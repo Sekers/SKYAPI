@@ -30,8 +30,6 @@ Future releases will add support for data creation, updates, and deletions.
 
 See the [SKYAPI Wiki](https://github.com/Sekers/SKYAPI/wiki#api-endpoints) for a list of the endpoints currently supported.
 
-
-
 ---
 
 ## Documentation
@@ -42,4 +40,4 @@ The SKYAPI module documentation is hosted in the [GitHub Wiki](https://github.co
 
 ## Developing and Contributing
 
-Contact us on the [GrimAdmin.com SKYAPI PowerShell Module Forum](https://www.grimadmin.com/forum/index.php?forum=7).
+Contact us on the [Grimadmin.com SKYAPI PowerShell Module Forum](https://www.grimadmin.com/forum/index.php?forum=7).
