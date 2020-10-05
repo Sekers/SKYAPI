@@ -2,12 +2,10 @@
 
 ---
 
-## [0.1.0](https://github.com/Sekers/SKYAPI) - (2020-10-05)
+## [0.1.0](https://github.com/Sekers/SKYAPI/tree/0.1.0) - (2020-10-05)
 
-### Features:
+### Features
 
 + Initial public release
-
-More Info: [[cl]](https://github.com/Sekers/SKYAPI)
 
 Author: [**@Sekers**](https://github.com/Sekers)
