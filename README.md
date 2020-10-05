@@ -1,8 +1,7 @@
 # SKYAPI PowerShell Module <!-- omit in toc -->
 
-## Table of Contents
+## Table of Contents  <!-- omit in toc -->
 
-- [Table of Contents](#table-of-contents)
 - [Overview](#overview)
 - [What's New](#whats-new)
 - [Current API Support](#current-api-support)
