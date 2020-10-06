@@ -24,11 +24,11 @@ See [CHANGELOG.md](./CHANGELOG.md) for information on the latest updates, as wel
 
 ## Current API Support
 
-At present, this module is focused on retrieving information from the Blackbaud SKY API [School API](https://developer.blackbaud.com/skyapi/apis/school). However, this module has been built so that other SKY API endpoints can easily be added in.
+At present, this module is focused on retrieving information from the Blackbaud SKY API [School API](https://developer.blackbaud.com/skyapi/apis/school). However, it has been built so that other SKY API endpoints can easily be added in.
 
 Future releases will add support for data creation, updates, and deletions.
 
-See the [SKYAPI Wiki](https://github.com/Sekers/SKYAPI/wiki#api-endpoints) for a list of the endpoints currently supported.
+See the [SKYAPI Wiki](../wiki) for a list of the [endpoints currently supported](../wiki#api-endpoints).
 
 ---
 
