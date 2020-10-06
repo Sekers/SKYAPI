@@ -34,7 +34,7 @@ See the [SKYAPI Wiki](https://github.com/Sekers/SKYAPI/wiki) for a list of the [
 
 ## Documentation
 
-The SKYAPI module documentation is hosted in the [GitHub Wiki](https://github.com/Sekers/SKYAPI/wiki). Examples are included in the [Sample Usage Scripts folder](./Sample_Usage_Scripts).
+The SKYAPI module documentation is hosted in the [SKYAPI Wiki](https://github.com/Sekers/SKYAPI/wiki). Examples are included in the [Sample Usage Scripts folder](./Sample_Usage_Scripts).
 
 ---
 
