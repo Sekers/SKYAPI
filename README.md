@@ -28,7 +28,7 @@ At present, this module is focused on retrieving information from the Blackbaud 
 
 Future releases will add support for data creation, updates, and deletions.
 
-See the [SKYAPI Wiki](https://github.com/Sekers/SKYAPI/wiki) for a list of the [endpoints currently supported](https://github.com/Sekers/SKYAPI/wiki#api-endpoints).
+See the [SKYAPI Wiki](.../wiki) for a list of the [endpoints currently supported](.../wiki#api-endpoints).
 
 ---
 
