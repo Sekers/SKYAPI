@@ -76,11 +76,62 @@ Function Get-RefreshToken
     $Authorization
 }
 
+# Helper to make sure Browser Emulation/Compatibility Mode is Off When Using the WebBrowser Control.
+# This function will set the Internet Explorer emulation mode for the running executable. This allows the WebBrowser control to support newer html features and improves compatibility with modern websites.
+# Modified from https://www.sapien.com/blog/2020/11/05/a-simple-fix-for-problems-with-windows-forms-webbrowser/ (see also https://bchallis.wordpress.com/2020/10/17/problems-with-the-windows-forms-webbrowser-control-and-a-simple-way-to-fix-it/)
+function Set-WebBrowserEmulation
+{
+	param
+	(
+		[ValidateNotNullOrEmpty()]
+		[string]
+		$ExecutableName = [System.IO.Path]::GetFileName([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
+	)
+ 
+	#region Get IE Version
+	$valueNames = 'svcVersion', 'svcUpdateVersion', 'Version', 'W2kVersion'
+ 
+	$version = 0;
+	for ($i = 0; $i -lt $valueNames.Length; $i++)
+	{
+		$objVal = [Microsoft.Win32.Registry]::GetValue('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer', $valueNames[$i], '0')
+		$strVal = [System.Convert]::ToString($objVal)
+		if ($strVal)
+		{
+			$iPos = $strVal.IndexOf('.')
+			if ($iPos -gt 0)
+			{
+				$strVal = $strVal.Substring(0, $iPos)
+			}
+ 
+			$res = 0;
+			if ([int]::TryParse($strVal, [ref]$res))
+			{
+				$version = [Math]::Max($version, $res)
+			}
+		}
+	}
+ 
+	if ($version -lt 7)
+	{
+		$version = 7000
+	}
+	else
+	{
+		$version = $version * 1000
+	}
+	#endregion
+ 
+	[Microsoft.Win32.Registry]::SetValue('HKEY_CURRENT_USER\SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION', $ExecutableName, $version)
+}
+
 Function Show-OAuthWindow
 {
     param(
         [System.Uri]$Url
     )
+
+    Set-WebBrowserEmulation
 
     Add-Type -AssemblyName System.Windows.Forms
 
