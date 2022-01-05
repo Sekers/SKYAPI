@@ -27,7 +27,7 @@ Function Connect-SKYAPI
     # If Key File Does Not Exist or the -ForceReauthentication Parameter is Set, Ask User to Reauthenticate
     if ((-not (Test-Path $sky_api_tokens_file_path)) -or ($ForceReauthentication))
     {
-        Get-NewToken -sky_api_tokens_file_path $sky_api_tokens_file_path
+        Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path
     }
 
     # Get Tokens & Set Creation Times
@@ -45,7 +45,7 @@ Function Connect-SKYAPI
     # If Refresh Token Has Expired Because it Hasn't Been Used for Max Refresh Token Timespan, Ask User to Reauthenticate
     if (-not (Confirm-TokenIsFresh -TokenCreation $refresh_token_creation -TokenType Refresh))
     {
-        Get-NewToken -sky_api_tokens_file_path $sky_api_tokens_file_path
+        Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path
 
         # Get Tokens & Set Creation Times
         try

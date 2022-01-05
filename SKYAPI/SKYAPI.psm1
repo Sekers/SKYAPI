@@ -156,7 +156,7 @@ Function Show-OAuthWindow
     $output
 }
 
-Function Get-NewToken
+Function Get-NewTokens
 {
     [CmdletBinding()]
     param($sky_api_tokens_file_path)

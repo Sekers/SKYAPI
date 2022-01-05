@@ -75,7 +75,7 @@ FunctionsToExport = @(
     'Get-SKYAPIAuthToken',
     'Get-RefreshToken',
     'Show-OAuthWindow',
-    'Get-NewToken',
+    'Get-NewTokens',
     'CatchInvokeErrors',
     'Get-UnpagedEntity',
     'Get-PagedEntity',
