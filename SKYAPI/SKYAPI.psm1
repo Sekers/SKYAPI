@@ -484,7 +484,7 @@ function Get-AuthTokensFromFile
 }
 
 # Import the functions
-$SKYAPIFunctions  = @(Get-ChildItem -Path $PSScriptRoot\Functions\*.ps1)
+$SKYAPIFunctions = @(Get-ChildItem -Path $PSScriptRoot\Functions\*.ps1)
 
 Foreach($SKYAPIFunction in $SKYAPIFunctions)
 {
