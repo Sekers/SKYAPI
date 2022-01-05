@@ -73,7 +73,7 @@ FunctionsToExport = @(
     'Set-SKYAPIConfigFilePath',
     'Set-SKYAPITokensFilePath',
     'Get-SKYAPIAuthToken',
-    'Get-RefreshToken',
+    'Get-AccessToken',
     'Show-OAuthWindow',
     'Get-NewTokens',
     'CatchInvokeErrors',

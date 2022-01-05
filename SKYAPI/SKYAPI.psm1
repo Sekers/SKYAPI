@@ -51,12 +51,12 @@ Function Get-SKYAPIAuthToken
 }
 
 <#
-    Get-RefreshToken: Uses the long life (365 days) refresh_token to get a new access_token.
+    Get-AccessToken: Uses the long life (365 days) refresh_token to get a new access_token.
     When you use a refresh token, you'll receive a new short-lived access token (60 minutes)
     that you can use when making subsequent calls to the SKY API.
     Using a refresh token also exchanges the current refresh token for a new one to reset the token life.
 #>
-Function Get-RefreshToken
+Function Get-AccessToken
 {
     [CmdletBinding()]
     param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
@@ -184,7 +184,7 @@ Function Get-NewTokens
     $Authorization = Get-SKYAPIAuthToken -grant_type 'authorization_code' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authOutput["code"] -token_uri $token_uri
 
     # Swap token for a Refresh token (which when requested returns both refresh and access tokens)
-    $Authorization = Get-RefreshToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authorization.refresh_token -token_uri $token_uri
+    $Authorization = Get-AccessToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authorization.refresh_token -token_uri $token_uri
 
     # Make sure path to credentials file parent folder exists and if it doesn't, create it
     $sky_api_tokens_file_path_ParentDir = Split-Path -Path $sky_api_tokens_file_path

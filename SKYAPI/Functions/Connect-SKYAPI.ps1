@@ -72,7 +72,7 @@ Function Connect-SKYAPI
             $NextAction = $null
             try
             {
-                $Authorization = Get-RefreshToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $($AuthTokensFromFile.refresh_token) -token_uri $token_uri
+                $Authorization = Get-AccessToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $($AuthTokensFromFile.refresh_token) -token_uri $token_uri
             }
             catch
             {
