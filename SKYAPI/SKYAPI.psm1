@@ -257,7 +257,7 @@ Function Get-UnpagedEntity
     if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+        $AuthTokensFromFile = Get-AuthTokensFromFile
         $authorisation.access_token = $($AuthTokensFromFile.access_token)
         $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
         $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -304,7 +304,7 @@ Function Get-UnpagedEntity
             $NextAction = CatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+            $AuthTokensFromFile = Get-AuthTokensFromFile
             $authorisation.access_token = $($AuthTokensFromFile.access_token)
             $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
             $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -327,7 +327,7 @@ Function Get-PagedEntity
     if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+        $AuthTokensFromFile = Get-AuthTokensFromFile
         $authorisation.access_token = $($AuthTokensFromFile.access_token)
         $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
         $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -403,7 +403,7 @@ Function Get-PagedEntity
             $NextAction = CatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+            $AuthTokensFromFile = Get-AuthTokensFromFile
             $authorisation.access_token = $($AuthTokensFromFile.access_token)
             $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
             $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -462,11 +462,6 @@ function Confirm-TokenIsFresh
 function Get-AuthTokensFromFile
 {
     param (
-        [parameter(
-        Position=0,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$TokensPath
     )
 
     try

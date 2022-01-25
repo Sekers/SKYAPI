@@ -33,7 +33,7 @@ Function Connect-SKYAPI
     # Get Tokens & Set Creation Times
     try
     {
-        $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+        $AuthTokensFromFile = Get-AuthTokensFromFile
         $refresh_token_creation = $AuthTokensFromFile.refresh_token_creation
         $access_token_creation = $AuthTokensFromFile.access_token_creation    
     }
@@ -50,7 +50,7 @@ Function Connect-SKYAPI
         # Get Tokens & Set Creation Times
         try
         {
-            $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+            $AuthTokensFromFile = Get-AuthTokensFromFile
             $refresh_token_creation = $AuthTokensFromFile.refresh_token_creation
             $access_token_creation = $AuthTokensFromFile.access_token_creation    
         }
@@ -80,7 +80,7 @@ Function Connect-SKYAPI
                 $NextAction = CatchInvokeErrors($_)
 
                 # Just in case the token was refreshed by the error catcher, update the $AuthTokensFromFile variable
-                $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+                $AuthTokensFromFile = Get-AuthTokensFromFile
             }
         }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
 

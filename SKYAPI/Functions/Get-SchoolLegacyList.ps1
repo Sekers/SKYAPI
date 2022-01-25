@@ -22,7 +22,7 @@ function Get-SchoolLegacyList
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+    $AuthTokensFromFile = Get-AuthTokensFromFile
 
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/legacy/lists/'
