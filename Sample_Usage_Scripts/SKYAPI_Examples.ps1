@@ -9,14 +9,14 @@
 <#
     Retrieve and Create/Update the SKY API Module Configuration File
 #>
-# Get-SKYAPIConfig -ConfigPath '.\Sample Usage Script\sky_api_config.json'
-# Set-SKYAPIConfig -ConfigPath '.\Sample Usage Script\sky_api_config.json' -Silent -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+# Get-SKYAPIConfig -ConfigPath '.\Sample_Usage_Scripts\Config\sky_api_config.json'
+# Set-SKYAPIConfig -ConfigPath '.\Sample_Usage_Scripts\Config\sky_api_config.json' -Silent -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 <#
     Set the Necessary File Paths.
     Both These *MUST* Be Set Prior to Running Commands.
 #>
-# Set-SKYAPIConfigFilePath -Path "$PSScriptRoot\sky_api_config.json" # The location where you placed your Blackbaud SKY API configuration file.
+# Set-SKYAPIConfigFilePath -Path "$PSScriptRoot\Config\sky_api_config.json" # The location where you placed your Blackbaud SKY API configuration file.
 # Set-SKYAPITokensFilePath -Path "$env:HOMEDRIVE$env:HOMEPATH\SKYAPI\Key.json" # The location where you want the access and refresh tokens to be stored.
 
 <#
