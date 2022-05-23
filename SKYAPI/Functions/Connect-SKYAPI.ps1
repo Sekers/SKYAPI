@@ -77,6 +77,7 @@ Function Connect-SKYAPI
             catch
             {
                 # Process Invoke Error
+                $LastCaughtError = ($_)
                 $NextAction = CatchInvokeErrors($_)
 
                 # Just in case the token was refreshed by the error catcher, update the $AuthTokensFromFile variable
@@ -86,8 +87,9 @@ Function Connect-SKYAPI
 
         if ($InvokeCount -ge $MaxInvokeCount)
         {
-            throw "Invoke tried running $InvokeCount times, but failed each time.`n" `
-            + "It is possible that the `'Key.json`' token file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."
+            Write-Warning $("Invoke tried running $InvokeCount times, but failed each time. " `
+            + "It is possible that the `'Key.json`' token file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it.")
+            throw $LastCaughtError
         }
             
             # Add Refresh & Access Token expirys to PSCustomObject and Save credentials to file
