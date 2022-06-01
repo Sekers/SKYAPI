@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.0'
+ModuleVersion = '0.2.1'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -30,7 +30,7 @@ CompanyName = 'The Grim Admin'
 Copyright = '(c) The Grim Admin. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = 'PowerShell Module for the Blackbaud SKY API'
+Description = 'PowerShell Module for the Blackbaud SKY API'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
@@ -72,21 +72,13 @@ Copyright = '(c) The Grim Admin. All rights reserved.'
 FunctionsToExport = @(
     'Set-SKYAPIConfigFilePath',
     'Set-SKYAPITokensFilePath',
-    'Get-SKYAPIAuthToken',
-    'Get-AccessToken',
-    'Show-OAuthWindow',
-    'Get-NewTokens',
-    'CatchInvokeErrors',
-    'Get-UnpagedEntity',
-    'Get-PagedEntity',
-    'Confirm-TokenIsFresh',
     'Get-AuthTokensFromFile',
     'Connect-SKYAPI',
     'Get-SchoolCourseList',
     'Get-SchoolEducationList',
     'Get-SchoolGradeLevelList',
-    'Get-SchoolLegacyList',
     'Get-SchoolLevelList',
+    'Get-SchoolList',
     'Get-SchoolOfferingTypeList',
     'Get-SchoolRoleList',
     'Get-SchoolSectionListBySchoolLevel',
@@ -109,7 +101,9 @@ CmdletsToExport = @()
 VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+AliasesToExport = @(
+    Get-SchoolLegacyList
+)
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

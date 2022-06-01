@@ -5,7 +5,7 @@
 
 # Parameter,Required,Type,Description
 # base_role_ids,yes,string,Comma delimited list of base role IDs to get users for.
-# Marker,no,integer,Results will start with this user in the result set.
+# Marker,no,integer,Results will start with this user in the result set (use the last user's ID as the marker value to return the next set of results)
 # ResponseLimit,no,integer,Limits response to this number of results.
 
 function Get-SchoolUserExtendedList
@@ -45,9 +45,10 @@ function Get-SchoolUserExtendedList
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
-    # Set Marker parameter to 1 if not set. That way it can do pagination properly.
+    # Set/Replace Marker parameter to 1 if not set or 0. That way it can do pagination properly.
     if ($null -eq $Marker -or $Marker -eq '' -or $Marker -eq 0)
     {
+        $parameters.Remove('Marker') | Out-Null
         $Marker = 1
         $parameters.Add('Marker',$Marker)
     }
@@ -57,7 +58,7 @@ function Get-SchoolUserExtendedList
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+    $AuthTokensFromFile = Get-AuthTokensFromFile
 
     $response = Get-PagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit
     $response

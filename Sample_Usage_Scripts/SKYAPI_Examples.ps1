@@ -128,10 +128,11 @@
 # Get-SchoolStudentListBySection -Section_ID "93054528"
 
 <#
-    Get-SchoolLegacyList Example
+    Get-SchoolList Example
+    NOTE: This replaces 'Get-SchoolLegacyList' which is being deprecated 2023-01-01
 #>
-# [array]$LegacyList = Get-SchoolLegacyList -List_ID 105627
-# foreach ($ListItem in $LegacyList)
+# [array]$SingleList = Get-SchoolList -List_ID 105627
+# foreach ($ListItem in $SingleList)
 # {
 #     $GroupID = $ListItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "Group Identifier"} | Select-Object -ExpandProperty value  
 #     write-host $GroupID

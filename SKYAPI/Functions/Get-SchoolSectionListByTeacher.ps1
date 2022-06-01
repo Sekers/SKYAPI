@@ -44,7 +44,7 @@ function Get-SchoolSectionListByTeacher
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+    $AuthTokensFromFile = Get-AuthTokensFromFile
 
     # Get data for one or more school levels
     foreach ($uid in $Teacher_ID)

@@ -33,7 +33,7 @@ Function Connect-SKYAPI
     # Get Tokens & Set Creation Times
     try
     {
-        $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+        $AuthTokensFromFile = Get-AuthTokensFromFile
         $refresh_token_creation = $AuthTokensFromFile.refresh_token_creation
         $access_token_creation = $AuthTokensFromFile.access_token_creation    
     }
@@ -50,7 +50,7 @@ Function Connect-SKYAPI
         # Get Tokens & Set Creation Times
         try
         {
-            $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+            $AuthTokensFromFile = Get-AuthTokensFromFile
             $refresh_token_creation = $AuthTokensFromFile.refresh_token_creation
             $access_token_creation = $AuthTokensFromFile.access_token_creation    
         }
@@ -77,17 +77,19 @@ Function Connect-SKYAPI
             catch
             {
                 # Process Invoke Error
+                $LastCaughtError = ($_)
                 $NextAction = CatchInvokeErrors($_)
 
                 # Just in case the token was refreshed by the error catcher, update the $AuthTokensFromFile variable
-                $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+                $AuthTokensFromFile = Get-AuthTokensFromFile
             }
         }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
 
         if ($InvokeCount -ge $MaxInvokeCount)
         {
-            throw "Invoke tried running $InvokeCount times, but failed each time.`n" `
-            + "It is possible that the `'Key.json`' token file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."
+            Write-Warning $("Invoke tried running $InvokeCount times, but failed each time. " `
+            + "It is possible that the `'Key.json`' token file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it.")
+            throw $LastCaughtError
         }
             
             # Add Refresh & Access Token expirys to PSCustomObject and Save credentials to file

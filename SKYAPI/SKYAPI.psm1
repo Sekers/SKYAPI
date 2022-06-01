@@ -1,6 +1,9 @@
 ﻿# Configure script to use TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Aliases
+Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
+
 # Functions
 function Set-SKYAPIConfigFilePath
 {
@@ -74,6 +77,47 @@ Function Get-AccessToken
                             -Uri $token_uri `
                             -Body $AuthorizationPostRequest
     $Authorization
+}
+
+
+# Helper function to get a specified nested member roperty of an object.
+# From: https://stackoverflow.com/questions/69368564/powershell-get-value-from-json-using-string-from-array
+# This will take an array with each item as the next property in the path, or you can use a string with a delimiter (e.g., "results.rows")
+function Resolve-MemberChain 
+{
+    param
+    (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [psobject[]]$InputObject,
+
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string[]]$MemberPath,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Delimiter
+    )
+
+    begin
+    {
+        if($PSBoundParameters.ContainsKey('Delimiter'))
+        {
+            $MemberPath = $MemberPath.Split([string[]]@($Delimiter))
+        }
+    }
+
+    process
+    {
+        foreach($obj in $InputObject)
+        {
+            $cursor = $obj
+            foreach($member in $MemberPath)
+            {
+                $cursor = $cursor.$member
+            }
+    
+            $cursor
+        }
+    }
 }
 
 # Helper to make sure Browser Emulation/Compatibility Mode is Off When Using the WebBrowser Control.
@@ -203,29 +247,51 @@ Function Get-NewTokens
 }
 
 # Handle Common Errors > https://developer.blackbaud.com/skyapi/docs/resources/in-depth-topics/handle-common-errors
-function CatchInvokeErrors($InvokeErrorMessage)
+function CatchInvokeErrors($InvokeErrorMessageRaw)
 {
     # Convert From JSON
-    $InvokeErrorMessage = $InvokeErrorMessage.ErrorDetails.Message | ConvertFrom-Json
+    $InvokeErrorMessage = $InvokeErrorMessageRaw.ErrorDetails.Message | ConvertFrom-Json
 
-    # Get Status Code, or Error if Code is blank
-    $StatusCodeorError = If($InvokeErrorMessage.statusCode) {$InvokeErrorMessage.statusCode} else {$InvokeErrorMessage.error}
+    # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 3 different ways so we need to account for that. Yay for no consistency.
+    If ($InvokeErrorMessage.statusCode)
+    {
+        $StatusCodeorError = $InvokeErrorMessage.statusCode
+    }
+    elseif ($InvokeErrorMessage.error)
+    {
+        $StatusCodeorError = If($InvokeErrorMessage.statusCode) {$InvokeErrorMessage.statusCode} else {$InvokeErrorMessage.error}
+    }
+    elseif ($InvokeErrorMessage.errors) {
+        $StatusCodeorError = If($InvokeErrorMessage.errors.error_code) {$InvokeErrorMessage.errors.error_code} else {$InvokeErrorMessage.errors}
+    }
+    else
+    {
+        # If it's not in a format the module recognizes, then just throw the raw message.
+        throw $InvokeErrorMessageRaw
+    }
 
+    # Try and handle the error message.
     Switch ($StatusCodeorError)
     {
+        invalid_client # You usually see this error when providing an invalid .
+        {
+            # We will display the error, try again and handle the issue later.
+            Write-Warning $InvokeErrorMessageRaw
+            'retry'
+        }
         invalid_grant # You usually, but not always, see this error when providing an invalid, expired, or previously used authorization code.
         {
             # We will display the error, try again and handle the issue later.
-            Write-Error $InvokeErrorMessage
+            Write-Warning $InvokeErrorMessageRaw
             'retry'
         }
         400 # Bad request. Usually means that data in the initial request is invalid or improperly formatted.
         {
-            throw "Bad request: $InvokeErrorMessage"
+            throw $InvokeErrorMessageRaw
         }
         401 # Unauthorized Request. Could mean that the authenticated user does not have rights to access the requested data or does not have permission to edit a given record or record type. An unauthorized request also occurs if the authorization token expires or if the authorization header is not supplied.
         {
-            # Usually this happens if the token has expired.
+            # This can happens if the token has expired so we will try to refresh and then run the invoke again.
             Connect-SKYAPI -ForceRefresh
             'retry'
         }
@@ -235,15 +301,15 @@ function CatchInvokeErrors($InvokeErrorMessage)
             Start-Sleep -Seconds 1
             'retry'
         }
-        500 # Internal Server Error. 
+        500 # Internal Server Error.
         {
-            # Sleep for 100 second and return the try command. I don't know if this is too long, but it seems reasonable.
-            Start-Sleep -Seconds 100
+            # Sleep for 5 seconds and return the try command. I don't know if this is a godo length, but it seems reasonable since we try 5 times before failing.
+            Start-Sleep -Seconds 5
             'retry'
         }
         default
         {
-            throw "I don't have that fruit (code). OK I need a better error message. The code/error returned is " + $StatusCodeorError + " if that helps."
+            throw $InvokeErrorMessageRaw
         }
     }    
 }
@@ -257,7 +323,7 @@ Function Get-UnpagedEntity
     if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+        $AuthTokensFromFile = Get-AuthTokensFromFile
         $authorisation.access_token = $($AuthTokensFromFile.access_token)
         $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
         $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -288,10 +354,11 @@ Function Get-UnpagedEntity
                                         'bb-api-subscription-key' = ($api_key)} `
                                 -Uri $($Request.Uri.AbsoluteUri)
         
-            # If there is a response field return that
-            if ($null -ne $response_field -and $response_field -ne "")
+            # If there is a response field set for the endpoint cmdlet, return that.
+            if ($null -ne $response_field -and "" -ne $response_field)
             {
-                return $apiCallResult.$response_field
+                # return $apiCallResult.$response_field
+                return Resolve-MemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
             }
             else # else return the entire API call result
             {
@@ -301,10 +368,11 @@ Function Get-UnpagedEntity
         catch
         {
             # Process Invoke Error
+            $LastCaughtError = ($_)
             $NextAction = CatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+            $AuthTokensFromFile = Get-AuthTokensFromFile
             $authorisation.access_token = $($AuthTokensFromFile.access_token)
             $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
             $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -314,7 +382,7 @@ Function Get-UnpagedEntity
 
     if ($InvokeCount -ge $MaxInvokeCount)
     {
-        throw "Invoke tried running $InvokeCount times, but failed each time. The last error message is: `n" + $Error[0]
+        throw $LastCaughtError
     }
 }
 
@@ -327,7 +395,7 @@ Function Get-PagedEntity
     if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+        $AuthTokensFromFile = Get-AuthTokensFromFile
         $authorisation.access_token = $($AuthTokensFromFile.access_token)
         $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
         $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -362,11 +430,12 @@ Function Get-PagedEntity
                                             'bb-api-subscription-key' = ($api_key)} `
                                     -Uri $($Request.Uri.AbsoluteUri)
                 
-                # If there is a response field use that
-                if ($null -ne $response_field -and $response_field -ne "")
+                # If there is a response field set for the endpoint cmdlet, return that.
+                if ($null -ne $response_field -and "" -ne $response_field)
                 {
-                    $allRecords += $apiItems.$response_field
-                    $pageRecordCount = $apiItems.$response_field.count
+                    $recordsThisIteration = Resolve-MemberChain -InputObject $apiItems -MemberPath $response_field -Delimiter "."
+                    $allRecords += $recordsThisIteration
+                    $pageRecordCount = $recordsThisIteration.count
                     
                 }
                 else # No response field
@@ -395,15 +464,16 @@ Function Get-PagedEntity
             }
             while ($pageRecordCount -eq $page_limit) # Loop to the next page if the current page is full
 
-            $allRecords            
+            $allRecords
         }
         catch
         {
             # Process Invoke Error
+            $LastCaughtError = ($_)
             $NextAction = CatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-AuthTokensFromFile -TokensPath $sky_api_tokens_file_path
+            $AuthTokensFromFile = Get-AuthTokensFromFile
             $authorisation.access_token = $($AuthTokensFromFile.access_token)
             $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
             $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -413,7 +483,7 @@ Function Get-PagedEntity
 
     if ($InvokeCount -ge $MaxInvokeCount)
     {
-        throw "Invoke tried running $InvokeCount times, but failed each time. The last error message is: `n" + $Error[0]
+        throw $LastCaughtError
     }
 }
 
@@ -462,11 +532,6 @@ function Confirm-TokenIsFresh
 function Get-AuthTokensFromFile
 {
     param (
-        [parameter(
-        Position=0,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$TokensPath
     )
 
     try
