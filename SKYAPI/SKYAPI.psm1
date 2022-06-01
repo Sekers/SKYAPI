@@ -1,6 +1,9 @@
 ﻿# Configure script to use TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Aliases
+Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
+
 # Functions
 function Set-SKYAPIConfigFilePath
 {
@@ -74,6 +77,47 @@ Function Get-AccessToken
                             -Uri $token_uri `
                             -Body $AuthorizationPostRequest
     $Authorization
+}
+
+
+# Helper function to get a specified nested member roperty of an object.
+# From: https://stackoverflow.com/questions/69368564/powershell-get-value-from-json-using-string-from-array
+# This will take an array with each item as the next property in the path, or you can use a string with a delimiter (e.g., "results.rows")
+function Resolve-MemberChain 
+{
+    param
+    (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [psobject[]]$InputObject,
+
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string[]]$MemberPath,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Delimiter
+    )
+
+    begin
+    {
+        if($PSBoundParameters.ContainsKey('Delimiter'))
+        {
+            $MemberPath = $MemberPath.Split([string[]]@($Delimiter))
+        }
+    }
+
+    process
+    {
+        foreach($obj in $InputObject)
+        {
+            $cursor = $obj
+            foreach($member in $MemberPath)
+            {
+                $cursor = $cursor.$member
+            }
+    
+            $cursor
+        }
+    }
 }
 
 # Helper to make sure Browser Emulation/Compatibility Mode is Off When Using the WebBrowser Control.
@@ -257,10 +301,10 @@ function CatchInvokeErrors($InvokeErrorMessageRaw)
             Start-Sleep -Seconds 1
             'retry'
         }
-        500 # Internal Server Error. 
+        500 # Internal Server Error.
         {
-            # Sleep for 100 second and return the try command. I don't know if this is too long, but it seems reasonable.
-            Start-Sleep -Seconds 100
+            # Sleep for 5 seconds and return the try command. I don't know if this is a godo length, but it seems reasonable since we try 5 times before failing.
+            Start-Sleep -Seconds 5
             'retry'
         }
         default
@@ -310,10 +354,11 @@ Function Get-UnpagedEntity
                                         'bb-api-subscription-key' = ($api_key)} `
                                 -Uri $($Request.Uri.AbsoluteUri)
         
-            # If there is a response field return that
-            if ($null -ne $response_field -and $response_field -ne "")
+            # If there is a response field set for the endpoint cmdlet, return that.
+            if ($null -ne $response_field -and "" -ne $response_field)
             {
-                return $apiCallResult.$response_field
+                # return $apiCallResult.$response_field
+                return Resolve-MemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
             }
             else # else return the entire API call result
             {
@@ -385,11 +430,12 @@ Function Get-PagedEntity
                                             'bb-api-subscription-key' = ($api_key)} `
                                     -Uri $($Request.Uri.AbsoluteUri)
                 
-                # If there is a response field use that
-                if ($null -ne $response_field -and $response_field -ne "")
+                # If there is a response field set for the endpoint cmdlet, return that.
+                if ($null -ne $response_field -and "" -ne $response_field)
                 {
-                    $allRecords += $apiItems.$response_field
-                    $pageRecordCount = $apiItems.$response_field.count
+                    $recordsThisIteration = Resolve-MemberChain -InputObject $apiItems -MemberPath $response_field -Delimiter "."
+                    $allRecords += $recordsThisIteration
+                    $pageRecordCount = $recordsThisIteration.count
                     
                 }
                 else # No response field
@@ -418,7 +464,7 @@ Function Get-PagedEntity
             }
             while ($pageRecordCount -eq $page_limit) # Loop to the next page if the current page is full
 
-            $allRecords            
+            $allRecords
         }
         catch
         {
