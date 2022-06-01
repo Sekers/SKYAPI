@@ -80,9 +80,10 @@ function Get-SchoolUserList
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
-    # Set Marker parameter to 1 if not set. That way it can do pagination properly.
+    # Set/Replace Marker parameter to 1 if not set or 0. That way it can do pagination properly.
     if ($null -eq $Marker -or $Marker -eq '' -or $Marker -eq 0)
     {
+        $parameters.Remove('Marker') | Out-Null
         $Marker = 1
         $parameters.Add('Marker',$Marker)
     }
