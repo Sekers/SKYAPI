@@ -2,7 +2,7 @@
 # Get data for one or more user IDs.
 
 # Parameter,Required,Type,Description
-# User_ID,yes,string,Comma delimited list of user IDs for each user you want returned.
+# User_ID,yes,int,Comma delimited list of user IDs for each user you want returned.
 
 function Get-SchoolUser
 {
