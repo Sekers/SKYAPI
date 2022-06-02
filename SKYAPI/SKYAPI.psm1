@@ -80,7 +80,7 @@ Function Get-AccessToken
 }
 
 
-# Helper function to get a specified nested member roperty of an object.
+# Helper function to get a specified nested member property of an object.
 # From: https://stackoverflow.com/questions/69368564/powershell-get-value-from-json-using-string-from-array
 # This will take an array with each item as the next property in the path, or you can use a string with a delimiter (e.g., "results.rows")
 function Resolve-MemberChain 
@@ -303,7 +303,7 @@ function CatchInvokeErrors($InvokeErrorMessageRaw)
         }
         500 # Internal Server Error.
         {
-            # Sleep for 5 seconds and return the try command. I don't know if this is a godo length, but it seems reasonable since we try 5 times before failing.
+            # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
             Start-Sleep -Seconds 5
             'retry'
         }
