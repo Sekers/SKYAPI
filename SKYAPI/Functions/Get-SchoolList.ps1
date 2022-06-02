@@ -64,10 +64,9 @@ function Get-SchoolList
     $AuthTokensFromFile = Get-AuthTokensFromFile
 
     # Get data for one or more IDs
-    foreach ($id in $List_ID)
+    foreach ($uid in $List_ID)
     {
-        $endpointWithListID = $endpoint + $id.ToString()
-        $response = Get-PagedEntity -url $endpointWithListID -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit
+        $response = Get-PagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit
         $response
     }
 }
