@@ -65,6 +65,11 @@
 # Get-SchoolUser -User_Id 2230332,3243114
 
 <#
+    Get-SchoolUserExtended Example
+#>
+# Get-SchoolUserExtended -User_Id 2230332,3243114
+
+<#
     Get-SchoolUserList Example
     (Use Get-SchoolRoleList to get a list)
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
@@ -138,3 +143,7 @@
 #     write-host $GroupID
 # }
 
+<#
+    Get-SchoolListOfLists Example
+#>
+# Get-SchoolListOfLists
