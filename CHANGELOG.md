@@ -1,9 +1,35 @@
 # Changelog for SKYAPI PowerShell Module
+
+## [0.2.3](https://github.com/Sekers/SKYAPI/tree/0.2.3) - (2022-06-02)
+
+### Fixes
+
+- Resolved pagination issues when 1,000 or more records were returned using Get-SchoolList or Get-SchoolUserExtendedList
+
+### Features
+
+- New Endpoint: [Get-SchoolUserExtended](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersExtendedByUser_idGet)
+- New Endpoint: [Get-SchoolListOfLists](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsGet)
+- New Endpoint: [Get-SchoolUserBBIDStatus](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersBbidstatusGet)
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
+
+## [0.2.2](https://github.com/Sekers/SKYAPI/tree/0.2.2) - (2022-06-02)
+
+### Fixes
+
+- Fixed issue with manifest file (typo preventing module from loading)
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
+
 ## [0.2.1](https://github.com/Sekers/SKYAPI/tree/0.2.1) - (2022-06-01)
 
 ### Fixes
 
-- Improved invoke error handling
 - Fixed rare bug on a couple of endpoints that use the Marker parameter
 
 ### Features
@@ -19,6 +45,8 @@
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
+---
+
 ## [0.2.0](https://github.com/Sekers/SKYAPI/tree/0.2.0) - (2021-11-15)
 
 ### Fixes
@@ -28,6 +56,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.1.1](https://github.com/Sekers/SKYAPI/tree/0.1.1) - (2020-10-05)
 
 ### Features
