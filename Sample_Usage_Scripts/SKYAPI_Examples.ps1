@@ -65,6 +65,24 @@
 # Get-SchoolUser -User_Id 2230332,3243114
 
 <#
+    Get-SchoolUserBBIDStatus Example
+    (Use Get-SchoolRoleList to get a list)
+    Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
+    because they are in the "Admin Team" role which has the same base_role_id as Staff.
+    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
+    The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
+    because the returned object type is a PSCustomObject and not an array in those cases. 
+    PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
+#>
+# [array]$StudentBBIDStatus = Get-SchoolUserBBIDStatus -Base_Role_Ids "332,15,14" | Where-Object {@('0','0') -Contains $_.status_id} | Select-Object -Property id, name, username, email, status
+# $StudentBBIDStatus.Count
+
+<#
+    Get-SchoolUserExtended Example
+#>
+# Get-SchoolUserExtended -User_Id 2230332,3243114
+
+<#
     Get-SchoolUserList Example
     (Use Get-SchoolRoleList to get a list)
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
@@ -81,11 +99,14 @@
     (Use Get-SchoolRoleList to get a list)
     Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
-    Suggest returning to an array because the ".Count" function will otherwise not work if you have less than 2 responses.
+    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
+    The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
+    because the returned object type is a PSCustomObject and not an array in those cases. 
+    PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
 #>
 # [array]$list = Get-SchoolUserExtendedList -Base_Role_Ids "332,15,14"
 # $list.Count
-# Get students in grades 4-8. Roll ID 14 is Student.
+# # Get students in grades 4-8. Roll ID 14 is Student.
 # $GoogleClassroomStudents = Get-SchoolUserExtendedList -Base_Role_Ids "14" | Where-Object {@('4','5','6','7','8') -Contains $_.student_info.grade_level} | Select-Object -Property id, email, student_info
 
 <#
@@ -131,10 +152,14 @@
     Get-SchoolList Example
     NOTE: This replaces 'Get-SchoolLegacyList' which is being deprecated 2023-01-01
 #>
-# [array]$SingleList = Get-SchoolList -List_ID 105627
-# foreach ($ListItem in $SingleList)
+# [array]$SchoolList = Get-SchoolList -List_ID 105627
+# foreach ($ListItem in $SchoolList)
 # {
 #     $GroupID = $ListItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "Group Identifier"} | Select-Object -ExpandProperty value  
 #     write-host $GroupID
 # }
 
+<#
+    Get-SchoolListOfLists Example
+#>
+# Get-SchoolListOfLists

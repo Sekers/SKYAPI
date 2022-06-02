@@ -1,5 +1,5 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersExtendedGet
-# Returns a paginated list of users, limited to 1000 users per page.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersBbidstatusGet
+# Returns a paginated collection of users education management BBID status, limited to 1000 users per page.
 # Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
 # because they are in the "Admin Team" roll which has the same base_roll_id as Staff.
 
@@ -8,7 +8,7 @@
 # Marker,no,integer,Results will start with the user AFTER the specified user's ID in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
-function Get-SchoolUserExtendedList
+function Get-SchoolUserBBIDStatus
 {
     [cmdletbinding()]
     param(
@@ -36,7 +36,7 @@ function Get-SchoolUserExtendedList
     [MarkerType]$MarkerType = [MarkerType]::LAST_USER_ID
 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/extended'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/bbidstatus?base_role_ids='
 
     # Set the response field
     $ResponseField = "value"

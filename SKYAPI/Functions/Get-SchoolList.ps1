@@ -4,8 +4,8 @@
 # This is an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/docs/services/school/operations/V1LegacyListsByList_idGet).
 
 # Parameter,Required,Type,Description
-# list_id,yes,string,Comma delimited list of base role IDs to get users for.
-# Page,no,integer,Results will start with this user in the result set.
+# list_id,integer,Comma delimited list of list IDs to get results (will return combined results even if lists have different headers)
+# Page,no,integer,Results will start with this page of results in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
 function Get-SchoolList
@@ -32,6 +32,9 @@ function Get-SchoolList
     # Set API responses per page limit.
     $PageLimit = 1000
 
+    # Specify Marker Type
+    [MarkerType]$MarkerType = [MarkerType]::NEXT_PAGE
+
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/lists/advanced/'
 
@@ -44,7 +47,7 @@ function Get-SchoolList
     {
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
-
+   
     # Set/Replace Page parameter to 1 if not set or 0. That way it can do pagination properly.
     if ($null -eq $Page -or $Page -eq '' -or $Page -eq 0)
     {
@@ -64,10 +67,9 @@ function Get-SchoolList
     $AuthTokensFromFile = Get-AuthTokensFromFile
 
     # Get data for one or more IDs
-    foreach ($id in $List_ID)
+    foreach ($uid in $List_ID)
     {
-        $endpointWithListID = $endpoint + $id.ToString()
-        $response = Get-PagedEntity -url $endpointWithListID -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit
+        $response = Get-PagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
         $response
     }
 }
