@@ -1,4 +1,4 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersExtendedGet
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersBbidstatusGet
 # Returns a paginated collection of users education management BBID status, limited to 1000 users per page.
 # Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
 # because they are in the "Admin Team" roll which has the same base_roll_id as Staff.
