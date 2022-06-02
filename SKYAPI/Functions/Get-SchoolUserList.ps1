@@ -10,7 +10,7 @@
 # maiden_name,no,string,Filter results by maiden name.
 # grad_year,no,string,The beginning date in a school year (ex. 2017).
 # end_grad_year,no,string,The end date in a school year (ex. 2018). Enter a grad_year and end_grad_year to find matching results in the date range.
-# Marker,no,integer,Results will start with this user in the result set.
+# Marker,no,integer,Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
 function Get-SchoolUserList
@@ -66,6 +66,9 @@ function Get-SchoolUserList
     
     # Set API responses per page limit.
     $PageLimit = 100
+
+    # Specify Marker Type
+    [MarkerType]$MarkerType = [MarkerType]::NEXT_RECORD_NUMBER
     
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/users'
@@ -95,6 +98,6 @@ function Get-SchoolUserList
     # Grab the security tokens
     $AuthTokensFromFile = Get-AuthTokensFromFile
 
-    $response = Get-PagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit
+    $response = Get-PagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
     $response
 }

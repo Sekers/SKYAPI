@@ -5,7 +5,7 @@
 
 # Parameter,Required,Type,Description
 # base_role_ids,yes,string,Comma delimited list of base role IDs to get users for.
-# Marker,no,integer,Results will start with this user in the result set (use the last user's ID as the marker value to return the next set of results)
+# Marker,no,integer,Results will start with the user AFTER the specified user's ID in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
 function Get-SchoolUserBBIDStatus
@@ -32,6 +32,9 @@ function Get-SchoolUserBBIDStatus
     # Set API responses per page limit.
     $PageLimit = 1000
 
+    # Specify Marker Type
+    [MarkerType]$MarkerType = [MarkerType]::LAST_USER_ID
+
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/bbidstatus?base_role_ids='
 
@@ -52,6 +55,6 @@ function Get-SchoolUserBBIDStatus
     # Grab the security tokens
     $AuthTokensFromFile = Get-AuthTokensFromFile
 
-    $response = Get-PagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit
+    $response = Get-PagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
     $response
 }

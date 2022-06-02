@@ -4,6 +4,22 @@
 # Aliases
 Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
 
+# Type Definitions
+
+# Public Enum
+# Name: MarkerType
+# Value: NEXT_RECORD_NUMBER - Use the record number as the marker value to return the next set of results. For example: marker=101 will return the second set of results.
+# Value: LAST_USER_ID - Use the last user's ID as the marker value to return the next set of results.
+# Value: NEXT_PAGE - Use the page number as the marker value to return the next set of results. For example: page=2 will return the second set of results.
+
+Add-Type -TypeDefinition @"
+public enum MarkerType {
+    NEXT_RECORD_NUMBER,
+    LAST_USER_ID,
+    NEXT_PAGE
+}
+"@
+
 # Functions
 function Set-SKYAPIConfigFilePath
 {
@@ -389,7 +405,7 @@ Function Get-UnpagedEntity
 Function Get-PagedEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit)
+    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -447,8 +463,24 @@ Function Get-PagedEntity
                 $totalRecordCount = $allRecords.count
 
                 # Update marker location for next page
-                [int]$params['Marker'] += $page_limit
-                $Request.Query = $params.ToString()
+                switch ($marker_type)
+                {
+                    NEXT_RECORD_NUMBER
+                    {
+                        [int]$params['Marker'] += $page_limit
+                        $Request.Query = $params.ToString()
+                    }
+                    LAST_USER_ID
+                    {
+                        [int]$params['Marker'] = $allRecords[-1].id
+                        $Request.Query = $params.ToString()
+                    }
+                    NEXT_PAGE
+                    {
+                        [int]$params['Page'] += 1
+                        $Request.Query = $params.ToString()
+                    }
+                }
 
                 # If the user supplied a limit, then respect it and don't get subsequent pages
                 if (($null -ne $response_limit -and $response_limit -ne 0 -and $response_limit -ne "") -and $response_limit -le $totalRecordCount)
