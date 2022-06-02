@@ -87,6 +87,7 @@ FunctionsToExport = @(
     'Get-SchoolStudentListBySection',
     'Get-SchoolTermList',
     'Get-SchoolUser',
+    'Get-SchoolUserExtended',
     'Get-SchoolUserExtendedList',
     'Get-SchoolUserList',
     'Get-SchoolYearList',
