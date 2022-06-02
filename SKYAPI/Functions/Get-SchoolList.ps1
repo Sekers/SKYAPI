@@ -4,7 +4,7 @@
 # This is an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/docs/services/school/operations/V1LegacyListsByList_idGet).
 
 # Parameter,Required,Type,Description
-# list_id,yes,string,Comma delimited list of base role IDs to get users for.
+# list_id,integer,Comma delimited list of list IDs to get results (will return combined results even if lists have different headers)
 # Page,no,integer,Results will start with this user in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
