@@ -12,6 +12,8 @@ Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
 # Value: LAST_USER_ID - Use the last user's ID as the marker value to return the next set of results.
 # Value: NEXT_PAGE - Use the page number as the marker value to return the next set of results. For example: page=2 will return the second set of results.
 
+# Check to see if the MarkerType Type is already loading to prevent the "Cannot add type. The type name 'MarkerType' already exists." error message. 
+if ("MarkerType" -as [type]) {} else {
 Add-Type -TypeDefinition @"
 public enum MarkerType {
     NEXT_RECORD_NUMBER,
@@ -19,6 +21,7 @@ public enum MarkerType {
     NEXT_PAGE
 }
 "@
+}
 
 # Functions
 function Set-SKYAPIConfigFilePath
