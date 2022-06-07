@@ -14,7 +14,15 @@ Function Connect-SKYAPI
         ParameterSetName = 'ForceRefresh',
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [Switch]$ForceRefresh
+        [Switch]$ForceRefresh,
+
+        [parameter(
+            Position=2,
+            Mandatory=$false,
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true)]
+            [ValidateSet('EdgeWebView2','MiniHTTPServer',"LegacyIEControl")]
+            [string]$AuthenticationMethod
     )
     
     # Set the Necesasary Configuration Variables
@@ -27,7 +35,7 @@ Function Connect-SKYAPI
     # If Key File Does Not Exist or the -ForceReauthentication Parameter is Set, Ask User to Reauthenticate
     if ((-not (Test-Path $sky_api_tokens_file_path)) -or ($ForceReauthentication))
     {
-        Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path
+        Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path -AuthenticationMethod $AuthenticationMethod
     }
 
     # Get Tokens & Set Creation Times
@@ -45,7 +53,7 @@ Function Connect-SKYAPI
     # If Refresh Token Has Expired Because it Hasn't Been Used for Max Refresh Token Timespan, Ask User to Reauthenticate
     if (-not (Confirm-TokenIsFresh -TokenCreation $refresh_token_creation -TokenType Refresh))
     {
-        Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path
+        Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path -AuthenticationMethod $AuthenticationMethod
 
         # Get Tokens & Set Creation Times
         try

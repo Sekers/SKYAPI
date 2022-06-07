@@ -1,6 +1,9 @@
 ﻿# Configure script to use TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Global Variables
+New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell" -Scope Global -Force
+
 # Aliases
 Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
 
@@ -191,24 +194,147 @@ function Set-WebBrowserEmulation
 Function Show-OAuthWindow
 {
     param(
-        [System.Uri]$Url
+        [parameter(
+        Position=0,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [System.Uri]$Url,
+
+        [parameter(
+        Position=1,
+        Mandatory=$false,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [ValidateSet('EdgeWebView2','MiniHTTPServer',"LegacyIEControl")]
+        [string]$AuthenticationMethod
     )
 
-    Set-WebBrowserEmulation
+    # Check if WebView2 is installed
+    $SourceProductName = 'Microsoft Edge WebView2 Runtime' # Partial Name is Fine as Long as it is Unique enough for a match
 
-    Add-Type -AssemblyName System.Windows.Forms
+    # Get a Listing of Installed Applications From the Registry
+    $InstalledApplicationsFromRegistry = @()
+    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
+    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+  
+    # If Edge WebView 2 runtime not installed - https://developer.microsoft.com/en-us/microsoft-edge/webview2/
+    # If you run the following command from an elevated process or command prompt, it triggers a per-machine install.
+    # If you don't run the command from an elevated process or command prompt, a per-user install will take place.
+    #However, a per-user install is automatically replaced by a per-machine install, if a per-machine Microsoft Edge Updater is in place.
+    #A per-machine Microsoft Edge Updater is provided as part of Microsoft Edge, except for the Canary preview channel of Microsoft Edge.
+    #For more information, see https://docs.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution#installing-the-runtime-as-per-machine-or-per-user.
+    while (-Not ($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName}))
+    {
+        Write-Warning "Microsoft Edge WebView2 Runtime is not installed and is required for browser-based authentication. Please install the runtime and try again."
+        $PromptTitle = "Options"
+        $PromptMessage = "Enter your choice:"
+        $PromptChoices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Download & install the Edge WebView2 runtime", "&Try alternative method (beta)", "&Cancel & exit")
+        $PromptDefault = 0
+        $PromptSelection = $host.UI.PromptForChoice($PromptTitle,$PromptMessage,$PromptChoices,$PromptDefault)
 
-    $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=440;Height=640}
-    $web  = New-Object -TypeName System.Windows.Forms.WebBrowser -Property @{Width=420;Height=600;Url=($url ) }
-    $DocComp  = {
-        $Global:uri = $web.Url.AbsoluteUri
-        if ($Global:Uri -match "error=[^&]*|code=[^&]*") {$form.Close() }
+        switch($PromptSelection)
+        {
+            0   {
+                    Write-Host "Attempting to download & install the Microsoft Edge WebView2 runtime"
+                    # Create Download Folder If It Doesn't Already Exist
+                    $DownloadPath = "$sky_api_user_data_path\Downloads"
+                    $null = New-Item -ItemType Directory -Path $DownloadPath -Force
+
+                    # Download WebView2 Evergreen Bootstrapper
+                    $DownloadURL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+                    $DownloadContent = Invoke-WebRequest -Uri $DownloadURL
+                    $DownloadFileName = "Microsoft Edge WebView2 Runtime Installer.exe"
+
+                    # Create the file (this will overwrite it any existing file)
+                    $WebView2Installer = [System.IO.FileStream]::new("$DownloadPath\$DownloadFileName", [System.IO.FileMode]::Create)
+                    $WebView2Installer.Write($DownloadContent.Content, 0, $DownloadContent.RawContentLength)
+                    $WebView2Installer.Close()
+
+                    # Install
+                    Write-Host "File Downloaded. Attempting to run installer."
+                    Start-Process -Filepath "$DownloadPath\$DownloadFileName" -Wait
+
+                    # Get a Listing of Installed Applications From the Registry
+                    $InstalledApplicationsFromRegistry = @()
+                    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
+                    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+                    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+
+                    # Retry Opening Authentication Window
+                    Write-Host "Retrying Authentication"
+                }
+            1   {
+                    Write-Host "Attempting alternate method by building a mini webserver in PowerShell. Continue?"
+                    Write-Host "Sorry. This feature is not yet implemented."
+                }
+            2   {
+                    Write-Host "Exiting..."
+                    Exit
+                }
+        }
+        
     }
-    $web.ScriptErrorsSuppressed = $true
-    $web.Add_DocumentCompleted($DocComp)
-    $form.Controls.Add($web)
-    $form.Add_Shown({$form.Activate()})
-    $form.ShowDialog() | Out-Null
+    
+    Switch ($AuthenticationMethod)
+    {
+        MiniHTTPServer # TODO
+        {
+            Write-Error "Sorry this feature is not yet implemented" -ErrorAction Stop
+        }
+        LegacyIEControl
+        {
+            Set-WebBrowserEmulation
+
+            Add-Type -AssemblyName System.Windows.Forms
+        
+            $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=440;Height=640}
+            $web = New-Object -TypeName System.Windows.Forms.WebBrowser -Property @{Width=420;Height=600;Url=($url)}
+            $DocComp = {
+                $Global:uri = $web.Url.AbsoluteUri
+                if ($Global:Uri -match "error=[^&]*|code=[^&]*") {$form.Close() }
+            }
+            $web.ScriptErrorsSuppressed = $true
+            $web.Add_DocumentCompleted($DocComp)
+            $form.Controls.Add($web)
+            $form.Add_Shown({$form.Activate()})
+            $form.ShowDialog() | Out-Null     
+        }
+        default # EdgeWebView2
+        {
+            # Load Assemblies
+            Add-Type -AssemblyName System.Windows.Forms
+
+            # Note, you also need the following two files in the same folder as the Microsoft.Web.WebView2.WinForms.dll:
+            # - Microsoft.Web.WebView2.Core.dll
+            # - WebView2Loader.dll
+            Add-Type -AssemblyName "$PSScriptRoot\Dependencies\Microsoft.Web.WebView2\1.0.1210.39\netcoreapp3.0\Microsoft.Web.WebView2.WinForms.dll"
+
+
+            $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=600;Height=800}
+            $WebView2 = New-Object -TypeName Microsoft.Web.WebView2.WinForms.WebView2
+            $DocComp = {
+                $Global:uri = $web.Url.AbsoluteUri
+                if ($Global:Uri -match "error=[^&]*|code=[^&]*") {$form.Close() }
+            }
+            #$web.ScriptErrorsSuppressed = $true
+            #$web.Add_DocumentCompleted($DocComp)
+
+            $WebView2.CreationProperties = New-Object -TypeName 'Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties'
+            $WebView2.CreationProperties.UserDataFolder = $sky_api_user_data_path
+            $WebView2.Source = [uri]::new($Url)
+            #$WebView2.Visible = $true
+
+            #$WebView2.Location = New-Object System.Drawing.Point(0, 0)
+            #$webview.Name = 'webview'
+            $WebView2.Size = New-Object System.Drawing.Size(584, 760)
+
+            $form.Controls.Add($WebView2)
+            $form.Add_Shown({$form.Activate()})
+            $form.ShowDialog() | Out-Null
+        }
+    }    
 
     $queryOutput = [System.Web.HttpUtility]::ParseQueryString($web.Url.Query)
     $output = @{}
@@ -216,13 +342,33 @@ Function Show-OAuthWindow
         $output["$key"] = $queryOutput[$key]
     }
 
-    $output
+# TODO - SEE WHAT OUTPUT IS LIKE AND MAKE SURE IT VALIDATES
+    if ($output) {
+        <# Action to perform if the condition is true #>
+    }
+
+    Return $output
 }
 
 Function Get-NewTokens
 {
     [CmdletBinding()]
-    param($sky_api_tokens_file_path)
+    param(
+        [parameter(
+            Position=0,
+            Mandatory=$false,
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true)]
+            [string]$sky_api_tokens_file_path,
+        
+        [parameter(
+            Position=1,
+            Mandatory=$false,
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true)]
+            [ValidateSet('EdgeWebView2','MiniHTTPServer',"LegacyIEControl")]
+            [string]$AuthenticationMethod
+    )
 
     # Set the Necessary Config Variables
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -241,7 +387,7 @@ Function Get-NewTokens
     "&redirect_uri=" + [System.Web.HttpUtility]::UrlEncode($redirect_uri) +
     '&response_type=code&state=state'
 
-    $authOutput = Show-OAuthWindow -Url $strUri
+    $authOutput = Show-OAuthWindow -Url $strUri -AuthenticationMethod $AuthenticationMethod
 
     # Get auth token
     $Authorization = Get-SKYAPIAuthToken -grant_type 'authorization_code' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authOutput["code"] -token_uri $token_uri
