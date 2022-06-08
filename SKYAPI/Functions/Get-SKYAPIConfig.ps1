@@ -15,14 +15,13 @@ function Get-SKYAPIConfig
         Position=0,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
         [string]$ConfigPath = $sky_api_config_file_path # If not entered will see if it can pull path from this variable.
     )
     
-    # Make Sure Requested Path Isn't Null or Empty
+    # Make Sure Requested Path Isn't Null or Empty (better to catch it here than validating on the parameter of this function)
     if ([string]::IsNullOrEmpty($ConfigPath))
     {
-        throw "Cannot validate argument on parameter `'ConfigPath`'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again."
+        throw "`'`$sky_api_config_file_path`' is not specified. Don't forget to first use the `'Set-SKYAPIConfigFilePath`' & `'Set-SKYAPITokensFilePath`' cmdlets!"
     }
 
     try {

@@ -17,14 +17,21 @@
     Both These *MUST* Be Set Prior to Running Commands.
 #>
 # Set-SKYAPIConfigFilePath -Path "$PSScriptRoot\Config\sky_api_config.json" # The location where you placed your Blackbaud SKY API configuration file.
-# Set-SKYAPITokensFilePath -Path "$env:HOMEDRIVE$env:HOMEPATH\SKYAPI\Key.json" # The location where you want the access and refresh tokens to be stored.
+# Set-SKYAPITokensFilePath -Path "$env:HOMEDRIVE$env:HOMEPATH\SKYAPI\skyapi_key.json" # The location where you want the access and refresh tokens to be stored.
 
 <#
     Optionally, Test Connecting to the SKY API Service.
     Optional Parameters Can Force Reauthentication or Token Refresh.
+    "AuthenticationMethod" paramameter let's you specify how you want to authenticate if authentication is necessary:
+    - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
+                              Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
+    - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
+    - MiniHTTPServer: Alternate method of capturing the authentication using your user account's default web browser
+                      and listening for the authentication response using a temporary HTTP server hosted by the module.
 #>
 # Connect-SKYAPI
 # Connect-SKYAPI -ForceReauthentication
+# Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer 
 # Connect-SKYAPI -ForceRefresh
 
 <#
