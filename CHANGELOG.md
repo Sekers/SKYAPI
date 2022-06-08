@@ -1,5 +1,25 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.2.4](https://github.com/Sekers/SKYAPI/tree/0.2.4) - (2022-06-08)
+
+### Fixes
+
+- Attempted to prevent the MarkerType type error message if it is somehow preloaded (e.g., your IDE preloading it for some reason)
+
+### Features
+
+- Replaced the soon to be deprecated WebBrowser Class (IE popup window for authentication & authorization) with the Microsoft Edge WebView2 control. See [Issue #7](https://github.com/Sekers/SKYAPI/issues/7).
+- Added the "AuthenticationMethod" paramameter to the "Connect-SKYAPI" cmdlet which let's you specify how you want to authenticate if authentication is necessary:
+    - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
+                              Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
+    - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
+    - MiniHTTPServer (coming soon as a beta feature): Alternate method of capturing the authentication using your user account's default web browser
+                      and listening for the authentication response using a temporary HTTP server hosted by the module.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
+
 ## [0.2.3](https://github.com/Sekers/SKYAPI/tree/0.2.3) - (2022-06-02)
 
 ### Fixes
