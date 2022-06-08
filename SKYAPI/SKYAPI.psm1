@@ -206,7 +206,7 @@ Function Show-OAuthWindow
         Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [ValidateSet('EdgeWebView2','MiniHTTPServer',"LegacyIEControl")]
+        [ValidateSet('','EdgeWebView2','MiniHTTPServer','LegacyIEControl')] # Allows null to be passed
         [string]$AuthenticationMethod
     )
 
@@ -247,7 +247,7 @@ Function Show-OAuthWindow
                     $DownloadContent = Invoke-WebRequest -Uri $DownloadURL
                     $DownloadFileName = "Microsoft Edge WebView2 Runtime Installer.exe"
 
-                    # Create the file (this will overwrite it any existing file)
+                    # Create the file (this will overwrite any existing file with the same name)
                     $WebView2Installer = [System.IO.FileStream]::new("$DownloadPath\$DownloadFileName", [System.IO.FileMode]::Create)
                     $WebView2Installer.Write($DownloadContent.Content, 0, $DownloadContent.RawContentLength)
                     $WebView2Installer.Close()
@@ -289,8 +289,8 @@ Function Show-OAuthWindow
 
             Add-Type -AssemblyName System.Windows.Forms
         
-            $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=440;Height=640}
-            $web = New-Object -TypeName System.Windows.Forms.WebBrowser -Property @{Width=420;Height=600;Url=($url)}
+            $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=600;Height=800}
+            $web = New-Object -TypeName System.Windows.Forms.WebBrowser -Property @{Width=584;Height=760;Url=($url)}
             $DocComp = {
                 $Global:uri = $web.Url.AbsoluteUri
                 if ($Global:Uri -match "error=[^&]*|code=[^&]*") {$form.Close() }
@@ -299,50 +299,76 @@ Function Show-OAuthWindow
             $web.Add_DocumentCompleted($DocComp)
             $form.Controls.Add($web)
             $form.Add_Shown({$form.Activate()})
-            $form.ShowDialog() | Out-Null     
+            $form.ShowDialog() | Out-Null
+
+            # Parse Return URL
+            $queryOutput = [System.Web.HttpUtility]::ParseQueryString($web.Url.Query)
+            $output = @{}
+            foreach($key in $queryOutput.Keys){
+                $output["$key"] = $queryOutput[$key]
+            }
         }
         default # EdgeWebView2
-        {
+        {            
+            # Set EdgeWebView2 Control Version to Use
+            $EdgeWebView2Control_VersionNumber = '1.0.1210.39'
+            switch ($PSVersionTable.PSEdition)
+            {
+                Desktop {$EdgeWebView2Control_DotNETVersion = "net45"}
+                Core {$EdgeWebView2Control_DotNETVersion = "netcoreapp3.0"}
+                Default {$EdgeWebView2Control_DotNETVersion = "netcoreapp3.0"}
+            }
+            switch ([System.Environment]::Is64BitProcess)
+            {
+                $true {$EdgeWebView2Control_OSArchitecture = "win-x64"}
+                $false {$EdgeWebView2Control_OSArchitecture = "win-x86"}
+                Default {$EdgeWebView2Control_OSArchitecture = "win-x64"}
+            }
+            
+            # Update $AuthenticationMethod Variable (not currently needed but is useful to have in a variable)
+            $AuthenticationMethod = "EdgeWebView2"
+            
             # Load Assemblies
             Add-Type -AssemblyName System.Windows.Forms
 
-            # Note, you also need the following two files in the same folder as the Microsoft.Web.WebView2.WinForms.dll:
+            # Note, you also need the following two files in the same folder as "Microsoft.Web.WebView2.WinForms.dll":
             # - Microsoft.Web.WebView2.Core.dll
             # - WebView2Loader.dll
-            Add-Type -AssemblyName "$PSScriptRoot\Dependencies\Microsoft.Web.WebView2\1.0.1210.39\netcoreapp3.0\Microsoft.Web.WebView2.WinForms.dll"
-
+            Add-Type -Path "$PSScriptRoot\Dependencies\Microsoft.Web.WebView2\$EdgeWebView2Control_VersionNumber\$EdgeWebView2Control_DotNETVersion\$EdgeWebView2Control_OSArchitecture\Microsoft.Web.WebView2.WinForms.dll"
 
             $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=600;Height=800}
             $WebView2 = New-Object -TypeName Microsoft.Web.WebView2.WinForms.WebView2
-            $DocComp = {
-                $Global:uri = $web.Url.AbsoluteUri
-                if ($Global:Uri -match "error=[^&]*|code=[^&]*") {$form.Close() }
-            }
-            #$web.ScriptErrorsSuppressed = $true
-            #$web.Add_DocumentCompleted($DocComp)
 
             $WebView2.CreationProperties = New-Object -TypeName 'Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties'
             $WebView2.CreationProperties.UserDataFolder = $sky_api_user_data_path
-            $WebView2.Source = [uri]::new($Url)
-            #$WebView2.Visible = $true
-
-            #$WebView2.Location = New-Object System.Drawing.Point(0, 0)
-            #$webview.Name = 'webview'
+            $WebView2.Source = $Url
             $WebView2.Size = New-Object System.Drawing.Size(584, 760)
 
+            # Set Event Handlers. See APIs here: https://github.com/MicrosoftEdge/WebView2Browser#webview2-apis
+            $WebView2_NavigationCompleted = {
+                # Write-Host $($WebView2.Source.AbsoluteUri) # DEBUG LINE
+                if ($WebView2.Source.AbsoluteUri -match "error=[^&]*|$([regex]::escape($redirect_uri))*")
+                {
+                    $form.Close()
+                }
+            }
+            $WebView2.add_NavigationCompleted($WebView2_NavigationCompleted)
+            
+            # Add WebView2 Control to the Form and Show It
             $form.Controls.Add($WebView2)
             $form.Add_Shown({$form.Activate()})
             $form.ShowDialog() | Out-Null
-        }
-    }    
 
-    $queryOutput = [System.Web.HttpUtility]::ParseQueryString($web.Url.Query)
-    $output = @{}
-    foreach($key in $queryOutput.Keys){
-        $output["$key"] = $queryOutput[$key]
+            # Parse Return URL
+            $queryOutput = [System.Web.HttpUtility]::ParseQueryString($WebView2.Source.Query)
+            $output = @{}
+            foreach($key in $queryOutput.Keys){
+                $output["$key"] = $queryOutput[$key]
+            }
+        }
     }
 
-# TODO - SEE WHAT OUTPUT IS LIKE AND MAKE SURE IT VALIDATES
+# TODO - SEE WHAT OUTPUT IS LIKE AND MAKE SURE IT VALIDATES (like if the user gets an error or manually closes the form)
     if ($output) {
         <# Action to perform if the condition is true #>
     }
@@ -366,7 +392,7 @@ Function Get-NewTokens
             Mandatory=$false,
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true)]
-            [ValidateSet('EdgeWebView2','MiniHTTPServer',"LegacyIEControl")]
+            [ValidateSet('','EdgeWebView2','MiniHTTPServer','LegacyIEControl')] # Allows null to be passed
             [string]$AuthenticationMethod
     )
 
