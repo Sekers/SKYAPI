@@ -30,6 +30,7 @@
                       and listening for the authentication response using a temporary HTTP server hosted by the module.
 #>
 # Connect-SKYAPI
+# Connect-SKYAPI -ForceReauthentication
 # Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer 
 # Connect-SKYAPI -ForceRefresh
 

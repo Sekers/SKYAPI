@@ -225,16 +225,16 @@ Function Show-OAuthWindow
     #However, a per-user install is automatically replaced by a per-machine install, if a per-machine Microsoft Edge Updater is in place.
     #A per-machine Microsoft Edge Updater is provided as part of Microsoft Edge, except for the Canary preview channel of Microsoft Edge.
     #For more information, see https://docs.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution#installing-the-runtime-as-per-machine-or-per-user.
-    while (-Not ($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName}))
+    while (($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName}))
     {
         Write-Warning "Microsoft Edge WebView2 Runtime is not installed and is required for browser-based authentication. Please install the runtime and try again."
-        $PromptTitle = "Options"
-        $PromptMessage = "Enter your choice:"
-        $PromptChoices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Download & install the Edge WebView2 runtime", "&Try alternative method (beta)", "&Cancel & exit")
-        $PromptDefault = 0
-        $PromptSelection = $host.UI.PromptForChoice($PromptTitle,$PromptMessage,$PromptChoices,$PromptDefault)
+        $PromptNoWebView2Runtime_Title = "Options"
+        $PromptNoWebView2Runtime_Message = "Enter your choice:"
+        $PromptNoWebView2Runtime_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Download & install the Edge WebView2 runtime", "&Try alternative method (beta)", "&Cancel & exit")
+        $PromptNoWebView2Runtime_Default = 0
+        $PromptNoWebView2Runtime_Selection = $host.UI.PromptForChoice($PromptNoWebView2Runtime_Title,$PromptNoWebView2Runtime_Message,$PromptNoWebView2Runtime_Choices,$PromptNoWebView2Runtime_Default)
 
-        switch($PromptSelection)
+        switch($PromptNoWebView2Runtime_Selection)
         {
             0   {
                     Write-Host "Attempting to download & install the Microsoft Edge WebView2 runtime"
@@ -263,11 +263,28 @@ Function Show-OAuthWindow
                     $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
 
                     # Retry Opening Authentication Window
-                    Write-Host "Retrying Authentication"
+                    Write-Host "Retrying Authentication...`n"
                 }
             1   {
-                    Write-Host "Attempting alternate method by building a mini webserver in PowerShell. Continue?"
-                    Write-Host "Sorry. This feature is not yet implemented."
+                    Write-Host "`nUsing this option will attempt to authenticate using an alternate method by building a mini webserver in PowerShell. Continue?"
+                    $PromptMiniWebserver_Title = "Options"
+                    $PromptMiniWebserver_Message = "Enter your choice:"
+                    $PromptMiniWebserver_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Load temporary HTTP server", "&Cancel & exit")
+                    $PromptMiniWebserver_Default = 0
+                    $PromptMiniWebserver_Selection = $host.UI.PromptForChoice($PromptMiniWebserver_Title,$PromptMiniWebserver_Message,$PromptMiniWebserver_Choices,$PromptMiniWebserver_Default)
+
+                    switch($PromptMiniWebserver_Selection)
+                    {
+                        0   {
+                                Write-Host "Sorry. This feature is not yet implemented."
+                                Read-Host “Press ENTER to go back to the previous menu...”
+                                Write-Host ""
+                            }
+                        1   {
+                                Write-Host "Exiting..."
+                                Exit
+                            }
+                    }
                 }
             2   {
                     Write-Host "Exiting..."
