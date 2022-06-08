@@ -47,7 +47,7 @@ Function Connect-SKYAPI
     }
     catch
     {
-        throw "`'Key.json`' token file is corrupted or invalid. Please run Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."    
+        throw "Key JSON tokens file is corrupted or invalid. Please run Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."    
     }
 
     # If Refresh Token Has Expired Because it Hasn't Been Used for Max Refresh Token Timespan, Ask User to Reauthenticate
@@ -64,7 +64,7 @@ Function Connect-SKYAPI
         }
         catch
         {
-            throw "`'Key.json`' token file is corrupted or invalid. Please run Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."    
+            throw "Key JSON tokens file is corrupted or invalid. Please run Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."    
         }
     }
 
@@ -96,7 +96,7 @@ Function Connect-SKYAPI
         if ($InvokeCount -ge $MaxInvokeCount)
         {
             Write-Warning $("Invoke tried running $InvokeCount times, but failed each time. " `
-            + "It is possible that the `'Key.json`' token file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it.")
+            + "It is possible that the Key JSON tokens file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it.")
             throw $LastCaughtError
         }
             

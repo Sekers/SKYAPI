@@ -17,7 +17,7 @@
     Both These *MUST* Be Set Prior to Running Commands.
 #>
 # Set-SKYAPIConfigFilePath -Path "$PSScriptRoot\Config\sky_api_config.json" # The location where you placed your Blackbaud SKY API configuration file.
-# Set-SKYAPITokensFilePath -Path "$env:HOMEDRIVE$env:HOMEPATH\SKYAPI\Key.json" # The location where you want the access and refresh tokens to be stored.
+# Set-SKYAPITokensFilePath -Path "$env:HOMEDRIVE$env:HOMEPATH\SKYAPI\skyapi_key.json" # The location where you want the access and refresh tokens to be stored.
 
 <#
     Optionally, Test Connecting to the SKY API Service.

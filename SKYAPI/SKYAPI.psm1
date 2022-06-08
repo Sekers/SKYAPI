@@ -210,95 +210,98 @@ Function Show-OAuthWindow
         [string]$AuthenticationMethod
     )
 
-    # Check if WebView2 is installed
-    $SourceProductName = 'Microsoft Edge WebView2 Runtime' # Partial Name is Fine as Long as it is Unique enough for a match
-
-    # Get a Listing of Installed Applications From the Registry
-    $InstalledApplicationsFromRegistry = @()
-    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
-    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
-    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
-  
-    # If Edge WebView 2 runtime not installed - https://developer.microsoft.com/en-us/microsoft-edge/webview2/
+    # If Edge WebView 2 is the Authentication Method & the runtime not installed - https://developer.microsoft.com/en-us/microsoft-edge/webview2/
     # If you run the following command from an elevated process or command prompt, it triggers a per-machine install.
     # If you don't run the command from an elevated process or command prompt, a per-user install will take place.
     #However, a per-user install is automatically replaced by a per-machine install, if a per-machine Microsoft Edge Updater is in place.
     #A per-machine Microsoft Edge Updater is provided as part of Microsoft Edge, except for the Canary preview channel of Microsoft Edge.
     #For more information, see https://docs.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution#installing-the-runtime-as-per-machine-or-per-user.
-    while (($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName}))
+    if ($null -eq $AuthenticationMethod -or "" -eq $AuthenticationMethod -or $AuthenticationMethod -eq "EdgeWebView2")
     {
-        Write-Warning "Microsoft Edge WebView2 Runtime is not installed and is required for browser-based authentication. Please install the runtime and try again."
-        $PromptNoWebView2Runtime_Title = "Options"
-        $PromptNoWebView2Runtime_Message = "Enter your choice:"
-        $PromptNoWebView2Runtime_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Download & install the Edge WebView2 runtime", "&Try alternative method (beta)", "&Cancel & exit")
-        $PromptNoWebView2Runtime_Default = 0
-        $PromptNoWebView2Runtime_Selection = $host.UI.PromptForChoice($PromptNoWebView2Runtime_Title,$PromptNoWebView2Runtime_Message,$PromptNoWebView2Runtime_Choices,$PromptNoWebView2Runtime_Default)
+        # Check if WebView2 is installed
+        $SourceProductName = 'Microsoft Edge WebView2 Runtime' # Partial Name is Fine as Long as it is Unique enough for a match
 
-        switch($PromptNoWebView2Runtime_Selection)
+        # Get a Listing of Installed Applications From the Registry
+        $InstalledApplicationsFromRegistry = @()
+        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
+        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+
+        while ((-not ($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName})) -and ($null -eq $AuthenticationMethod -or "" -eq $AuthenticationMethod -or $AuthenticationMethod -eq "EdgeWebView2") )
         {
-            0   {
-                    Write-Host "Attempting to download & install the Microsoft Edge WebView2 runtime"
-                    # Create Download Folder If It Doesn't Already Exist
-                    $DownloadPath = "$sky_api_user_data_path\Downloads"
-                    $null = New-Item -ItemType Directory -Path $DownloadPath -Force
+            Write-Warning "Microsoft Edge WebView2 Runtime is not installed and is required for browser-based authentication. Please install the runtime and try again."
+            $PromptNoWebView2Runtime_Title = "Options"
+            $PromptNoWebView2Runtime_Message = "Enter your choice:"
+            $PromptNoWebView2Runtime_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Download & install the Edge WebView2 runtime", "&Try alternative method (beta)", "&Cancel & exit")
+            $PromptNoWebView2Runtime_Default = 0
+            $PromptNoWebView2Runtime_Selection = $host.UI.PromptForChoice($PromptNoWebView2Runtime_Title,$PromptNoWebView2Runtime_Message,$PromptNoWebView2Runtime_Choices,$PromptNoWebView2Runtime_Default)
 
-                    # Download WebView2 Evergreen Bootstrapper
-                    $DownloadURL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
-                    $DownloadContent = Invoke-WebRequest -Uri $DownloadURL
-                    $DownloadFileName = "Microsoft Edge WebView2 Runtime Installer.exe"
+            switch($PromptNoWebView2Runtime_Selection)
+            {
+                0   {
+                        Write-Host "Attempting to download & install the Microsoft Edge WebView2 runtime"
+                        # Create Download Folder If It Doesn't Already Exist
+                        $DownloadPath = "$sky_api_user_data_path\Downloads"
+                        $null = New-Item -ItemType Directory -Path $DownloadPath -Force
 
-                    # Create the file (this will overwrite any existing file with the same name)
-                    $WebView2Installer = [System.IO.FileStream]::new("$DownloadPath\$DownloadFileName", [System.IO.FileMode]::Create)
-                    $WebView2Installer.Write($DownloadContent.Content, 0, $DownloadContent.RawContentLength)
-                    $WebView2Installer.Close()
+                        # Download WebView2 Evergreen Bootstrapper
+                        $DownloadURL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+                        $DownloadContent = Invoke-WebRequest -Uri $DownloadURL
+                        $DownloadFileName = "Microsoft Edge WebView2 Runtime Installer.exe"
 
-                    # Install
-                    Write-Host "File Downloaded. Attempting to run installer."
-                    Start-Process -Filepath "$DownloadPath\$DownloadFileName" -Wait
+                        # Create the file (this will overwrite any existing file with the same name)
+                        $WebView2Installer = [System.IO.FileStream]::new("$DownloadPath\$DownloadFileName", [System.IO.FileMode]::Create)
+                        $WebView2Installer.Write($DownloadContent.Content, 0, $DownloadContent.RawContentLength)
+                        $WebView2Installer.Close()
 
-                    # Get a Listing of Installed Applications From the Registry
-                    $InstalledApplicationsFromRegistry = @()
-                    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
-                    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
-                    $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+                        # Install
+                        Write-Host "File Downloaded. Attempting to run installer."
+                        Start-Process -Filepath "$DownloadPath\$DownloadFileName" -Wait
 
-                    # Retry Opening Authentication Window
-                    Write-Host "Retrying Authentication...`n"
-                }
-            1   {
-                    Write-Host "`nUsing this option will attempt to authenticate using an alternate method by building a mini webserver in PowerShell. Continue?"
-                    $PromptMiniWebserver_Title = "Options"
-                    $PromptMiniWebserver_Message = "Enter your choice:"
-                    $PromptMiniWebserver_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Load temporary HTTP server", "&Cancel & exit")
-                    $PromptMiniWebserver_Default = 0
-                    $PromptMiniWebserver_Selection = $host.UI.PromptForChoice($PromptMiniWebserver_Title,$PromptMiniWebserver_Message,$PromptMiniWebserver_Choices,$PromptMiniWebserver_Default)
+                        # Get a Listing of Installed Applications From the Registry
+                        $InstalledApplicationsFromRegistry = @()
+                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
+                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
 
-                    switch($PromptMiniWebserver_Selection)
-                    {
-                        0   {
-                                Write-Host "Sorry. This feature is not yet implemented."
-                                Read-Host “Press ENTER to go back to the previous menu...”
-                                Write-Host ""
-                            }
-                        1   {
-                                Write-Host "Exiting..."
-                                Exit
-                            }
+                        # Retry Opening Authentication Window
+                        Write-Host "Retrying Authentication...`n"
                     }
-                }
-            2   {
-                    Write-Host "Exiting..."
-                    Exit
-                }
+                1   {
+                        $AuthenticationMethod = "MiniHTTPServer"
+                    }
+                2   {
+                        Write-Host "Exiting..."
+                        Exit
+                    }
+            }
+            
         }
-        
     }
     
-    Switch ($AuthenticationMethod)
+    switch ($AuthenticationMethod)
     {
         MiniHTTPServer # TODO
         {
-            Write-Error "Sorry this feature is not yet implemented" -ErrorAction Stop
+            Write-Host "`nUsing this option will attempt to authenticate using an alternate method by building a mini webserver in PowerShell. Continue?"
+            $PromptMiniWebserver_Title = "Options"
+            $PromptMiniWebserver_Message = "Enter your choice:"
+            $PromptMiniWebserver_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Load temporary HTTP server", "&Cancel & exit")
+            $PromptMiniWebserver_Default = 0
+            $PromptMiniWebserver_Selection = $host.UI.PromptForChoice($PromptMiniWebserver_Title,$PromptMiniWebserver_Message,$PromptMiniWebserver_Choices,$PromptMiniWebserver_Default)
+
+            switch($PromptMiniWebserver_Selection)
+            {
+                0   {
+                        Write-Warning "Sorry. The mini webserver authentication feature is not yet implemented."
+                        Write-Host "Exiting..."
+                        Exit
+                    }
+                1   {
+                        Write-Host "Exiting..."
+                        Exit
+                    }
+            }
         }
         LegacyIEControl
         {
@@ -385,9 +388,25 @@ Function Show-OAuthWindow
         }
     }
 
-# TODO - SEE WHAT OUTPUT IS LIKE AND MAKE SURE IT VALIDATES (like if the user gets an error or manually closes the form)
-    if ($output) {
-        <# Action to perform if the condition is true #>
+    # Validate the $output variable before returning
+    if ($null -eq $output["code"]) {
+        Write-Warning "Authentication or authorization failed. Try again?"
+        $PromptNoAuthCode_Title = "Options"
+        $PromptNoAuthCode_Message = "Enter your choice:"
+        $PromptNoAuthCode_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Yes", "&No; exit the script")
+        $PromptNoAuthCode_Default = 0
+        $PromptNoAuthCode_Selection = $host.UI.PromptForChoice($PromptNoAuthCode_Title,$PromptNoAuthCode_Message,$PromptNoAuthCode_Choices,$PromptNoAuthCode_Default)
+
+        switch($PromptNoAuthCode_Selection)
+        {
+            0   { # Retry authenticating & authorizing
+                    $authOutput = Show-OAuthWindow -url $Url -AuthenticationMethod $AuthenticationMethod
+                    return $authOutput
+                }
+            1   {
+                    throw "Authentication or authorization failed. Exiting..."
+                }
+        }
     }
 
     Return $output
@@ -758,15 +777,21 @@ function Get-AuthTokensFromFile
     param (
     )
 
-    try
+    # Make Sure Requested Path Isn't Null or Empty
+    if ([string]::IsNullOrEmpty($sky_api_tokens_file_path))
     {
+        throw "`'`$sky_api_tokens_file_path`' is not specified. Don't forget to first use the `'Set-SKYAPIConfigFilePath`' & `'Set-SKYAPITokensFilePath`' cmdlets!"
+    }
+
+    try
+    {   
         $apiTokens = Get-Content $sky_api_tokens_file_path -ErrorAction Stop
         $SecureString = $apiTokens | ConvertTo-SecureString -ErrorAction Stop
         $AuthTokensFromFile = ((New-Object PSCredential "user",$SecureString).GetNetworkCredential().Password) | ConvertFrom-Json
     }
     catch
     {
-        throw "`'Key.json`' token file is missing, corrupted or invalid. Please run Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."    
+        throw "Key JSON tokens file is missing, corrupted or invalid. Please run Connect-SKYAPI with the -ForceReauthentication parameter to recreate it."    
     }
     
     $AuthTokensFromFile
