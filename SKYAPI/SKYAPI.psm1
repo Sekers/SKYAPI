@@ -327,6 +327,10 @@ Function Show-OAuthWindow
             foreach($key in $queryOutput.Keys){
                 $output["$key"] = $queryOutput[$key]
             }
+
+            # Dispose Form & IE WebBrowser Control
+            $web.Dispose()
+            $form.Dispose()
         }
         default # EdgeWebView2
         {            
@@ -385,6 +389,10 @@ Function Show-OAuthWindow
             foreach($key in $queryOutput.Keys){
                 $output["$key"] = $queryOutput[$key]
             }
+
+            # Dispose Form & Webview2 Control
+            $WebView2.Dispose()
+            $form.Dispose()
         }
     }
 
