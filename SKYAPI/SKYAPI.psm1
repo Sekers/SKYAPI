@@ -207,7 +207,14 @@ Function Show-OAuthWindow
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateSet('','EdgeWebView2','MiniHTTPServer','LegacyIEControl')] # Allows null to be passed
-        [string]$AuthenticationMethod
+        [string]$AuthenticationMethod,
+
+        [parameter(
+            Position=2,
+            Mandatory=$false,
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true)]
+            [switch]$ClearBrowserControlCache
     )
 
     # If Edge WebView 2 is the Authentication Method & the runtime not installed - https://developer.microsoft.com/en-us/microsoft-edge/webview2/
@@ -307,6 +314,33 @@ Function Show-OAuthWindow
         {
             Set-WebBrowserEmulation
 
+            if ($ClearBrowserControlCache)
+            {
+                # Try to clear IE cache
+                # More info: https://superuser.com/questions/450014/clearmytracksbyprocess-all-options
+                # Using 4351 (0x10FF) to clear all + files and settings stored by add-ons. Convert Hex to Decimal.
+                # // This magic value is the combination of the following bitflags:
+                # // #define CLEAR_HISTORY         0x0001 // Clears history
+                # // #define CLEAR_COOKIES         0x0002 // Clears cookies
+                # // #define CLEAR_CACHE           0x0004 // Clears Temporary Internet Files folder
+                # // #define CLEAR_CACHE_ALL       0x0008 // Clears offline favorites and download history
+                # // #define CLEAR_FORM_DATA       0x0010 // Clears saved form data for form auto-fill-in
+                # // #define CLEAR_PASSWORDS       0x0020 // Clears passwords saved for websites
+                # // #define CLEAR_PHISHING_FILTER 0x0040 // Clears phishing filter data
+                # // #define CLEAR_RECOVERY_DATA   0x0080 // Clears webpage recovery data
+                # // #define CLEAR_PRIVACY_ADVISOR 0x0800 // Clears tracking data
+                # // #define CLEAR_SHOW_NO_GUI     0x0100 // Do not show a GUI when running the cache clearing
+                # //
+                # // Bitflags available but not used in this magic value are as follows:
+                # // #define CLEAR_USE_NO_THREAD      0x0200 // Do not use multithreading for deletion
+                # // #define CLEAR_PRIVATE_CACHE      0x0400 // Valid only when browser is in private browsing mode
+                # // #define CLEAR_DELETE_ALL         0x1000 // Deletes data stored by add-ons
+                # // #define CLEAR_PRESERVE_FAVORITES 0x2000 // Preserves cached data for "favorite" websites
+                Write-Warning "Note: You may have to close PowerShell and start a new session for clearing the IE cache to take effect."
+                Start-Process -FilePath 'RunDll32.exe' -ArgumentList 'InetCpl.cpl, ClearMyTracksByProcess 4351' -Wait
+                $ClearBrowserControlCache = $false
+            }
+
             Add-Type -AssemblyName System.Windows.Forms
         
             $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=600;Height=800}
@@ -317,6 +351,7 @@ Function Show-OAuthWindow
             }
             $web.ScriptErrorsSuppressed = $true
             $web.Add_DocumentCompleted($DocComp)
+
             $form.Controls.Add($web)
             $form.Add_Shown({$form.Activate()})
             $form.ShowDialog() | Out-Null
@@ -365,6 +400,15 @@ Function Show-OAuthWindow
 
             $WebView2.CreationProperties = New-Object -TypeName 'Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties'
             $WebView2.CreationProperties.UserDataFolder = $sky_api_user_data_path
+
+            # Clear WebView2 cache in the previously specified UserDataFolder
+            # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control
+            if ($ClearBrowserControlCache)
+            {
+                Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView" -Force -Recurse
+                $ClearBrowserControlCache = $false
+            }
+
             $WebView2.Source = $Url
             $WebView2.Size = New-Object System.Drawing.Size(584, 760)
 
@@ -408,7 +452,7 @@ Function Show-OAuthWindow
         switch($PromptNoAuthCode_Selection)
         {
             0   { # Retry authenticating & authorizing
-                    $authOutput = Show-OAuthWindow -url $Url -AuthenticationMethod $AuthenticationMethod
+                    $authOutput = Show-OAuthWindow -url $Url -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
                     return $authOutput
                 }
             1   {
@@ -437,7 +481,14 @@ Function Get-NewTokens
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true)]
             [ValidateSet('','EdgeWebView2','MiniHTTPServer','LegacyIEControl')] # Allows null to be passed
-            [string]$AuthenticationMethod
+            [string]$AuthenticationMethod,
+
+        [parameter(
+            Position=2,
+            Mandatory=$false,
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true)]
+            [switch]$ClearBrowserControlCache
     )
 
     # Set the Necessary Config Variables
@@ -457,7 +508,7 @@ Function Get-NewTokens
     "&redirect_uri=" + [System.Web.HttpUtility]::UrlEncode($redirect_uri) +
     '&response_type=code&state=state'
 
-    $authOutput = Show-OAuthWindow -Url $strUri -AuthenticationMethod $AuthenticationMethod
+    $authOutput = Show-OAuthWindow -Url $strUri -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
 
     # Get auth token
     $Authorization = Get-SKYAPIAuthToken -grant_type 'authorization_code' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authOutput["code"] -token_uri $token_uri
