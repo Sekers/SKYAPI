@@ -74,7 +74,7 @@
 <#
     Get-SchoolUserBBIDStatus Example
     (Use Get-SchoolRoleList to get a list)
-    Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
+    Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
     The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
@@ -104,7 +104,7 @@
 <#
     Get-SchoolUserExtendedList Example
     (Use Get-SchoolRoleList to get a list)
-    Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
+    Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
     The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
