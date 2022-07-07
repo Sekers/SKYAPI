@@ -1,6 +1,6 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersExtendedGet
 # Returns a paginated list of users, limited to 1000 users per page.
-# Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
+# Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
 # because they are in the "Admin Team" roll which has the same base_roll_id as Staff.
 
 # Parameter,Required,Type,Description
