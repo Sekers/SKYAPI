@@ -46,6 +46,13 @@
 # Get-SchoolLevelList
 
 <#
+    Get-SchoolDepartmentList Example
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
+#>
+#  Get-SchoolDepartmentList
+#  Get-SchoolDepartmentList -level_id 229
+
+<#
     Get-SchoolGradeLevelList Example
 #>
 # Get-SchoolGradeLevelList
@@ -124,7 +131,7 @@
 
 <#
     Get-SchoolSectionListBySchoolLevel Example
-    (Use Get-SchoolLevelList to get a list)
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
 #>
 #  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionListBySchoolLevel -Level_Number 228,229
 #  $SchoolSectionListBySchoolLevel.Count
