@@ -1,11 +1,11 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsGet
-# Returns a collection of academic sections based on school level.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet
+# Returns a collection of activity sections based on school level.
 
 # Parameter,Required,Type,Description
 # Level_Number,yes,integer,Level number.
 # school_year,no,string,The school year to get sections for. Defaults to the current school year.
 
-function Get-SchoolSectionListBySchoolLevel
+function Get-SchoolActivityListBySchoolLevel
 {
     [cmdletbinding()]
     Param(
@@ -23,7 +23,7 @@ function Get-SchoolSectionListBySchoolLevel
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/sections'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/activities/sections'
 
     # Set the response field
     $ResponseField = "value"

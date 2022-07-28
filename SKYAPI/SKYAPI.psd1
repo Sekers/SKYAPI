@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.4'
+ModuleVersion = '0.2.5'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -74,7 +74,10 @@ FunctionsToExport = @(
     'Set-SKYAPITokensFilePath',
     'Get-AuthTokensFromFile',
     'Connect-SKYAPI',
+    'Get-SchoolActivityListBySchoolLevel',
+    'Get-SchoolAdvisoryListBySchoolLevel',
     'Get-SchoolCourseList',
+    'Get-SchoolDepartmentList',
     'Get-SchoolEducationList',
     'Get-SchoolGradeLevelList',
     'Get-SchoolLevelList',
@@ -83,6 +86,7 @@ FunctionsToExport = @(
     'Get-SchoolOfferingTypeList',
     'Get-SchoolRoleList',
     'Get-SchoolSectionListBySchoolLevel',
+    'Get-SchoolSectionListByStudent',
     'Get-SchoolSectionListByTeacher',
     'Get-SchoolStudentEnrollmentList',
     'Get-SchoolStudentListBySection',

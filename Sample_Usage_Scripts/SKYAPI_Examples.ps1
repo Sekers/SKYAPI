@@ -17,7 +17,7 @@
     Both These *MUST* Be Set Prior to Running Commands.
 #>
 # Set-SKYAPIConfigFilePath -Path "$PSScriptRoot\Config\sky_api_config.json" # The location where you placed your Blackbaud SKY API configuration file.
-# Set-SKYAPITokensFilePath -Path "$env:HOMEDRIVE$env:HOMEPATH\SKYAPI\skyapi_key.json" # The location where you want the access and refresh tokens to be stored.
+# Set-SKYAPITokensFilePath -Path "$env:USERPROFILE\SKYAPI\skyapi_key.json" # The location where you want the access and refresh tokens to be stored.
 
 <#
     Optionally, Test Connecting to the SKY API Service.
@@ -44,6 +44,13 @@
     Get-SchoolLevelList Example
 #>
 # Get-SchoolLevelList
+
+<#
+    Get-SchoolDepartmentList Example
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
+#>
+#  Get-SchoolDepartmentList
+#  Get-SchoolDepartmentList -level_id 229
 
 <#
     Get-SchoolGradeLevelList Example
@@ -74,7 +81,7 @@
 <#
     Get-SchoolUserBBIDStatus Example
     (Use Get-SchoolRoleList to get a list)
-    Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
+    Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
     The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
@@ -104,7 +111,7 @@
 <#
     Get-SchoolUserExtendedList Example
     (Use Get-SchoolRoleList to get a list)
-    Note that this takes BASE ROLE IDs and not roles. So a persson might show up in the Staff list even if they are not in the Staff role
+    Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
     The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
@@ -123,14 +130,40 @@
 # $StudentEnrollmentList.Count
 
 <#
+    Get-SchoolActivityListBySchoolLevel Example
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
+#>
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityListBySchoolLevel -Level_Number 228,229
+#  $SchoolActivityListBySchoolLevel.Count
+#  $SchoolActivityListBySchoolLevel[0]
+#  $SchoolActivityListBySchoolLevel[1]
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+
+<#
+    Get-SchoolAdvisoryListBySchoolLevel Example
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
+#>
+#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryListBySchoolLevel -Level_Number 228,229
+#  $SchoolAdvisoryListBySchoolLevel.Count
+#  $SchoolAdvisoryListBySchoolLevel[0]
+#  $SchoolAdvisoryListBySchoolLevel[1]
+#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+
+<#
     Get-SchoolSectionListBySchoolLevel Example
-    (Use Get-SchoolLevelList to get a list)
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
 #>
 #  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionListBySchoolLevel -Level_Number 228,229
 #  $SchoolSectionListBySchoolLevel.Count
 #  $SchoolSectionListBySchoolLevel[0]
 #  $SchoolSectionListBySchoolLevel[1]
 #  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+
+<#
+    Get-SchoolSectionListByStudent Example
+#>
+# [array]$SectionListByStudent = Get-SchoolSectionListByStudent -Student_ID 6111769,2772870
+# $SectionListByStudent.Count
 
 <#
     Get-SchoolSectionListByTeacher Example
