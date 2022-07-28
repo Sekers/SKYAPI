@@ -1,5 +1,23 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.2.5](https://github.com/Sekers/SKYAPI/tree/0.2.5) - (2022-07-28)
+
+### Fixes
+
+- Module now cleans up unused memory allocated to the Microsoft Edge WebView2 form when no longer needed
+
+### Features
+
+- Added ClearBrowserControlCache switch parameter to "Connect-SKYAPI"
+- New Endpoint: [Get-SchoolDepartmentList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsDepartmentsGet)
+- New Endpoint (Beta): [Get-SchoolSectionListByStudent](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsStudentByStudent_idSectionsGet)
+- New Endpoint: [Get-SchoolAdvisoryListBySchoolLevel](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdvisoriesSectionsGet)
+- New Endpoint: [Get-SchoolActivityListBySchoolLevel](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet)
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
+
 ## [0.2.4](https://github.com/Sekers/SKYAPI/tree/0.2.4) - (2022-06-08)
 
 ### Fixes
