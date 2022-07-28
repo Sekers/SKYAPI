@@ -140,6 +140,12 @@
 #  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
+    Get-SchoolSectionListByStudent Example
+#>
+# [array]$SectionListByStudent = Get-SchoolSectionListByStudent -Student_ID 6111769,2772870
+# $SectionListByStudent.Count
+
+<#
     Get-SchoolSectionListByTeacher Example
 #>
 # [array]$SectionListByTeacher = Get-SchoolSectionListByTeacher -Teacher_ID 1757293,2878846
