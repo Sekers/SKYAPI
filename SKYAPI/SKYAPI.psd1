@@ -74,6 +74,7 @@ FunctionsToExport = @(
     'Set-SKYAPITokensFilePath',
     'Get-AuthTokensFromFile',
     'Connect-SKYAPI',
+    'Get-SchoolActivityListBySchoolLevel',
     'Get-SchoolAdvisoryListBySchoolLevel',
     'Get-SchoolCourseList',
     'Get-SchoolDepartmentList',

@@ -130,8 +130,18 @@
 # $StudentEnrollmentList.Count
 
 <#
+    Get-SchoolActivityListBySchoolLevel Example
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
+#>
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityListBySchoolLevel -Level_Number 228,229
+#  $SchoolActivityListBySchoolLevel.Count
+#  $SchoolActivityListBySchoolLevel[0]
+#  $SchoolActivityListBySchoolLevel[1]
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+
+<#
     Get-SchoolAdvisoryListBySchoolLevel Example
-    (Use Get-SchoolAdvisoryListBySchoolLevel to get a list of levels to filter by)
+    (Use Get-SchoolLevelList to get a list of levels to filter by)
 #>
 #  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryListBySchoolLevel -Level_Number 228,229
 #  $SchoolAdvisoryListBySchoolLevel.Count
