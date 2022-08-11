@@ -1,5 +1,16 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.2.6](https://github.com/Sekers/SKYAPI/tree/0.2.6) - (2022-08-11)
+
+### Features
+
+- First Release Published to the PowerShell Gallery
+- New Endpoint (Beta): [Get-SchoolNewsCategories](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsCategoriesGet)
+- New Endpoint (Beta): [Get-SchoolNewsItems](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsItemsGet)
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.2.5](https://github.com/Sekers/SKYAPI/tree/0.2.5) - (2022-07-28)
 
 ### Fixes

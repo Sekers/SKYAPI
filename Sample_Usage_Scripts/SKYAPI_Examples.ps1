@@ -203,3 +203,14 @@
     Get-SchoolListOfLists Example
 #>
 # Get-SchoolListOfLists
+
+<#
+    Get-SchoolNewsCategories Example
+#>
+# Get-SchoolNewsCategories
+
+<#
+    Get-SchoolNewsItems Example
+#>
+# Get-SchoolNewsItems
+# Get-SchoolNewsItems -categories '12027,3154'

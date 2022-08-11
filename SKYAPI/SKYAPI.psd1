@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.5'
+ModuleVersion = '0.2.6'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -83,6 +83,8 @@ FunctionsToExport = @(
     'Get-SchoolLevelList',
     'Get-SchoolList',
     'Get-SchoolListOfLists',
+    'Get-SchoolNewsCategories',
+    'Get-SchoolNewsItems',
     'Get-SchoolOfferingTypeList',
     'Get-SchoolRoleList',
     'Get-SchoolSectionListBySchoolLevel',
@@ -127,10 +129,10 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        # Tags = @('GitHub', 'API', 'PowerShell')
+        Tags = @('GitHub', 'API', 'PowerShell', 'Blackbaud', 'SKYAPI')
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://github.com/Sekers/SKYAPI/blob/master/LICENSE'
 
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/Sekers/SKYAPI'
@@ -139,7 +141,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = 'https://github.com/Sekers/SKYAPI/blob/master/CHANGELOG.md'
 
         # Prerelease string of this module
         Prerelease = 'beta'
