@@ -1,5 +1,14 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.2.6b](https://github.com/Sekers/SKYAPI/tree/0.2.6b) - (2022-08-11)
+
+### Fixes
+
+- Updated Minimum PS Version to 5.1 to resolve GitHub action issue when publishing to the PowerShell Gallery.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.2.6](https://github.com/Sekers/SKYAPI/tree/0.2.6) - (2022-08-11)
 
 ### Features
