@@ -129,7 +129,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('GitHub', 'API', 'PowerShell', 'Blackbaud', 'SKYAPI')
+        Tags = @('API', 'PowerShell', 'Blackbaud', 'SKYAPI', "RaisersEdge", "FinancialEdge")
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/Sekers/SKYAPI/blob/master/LICENSE'
