@@ -27,6 +27,7 @@ Function Connect-SKYAPI
         [parameter(
         Position=3,
         Mandatory=$false,
+        ParameterSetName = 'ForceReauthentication',
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ClearBrowserControlCache
