@@ -38,7 +38,7 @@ function Get-SchoolCourseList
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile
+    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     $response = Get-UnpagedEntity -uid $teacher_id -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     $response

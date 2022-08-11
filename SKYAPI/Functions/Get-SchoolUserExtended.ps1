@@ -21,7 +21,7 @@ function Get-SchoolUserExtended
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile
+    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/extended/'

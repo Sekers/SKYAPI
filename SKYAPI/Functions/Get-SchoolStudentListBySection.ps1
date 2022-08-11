@@ -28,7 +28,7 @@ function Get-SchoolStudentListBySection
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile
+    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     # Get data for one or more school levels
     foreach ($uid in $Section_ID)

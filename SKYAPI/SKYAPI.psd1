@@ -72,7 +72,7 @@ PowerShellVersion = '5.1'
 FunctionsToExport = @(
     'Set-SKYAPIConfigFilePath',
     'Set-SKYAPITokensFilePath',
-    'Get-AuthTokensFromFile',
+    'Get-SKYAPIAuthTokensFromFile',
     'Connect-SKYAPI',
     'Get-SchoolActivityListBySchoolLevel',
     'Get-SchoolAdvisoryListBySchoolLevel',
