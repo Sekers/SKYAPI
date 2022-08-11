@@ -83,6 +83,8 @@ FunctionsToExport = @(
     'Get-SchoolLevelList',
     'Get-SchoolList',
     'Get-SchoolListOfLists',
+    'Get-SchoolNewsCategories',
+    'Get-SchoolNewsItems',
     'Get-SchoolOfferingTypeList',
     'Get-SchoolRoleList',
     'Get-SchoolSectionListBySchoolLevel',
