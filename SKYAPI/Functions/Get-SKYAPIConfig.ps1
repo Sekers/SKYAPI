@@ -26,7 +26,7 @@ function Get-SKYAPIConfig
 
     try {
         # Get Config and Secrets
-        Write-Verbose -Message 'Getting content of sky_api_config.json and returning as a PSCustomObject.'
+        # Write-Verbose -Message 'Getting content of sky_api_config.json and returning as a PSCustomObject.'
         $sky_api_config = Get-Content -Path "$ConfigPath" -ErrorAction 'Stop' | ConvertFrom-Json
 
         $sky_api_config = [PSCustomObject] @{
