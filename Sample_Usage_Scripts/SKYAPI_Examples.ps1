@@ -31,6 +31,7 @@
 #>
 # Connect-SKYAPI
 # Connect-SKYAPI -ForceReauthentication
+# Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
 # Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer 
 # Connect-SKYAPI -ForceRefresh
 
