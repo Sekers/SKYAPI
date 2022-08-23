@@ -28,6 +28,16 @@ function Get-SchoolSchedulesMeetings
             [string]$offering_types
     )
     
+    # Validate Date Strings
+    try {$null = [datetime]$start_date} catch
+    {
+        throw $_
+    }
+    try {$null = [datetime]$end_date} catch
+    {
+        throw $_
+    }
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/schedules/meetings'
     $endUrl = ''
