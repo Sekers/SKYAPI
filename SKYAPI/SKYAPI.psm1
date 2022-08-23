@@ -405,7 +405,7 @@ Function Show-OAuthWindow
             # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control
             if ($ClearBrowserControlCache)
             {
-                Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse
+                Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse -ErrorAction Ignore
                 $ClearBrowserControlCache = $false
             }
 
