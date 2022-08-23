@@ -27,17 +27,7 @@ function Get-SchoolSchedulesMeetings
             ValueFromPipelineByPropertyName=$true)]
             [string]$offering_types
     )
-    
-    # Validate Date Strings
-    try {$null = [datetime]$start_date} catch
-    {
-        throw $_
-    }
-    try {$null = [datetime]$end_date} catch
-    {
-        throw $_
-    }
-    
+       
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/schedules/meetings'
     $endUrl = ''
@@ -65,6 +55,16 @@ function Get-SchoolSchedulesMeetings
     if ($null -eq $end_date -or $end_date -eq '' -or $end_date -eq 0)
     {
         $end_date = (([DateTime]$start_date).AddDays(30)).ToString('yyyy-MM-dd')
+    }
+
+    # Validate Date Strings
+    try {$null = [datetime]$start_date} catch
+    {
+        throw $_
+    }
+    try {$null = [datetime]$end_date} catch
+    {
+        throw $_
     }
 
     # Initialize Variables
