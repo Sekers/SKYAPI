@@ -49,6 +49,12 @@ function Get-SchoolSchedulesMeetings
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
+    # Validate Start Date String
+    try {$null = [datetime]$start_date} catch
+    {
+        throw $_
+    }
+
     # If the 'end_date' parameter doesn't exist, then set it to 30 days ahead (the max allowed per call).
     # It is supposed to default to 30 days, but it doesn't work correctly unless you specify an end date (at least in the beta).
     # Also, if you put in a larger time limit than 30 days, it sometimes does 31 days or something like that. It's really dumb.
@@ -56,12 +62,8 @@ function Get-SchoolSchedulesMeetings
     {
         $end_date = (([DateTime]$start_date).AddDays(30)).ToString('yyyy-MM-dd')
     }
-
-    # Validate Date Strings
-    try {$null = [datetime]$start_date} catch
-    {
-        throw $_
-    }
+    
+    # Validate End Date String
     try {$null = [datetime]$end_date} catch
     {
         throw $_
