@@ -107,7 +107,7 @@ function Get-SchoolSchedulesMeetings
     # Massage dates in $response because PowerShell automatically converts API calls to date time...
     # But Blackbaud includes a generic date of '1900-01-01' when returning time which throws off Daylight Saving Time.
     # Blackbaud also includes a generic time of 'T00:00:00+00:00' when returning dates which throws off stuff too.
-    # Example Output from the API that PowerShell automatically pareses:
+    # Example Output from the API that PowerShell automatically parses:
     #     "start_time": "1900-01-01T09:36:00-05:00"
     #     "end_time": "1900-01-01T10:26:00-05:00"
     #     "meeting_date": "2022-09-06T00:00:00+00:00"
