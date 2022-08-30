@@ -616,6 +616,8 @@ Function Get-UnpagedEntity
         $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
     }
     
+    # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
     $fullUri = $url + $uid + $endUrl
     $Request = [System.UriBuilder]$fullUri
     
@@ -689,6 +691,7 @@ Function Get-PagedEntity
     }
 
     # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
     $fullUri = $url + $uid + $endUrl
     $Request = [System.UriBuilder]$fullUri
     $Request.Query = $params.ToString()
