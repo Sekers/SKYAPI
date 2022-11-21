@@ -593,6 +593,12 @@ function CatchInvokeErrors($InvokeErrorMessageRaw)
             Start-Sleep -Seconds 5
             'retry'
         }
+        503 # The service is currently unavailable.
+        {
+            # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
+            Start-Sleep -Seconds 5
+            'retry'
+        }
         default
         {
             throw $InvokeErrorMessageRaw
