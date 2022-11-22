@@ -181,7 +181,7 @@
 <#
     Get-SchoolEducationList Example
 #>
-# Get-SchoolEducationList -User_ID 1757293,1757293
+# Get-SchoolEducationList -User_ID 1757293,2878846
 
 <#
     Get-SchoolStudentListBySection Example
@@ -222,3 +222,9 @@
 # New-SchoolEventsCategory -description "My Events Category" -public $true -include_brief_description $true -include_long_description $true
 # New-SchoolEventsCategory -description "My Events Category" -public $false -roles 12342,19302
 # New-SchoolEventsCategory -description "My Events Category" -public $true "http://www.example.com/calendar/test_calendar.ics"
+
+<#
+    Update-SchoolUser Example
+#>
+Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
+Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
