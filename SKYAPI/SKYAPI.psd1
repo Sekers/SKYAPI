@@ -101,6 +101,7 @@ FunctionsToExport = @(
     'Get-SchoolUserList',
     'Get-SchoolYearList',
     'Get-SKYAPIConfig',
+    'New-SchoolEventsCategory',
     'Set-SKYAPIConfig'
 )
 

@@ -215,3 +215,10 @@
 #>
 # Get-SchoolNewsItems
 # Get-SchoolNewsItems -categories '12027,3154'
+
+<#
+    New-SchoolEventsCategory Example
+#>
+# New-SchoolEventsCategory -description "My Events Category" -public $true -include_brief_description $true -include_long_description $true
+# New-SchoolEventsCategory -description "My Events Category" -public $false -roles 12342,19302
+# New-SchoolEventsCategory -description "My Events Category" -public $true "http://www.example.com/calendar/test_calendar.ics"
