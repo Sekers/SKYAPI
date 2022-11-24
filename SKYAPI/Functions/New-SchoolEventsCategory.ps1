@@ -1,5 +1,5 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost
-# Returns the Id of the created Events Category.
+# Creates a new Events Category & returns its ID.
 # Requires the 'Content Manager' or 'Platform Manager' role in the K12 system.
 
 # Parameter,Required,Type,Description
