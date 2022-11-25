@@ -62,10 +62,10 @@ function New-SchoolUserPhone
     $parameters.Remove('User_ID') | Out-Null
 
     # Build PhoneTypeLink Model
-    if ($PhoneTypeLinks.Count -ge 1)
+    if ($links.Count -ge 1)
     {
         #TODO Verify PhoneTypeLinks Format (this functionality isn't working yet so I don't know what needs to be done to verify)
-        foreach ($PhoneTypeLink in $PhoneTypeLinks)
+        foreach ($PhoneTypeLink in $links)
         {
             # $($PhoneTypeLink | Get-Member -MemberType NoteProperty).count
             throw "Sorry. Using SKY API to link phone numbers between users doesn't currently work. Blackbaud is aware of the issue with this endpoint and is looking into it."
