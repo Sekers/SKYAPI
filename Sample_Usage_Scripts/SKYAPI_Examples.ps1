@@ -31,6 +31,7 @@
 #>
 # Connect-SKYAPI
 # Connect-SKYAPI -ForceReauthentication
+# Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
 # Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer 
 # Connect-SKYAPI -ForceRefresh
 
@@ -180,7 +181,7 @@
 <#
     Get-SchoolEducationList Example
 #>
-# Get-SchoolEducationList -User_ID 1757293,1757293
+# Get-SchoolEducationList -User_ID 1757293,2878846
 
 <#
     Get-SchoolStudentListBySection Example
@@ -214,3 +215,43 @@
 #>
 # Get-SchoolNewsItems
 # Get-SchoolNewsItems -categories '12027,3154'
+
+<#
+    Get-SchoolSchedulesMeetings
+    (Use Get-SchoolOfferingTypeList to get a list of offering types)
+    Note: offering_types defaults to 1 (Academics) if not specified.
+#>
+# Get-SchoolSchedulesMeetings "2022-11-01"
+# Get-SchoolSchedulesMeetings "2022-11-01" -end_date '2022-11-30' -offering_types '1,3'
+# Get-SchoolSchedulesMeetings "2022-11-01" | where-object faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
+
+<#
+    New-SchoolEventsCategory Example
+#>
+# New-SchoolEventsCategory -description "My Events Category" -public $true -include_brief_description $true -include_long_description $true
+# New-SchoolEventsCategory -description "My Events Category" -public $false -roles 12342,19302
+# New-SchoolEventsCategory -description "My Events Category" -public $true "http://www.example.com/calendar/test_calendar.ics"
+
+<#
+    Update-SchoolUser Example
+#>
+# Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
+# Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
+
+<#
+    Get-SchoolUserPhoneTypeList Example
+#>
+# Get-SchoolUserPhoneTypeList
+
+<#
+    Get-SchoolUserPhoneList Example
+#>
+#  [array]$PhoneNumbersByUser = Get-SchoolUserPhoneList -User_ID 3154032,5942642
+
+<#
+    New-SchoolUserPhone Example
+    (Use Get-SchoolUserPhoneTypeList to get a list of phone types)
+    Notes: Linking using the -links parameter doesn't currently work and Blackbaud is looking into the issue with the endpoint.
+           You can specify multiple user IDs with this function but it will not link them (each user record will have the number added without them sharing it).
+#>
+# New-SchoolUserPhone -User_Id 3154032,5942642 -number "(555) 555-5555" -type_id 331

@@ -18,7 +18,7 @@ function Get-SchoolNewsCategories
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile
+    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response

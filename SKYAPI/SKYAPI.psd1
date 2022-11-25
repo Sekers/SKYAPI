@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.6'
+ModuleVersion = '0.3.0'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -72,7 +72,7 @@ PowerShellVersion = '5.1'
 FunctionsToExport = @(
     'Set-SKYAPIConfigFilePath',
     'Set-SKYAPITokensFilePath',
-    'Get-AuthTokensFromFile',
+    'Get-SKYAPIAuthTokensFromFile',
     'Connect-SKYAPI',
     'Get-SchoolActivityListBySchoolLevel',
     'Get-SchoolAdvisoryListBySchoolLevel',
@@ -87,6 +87,7 @@ FunctionsToExport = @(
     'Get-SchoolNewsItems',
     'Get-SchoolOfferingTypeList',
     'Get-SchoolRoleList',
+    'Get-SchoolSchedulesMeetings',
     'Get-SchoolSectionListBySchoolLevel',
     'Get-SchoolSectionListByStudent',
     'Get-SchoolSectionListByTeacher',
@@ -98,9 +99,14 @@ FunctionsToExport = @(
     'Get-SchoolUserExtended',
     'Get-SchoolUserExtendedList',
     'Get-SchoolUserList',
+    'Get-SchoolUserPhoneList',
+    'Get-SchoolUserPhoneTypeList',
     'Get-SchoolYearList',
     'Get-SKYAPIConfig',
-    'Set-SKYAPIConfig'
+    'New-SchoolEventsCategory',
+    'New-SchoolUserPhone',
+    'Set-SKYAPIConfig',
+    'Update-SchoolUser'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -129,7 +135,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('GitHub', 'API', 'PowerShell', 'Blackbaud', 'SKYAPI')
+        Tags = @('API', 'PowerShell', 'Blackbaud', 'SKYAPI', "RaisersEdge", "FinancialEdge")
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/Sekers/SKYAPI/blob/master/LICENSE'
@@ -144,7 +150,7 @@ PrivateData = @{
         ReleaseNotes = 'https://github.com/Sekers/SKYAPI/blob/master/CHANGELOG.md'
 
         # Prerelease string of this module
-        Prerelease = 'beta'
+        # Prerelease = ''
 
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         # RequireLicenseAcceptance = $false

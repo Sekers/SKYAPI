@@ -1,5 +1,32 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.0](https://github.com/Sekers/SKYAPI/tree/0.3.0) - (2022-11-24)
+
+### Fixes
+
+- Made the Connect-SKYAPI ClearBrowserControlCache parameter available only if ForceReathentication is used.
+- When the Connect-SKYAPI ClearBrowserControlCache parameter is used, it will no longer return an error if the WebView folder doesn't exist.
+- Removed Write-Verbose message from the Get-SKYAPIConfig function that was accidentally left in the code.
+
+### Features
+
+- Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
+- New Endpoint: [Get-SchoolUserPhoneList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesGet)
+- New Endpoint: [Get-SchoolUserPhoneTypeList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet)
+- New Endpoint (Beta): [Get-SchoolSchedulesMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
+- New Endpoint: [New-SchoolEventsCategory](https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost)
+- New Endpoint: [New-SchoolUserPhone](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost)
+- New Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPatch)
+
+### Other
+- Renamed a backend function to prevent possible conflicts with other modules.
+- Removed the prerelease string fromm the module manifest.
+- Minor updates to the SKYAPI_Example.ps1 script.
+- Module will wait and then try again a few times if a 503 (The service is currently unavailable) is returned to allow for transient issues with the API service.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.2.6b](https://github.com/Sekers/SKYAPI/tree/0.2.6b) - (2022-08-11)
 
 ### Fixes

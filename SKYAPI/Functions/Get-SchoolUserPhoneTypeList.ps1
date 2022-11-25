@@ -1,14 +1,13 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1rolesget
-# Returns a list of user roles.
-# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet
+# Returns a collection of phone types.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolRoleList
+function Get-SchoolUserPhoneTypeList
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/roles'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/phonetypes'
 
     # Set the response field
     $ResponseField = "value"

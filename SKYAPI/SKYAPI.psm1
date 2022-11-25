@@ -405,7 +405,7 @@ Function Show-OAuthWindow
             # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control
             if ($ClearBrowserControlCache)
             {
-                Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse
+                Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse -ErrorAction Ignore
                 $ClearBrowserControlCache = $false
             }
 
@@ -593,6 +593,12 @@ function CatchInvokeErrors($InvokeErrorMessageRaw)
             Start-Sleep -Seconds 5
             'retry'
         }
+        503 # The service is currently unavailable.
+        {
+            # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
+            Start-Sleep -Seconds 5
+            'retry'
+        }
         default
         {
             throw $InvokeErrorMessageRaw
@@ -609,13 +615,15 @@ Function Get-UnpagedEntity
     if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-AuthTokensFromFile
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
         $authorisation.access_token = $($AuthTokensFromFile.access_token)
         $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
         $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
         $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
     }
     
+    # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
     $fullUri = $url + $uid + $endUrl
     $Request = [System.UriBuilder]$fullUri
     
@@ -658,7 +666,7 @@ Function Get-UnpagedEntity
             $NextAction = CatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-AuthTokensFromFile
+            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
             $authorisation.access_token = $($AuthTokensFromFile.access_token)
             $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
             $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -681,7 +689,7 @@ Function Get-PagedEntity
     if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-AuthTokensFromFile
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
         $authorisation.access_token = $($AuthTokensFromFile.access_token)
         $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
         $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -689,6 +697,7 @@ Function Get-PagedEntity
     }
 
     # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
     $fullUri = $url + $uid + $endUrl
     $Request = [System.UriBuilder]$fullUri
     $Request.Query = $params.ToString()
@@ -775,7 +784,155 @@ Function Get-PagedEntity
             $NextAction = CatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-AuthTokensFromFile
+            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+            $authorisation.access_token = $($AuthTokensFromFile.access_token)
+            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        }
+    }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
+
+    if ($InvokeCount -ge $MaxInvokeCount)
+    {
+        throw $LastCaughtError
+    }
+}
+
+function Submit-Entity
+{
+    [CmdletBinding()]
+    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+
+    # Reconnect If the Access Token is Expired 
+    if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    {
+        Connect-SKYAPI -ForceRefresh
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+        $authorisation.access_token = $($AuthTokensFromFile.access_token)
+        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+    }
+
+    # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
+    $fullUri = $url + $uid + $endUrl
+    $Request = [System.UriBuilder]$fullUri
+
+    # Build Body
+    $PostRequest = $params | ConvertTo-Json
+
+    # Run Invoke Command and Catch Responses
+    [int]$InvokeCount = 0
+    [int]$MaxInvokeCount = 5
+    do
+    {      
+        $InvokeCount += 1
+        $NextAction = $null
+        try
+        {
+            $apiCallResult =
+            Invoke-RestMethod   -Method Post `
+                                -ContentType application/json `
+                                -Headers @{
+                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                        'bb-api-subscription-key' = ($api_key)} `
+                                -Uri $($Request.Uri.AbsoluteUri) `
+                                -Body $PostRequest
+        
+            # If there is a response field set for the endpoint cmdlet, return that.
+            if ($null -ne $response_field -and "" -ne $response_field)
+            {
+                # return $apiCallResult.$response_field
+                return Resolve-MemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+            }
+            else # else return the entire API call result
+            {
+                return $apiCallResult
+            }
+        }
+        catch
+        {
+            # Process Invoke Error
+            $LastCaughtError = ($_)
+            $NextAction = CatchInvokeErrors($_)
+
+            # Just in case the token was refreshed by the error catcher, update these
+            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+            $authorisation.access_token = $($AuthTokensFromFile.access_token)
+            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        }
+    }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
+
+    if ($InvokeCount -ge $MaxInvokeCount)
+    {
+        throw $LastCaughtError
+    }
+}
+
+function Update-Entity
+{
+    [CmdletBinding()]
+    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+
+    # Reconnect If the Access Token is Expired 
+    if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    {
+        Connect-SKYAPI -ForceRefresh
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+        $authorisation.access_token = $($AuthTokensFromFile.access_token)
+        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+    }
+
+    # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
+    $fullUri = $url + $uid + $endUrl
+    $Request = [System.UriBuilder]$fullUri
+
+    # Build Body
+    $PatchRequest = $params | ConvertTo-Json
+
+    # Run Invoke Command and Catch Responses
+    [int]$InvokeCount = 0
+    [int]$MaxInvokeCount = 5
+    do
+    {      
+        $InvokeCount += 1
+        $NextAction = $null
+        try
+        {
+            $apiCallResult =
+            Invoke-RestMethod   -Method Patch `
+                                -ContentType application/json `
+                                -Headers @{
+                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                        'bb-api-subscription-key' = ($api_key)} `
+                                -Uri $($Request.Uri.AbsoluteUri) `
+                                -Body $PatchRequest
+        
+            # If there is a response field set for the endpoint cmdlet, return that.
+            if ($null -ne $response_field -and "" -ne $response_field)
+            {
+                # return $apiCallResult.$response_field
+                return Resolve-MemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+            }
+            else # else return the entire API call result
+            {
+                return $apiCallResult
+            }
+        }
+        catch
+        {
+            # Process Invoke Error
+            $LastCaughtError = ($_)
+            $NextAction = CatchInvokeErrors($_)
+
+            # Just in case the token was refreshed by the error catcher, update these
+            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
             $authorisation.access_token = $($AuthTokensFromFile.access_token)
             $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
             $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
@@ -831,7 +988,7 @@ function Confirm-TokenIsFresh
     }
 }
 
-function Get-AuthTokensFromFile
+function Get-SKYAPIAuthTokensFromFile
 {
     param (
     )

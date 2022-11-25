@@ -44,7 +44,7 @@ function Get-SchoolStudentEnrollmentList
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile
+    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     # Get data for one or more IDs
     foreach ($uid in $User_ID)

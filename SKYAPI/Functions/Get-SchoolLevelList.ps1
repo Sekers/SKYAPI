@@ -1,6 +1,15 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/v1levelsget
-# Returns a list of school levels.
-# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
+# Returns a collection of core school levels.
+# Requires at least one of the following roles in the Education Management system:
+#   - Academic Group Manager
+#   - Activity Group Manager
+#   - Advisory Group Manager
+#   - Athletic Group Manager
+#   - Dorm Group Manager
+#   - Dorm Supervisor
+#   - Platform Manager
+#   - Schedule Manager
+#   - SKY API Data Sync
 
 # Parameter,Required,Type,Description
 # No parameters accepted
@@ -18,7 +27,7 @@ function Get-SchoolLevelList
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile
+    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response

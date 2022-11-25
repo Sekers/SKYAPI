@@ -4,7 +4,7 @@
 # This is an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/docs/services/school/operations/V1LegacyListsByList_idGet).
 
 # Parameter,Required,Type,Description
-# list_id,integer,Comma delimited list of list IDs to get results (will return combined results even if lists have different headers)
+# list_id,yes,integer,Comma delimited list of list IDs to get results (will return combined results even if lists have different headers)
 # Page,no,integer,Results will start with this page of results in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
@@ -64,7 +64,7 @@ function Get-SchoolList
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
-    $AuthTokensFromFile = Get-AuthTokensFromFile
+    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     # Get data for one or more IDs
     foreach ($uid in $List_ID)
