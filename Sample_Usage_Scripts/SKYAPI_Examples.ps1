@@ -226,5 +226,23 @@
 <#
     Update-SchoolUser Example
 #>
-Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
-Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
+# Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
+# Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
+
+<#
+    Get-SchoolUserPhoneTypeList Example
+#>
+# Get-SchoolUserPhoneTypeList
+
+<#
+    Get-SchoolUserPhoneList Example
+#>
+#  [array]$PhoneNumbersByUser = Get-SchoolUserPhoneList -User_ID 3154032,5942642
+
+<#
+    New-SchoolUserPhone Example
+    (Use Get-SchoolUserPhoneTypeList to get a list of phone types)
+    Notes: Linking using the -links parameter doesn't currently work and Blackbaud is looking into the issue with the endpoint.
+           You can specify multiple user IDs with this function but it will not link them (each user record will have the number added without them sharing it).
+#>
+# New-SchoolUserPhone -User_Id 3154032,5942642 -number "(555) 555-5555" -type_id 331

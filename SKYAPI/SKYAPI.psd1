@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.2.6'
+ModuleVersion = '0.3.0'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -99,9 +99,12 @@ FunctionsToExport = @(
     'Get-SchoolUserExtended',
     'Get-SchoolUserExtendedList',
     'Get-SchoolUserList',
+    'Get-SchoolUserPhoneList',
+    'Get-SchoolUserPhoneTypeList',
     'Get-SchoolYearList',
     'Get-SKYAPIConfig',
     'New-SchoolEventsCategory',
+    'New-SchoolUserPhone',
     'Set-SKYAPIConfig',
     'Update-SchoolUser'
 )
