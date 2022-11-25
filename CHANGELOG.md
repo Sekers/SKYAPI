@@ -4,7 +4,7 @@
 
 ### Fixes
 
-- Resolved erroneous error message that sometimes appears when using New-SchoolUserPhone. 
+- Resolved erroneous error message that sometimes appears when using New-SchoolUserPhone.
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
