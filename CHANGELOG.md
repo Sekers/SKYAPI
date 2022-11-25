@@ -1,5 +1,14 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.1](https://github.com/Sekers/SKYAPI/tree/0.3.1) - (2022-08-11)
+
+### Fixes
+
+- Resolved erroneous error message that sometimes appears when using New-SchoolUserPhone.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.0](https://github.com/Sekers/SKYAPI/tree/0.3.0) - (2022-11-24)
 
 ### Fixes
