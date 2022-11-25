@@ -217,6 +217,15 @@
 # Get-SchoolNewsItems -categories '12027,3154'
 
 <#
+    Get-SchoolSchedulesMeetings
+    (Use Get-SchoolOfferingTypeList to get a list of offering types)
+    Note: offering_types defaults to 1 (Academics) if not specified.
+#>
+# Get-SchoolSchedulesMeetings "2022-11-01"
+# Get-SchoolSchedulesMeetings "2022-11-01" -end_date '2022-11-30' -offering_types '1,3'
+# Get-SchoolSchedulesMeetings "2022-11-01" | where-object faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
+
+<#
     New-SchoolEventsCategory Example
 #>
 # New-SchoolEventsCategory -description "My Events Category" -public $true -include_brief_description $true -include_long_description $true
