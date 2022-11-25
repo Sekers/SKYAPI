@@ -29,7 +29,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Other
 - Renamed a backend function to prevent possible conflicts with other modules.
-- Removed the prerelease string fromm the module manifest.
+- Removed the prerelease string from the module manifest.
 - Minor updates to the SKYAPI_Example.ps1 script.
 - Module will wait and then try again a few times if a 503 (The service is currently unavailable) is returned to allow for transient issues with the API service.
 
