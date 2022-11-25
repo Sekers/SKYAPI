@@ -38,8 +38,6 @@ The SKYAPI module documentation is hosted in the [SKYAPI Wiki](https://github.co
 
 ## Developing and Contributing
 
-Contact us on the [Grimadmin.com SKYAPI PowerShell Module Forum](https://www.grimadmin.com/forum/index.php?forum=7) if you would like to contribute.
-
 This project is developed using a [simplified Gitflow workflow](https://www.grimadmin.com/article.php/simple-modified-gitflow-workflow) that cuts out the release branches, which are unnecessary when maintaining only a single version for production. The Master/Main branch will always be the latest stable version released and tagged with an updated version number anytime the Develop branch is merged into it. [Rebasing](https://www.atlassian.com/git/tutorials/merging-vs-rebasing) will occur if we need to streamline complex history.
 
-You are also welcome to [fork](https://guides.github.com/activities/forking/) the project and then offer your changes back using a [pull request](https://guides.github.com/activities/forking/#making-a-pull-request).
+You are welcome to [fork](https://guides.github.com/activities/forking/) the project and then offer your changes back using a [pull request](https://guides.github.com/activities/forking/#making-a-pull-request).
