@@ -31,7 +31,7 @@ function Get-SchoolSectionByStudent
     # Get data for one or more IDs
     foreach ($uid in $Student_ID)
     {
-        $response = Get-UnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
         $response
     }
 }

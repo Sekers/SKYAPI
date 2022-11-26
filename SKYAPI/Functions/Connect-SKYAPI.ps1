@@ -64,7 +64,7 @@ Function Connect-SKYAPI
         # If Key File Does Not Exist or the -ForceReauthentication Parameter is Set, Ask User to Reauthenticate
         if ((-not (Test-Path $sky_api_tokens_file_path)) -or ($ForceReauthentication))
         {
-            Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
+            Get-SKYAPINewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
         }
 
         # Get Tokens & Set Creation Times
@@ -80,9 +80,9 @@ Function Connect-SKYAPI
         }
 
         # If Refresh Token Has Expired Because it Hasn't Been Used for Max Refresh Token Timespan, Ask User to Reauthenticate
-        if (-not (Confirm-TokenIsFresh -TokenCreation $refresh_token_creation -TokenType Refresh))
+        if (-not (Confirm-SKYAPITokenIsFresh -TokenCreation $refresh_token_creation -TokenType Refresh))
         {
-            Get-NewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
+            Get-SKYAPINewTokens -sky_api_tokens_file_path $sky_api_tokens_file_path -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
 
             # Get Tokens & Set Creation Times
             try
@@ -98,7 +98,7 @@ Function Connect-SKYAPI
         }
 
         # If the Access Token Expired OR the -ForceRefresh Parameter is Set, Then Refresh Access Token      
-        if ((-not (Confirm-TokenIsFresh -TokenCreation $access_token_creation -TokenType Access)) -or ($ForceRefresh))
+        if ((-not (Confirm-SKYAPITokenIsFresh -TokenCreation $access_token_creation -TokenType Access)) -or ($ForceRefresh))
         {
             # Run Invoke Command and Catch Responses
             [int]$InvokeCount = 0
@@ -109,13 +109,13 @@ Function Connect-SKYAPI
                 $NextAction = $null
                 try
                 {
-                    $Authorization = Get-AccessToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $($AuthTokensFromFile.refresh_token) -token_uri $token_uri
+                    $Authorization = Get-SKYAPIAccessToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $($AuthTokensFromFile.refresh_token) -token_uri $token_uri
                 }
                 catch
                 {
                     # Process Invoke Error
                     $LastCaughtError = ($_)
-                    $NextAction = CatchInvokeErrors($_)
+                    $NextAction = SKYAPICatchInvokeErrors($_)
 
                     # Just in case the token was refreshed by the error catcher, update the $AuthTokensFromFile variable
                     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile

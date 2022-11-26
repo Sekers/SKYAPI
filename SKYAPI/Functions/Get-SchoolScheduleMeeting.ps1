@@ -96,7 +96,7 @@ function Get-SchoolScheduleMeeting
         $parameters.Add('end_date',$DateIterationEnd.ToString('yyyy-MM-dd'))
 
         # Get data
-        $response += Get-UnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+        $response += Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     
         # Increase Iteration Range
         $DateIterationStart = $DateIterationStart.AddDays($IterationRangeInDays)

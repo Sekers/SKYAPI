@@ -52,7 +52,7 @@ function Get-SchoolActivityBySchoolLevel
         $parameters.Remove('level_num') | Out-Null
         $parameters.Add('level_num',$level_num) 
         
-        $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }
 }

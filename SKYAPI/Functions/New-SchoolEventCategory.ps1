@@ -113,7 +113,7 @@ function New-SchoolEventCategory
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-        $response = Submit-Entity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+        $response = Submit-SKYAPIEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
         $response
     }
 }

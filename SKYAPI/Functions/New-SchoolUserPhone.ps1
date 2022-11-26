@@ -98,7 +98,7 @@ function New-SchoolUserPhone
     # Set data for one or more IDs
     foreach ($uid in $User_ID)
     {      
-        $response = Submit-Entity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+        $response = Submit-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
         $response
     }
 }

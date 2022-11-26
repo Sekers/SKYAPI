@@ -49,7 +49,7 @@ function Get-SchoolStudentEnrollment
     # Get data for one or more IDs
     foreach ($uid in $User_ID)
     {
-        $response = Get-UnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }
 }
