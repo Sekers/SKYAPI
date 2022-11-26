@@ -1,14 +1,14 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1offeringtypesget
-# Returns a list of offering types.
-# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsCategoriesGet
+# Returns a collection of Content News Categories.
+# Requires the 'Parent', 'Faculty' or 'Student' role in the K12 system.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolOfferingTypeList
+function Get-SchoolNewsCategory
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/offeringtypes'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/news/categories'
 
     # Set the response field
     $ResponseField = "value"

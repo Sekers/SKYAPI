@@ -6,6 +6,31 @@ New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironm
 
 # Aliases
 Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
+Set-Alias -Name Get-SchoolSchedulesMeetings -Value Get-SchoolScheduleMeeting
+Set-Alias -Name Get-SchoolActivityListBySchoolLevel -Value Get-SchoolActivityBySchoolLevel
+Set-Alias -Name Get-SchoolAdvisoryListBySchoolLevel -Value Get-SchoolAdvisoryBySchoolLevel
+Set-Alias -Name Get-SchoolCourseList -Value Get-SchoolCourse
+Set-Alias -Name Get-SchoolDepartmentList -Value Get-SchoolDepartment
+Set-Alias -Name Get-SchoolEducationList -Value Get-SchoolUserEducation
+Set-Alias -Name Get-SchoolGradeLevelList -Value Get-SchoolGradeLevel
+Set-Alias -Name Get-SchoolLevelList -Value Get-SchoolLevel
+Set-Alias -Name Get-SchoolNewsCategories -Value Get-SchoolNewsCategory
+Set-Alias -Name Get-SchoolNewsItems -Value Get-SchoolNewsItem
+Set-Alias -Name Get-SchoolOfferingTypeList -Value Get-SchoolOfferingType
+Set-Alias -Name Get-SchoolRoleList  -Value Get-SchoolRole
+Set-Alias -Name Get-SchoolSectionListBySchoolLevel -Value Get-SchoolSectionBySchoolLevel
+Set-Alias -Name Get-SchoolSectionListByStudent -Value Get-SchoolSectionByStudent
+Set-Alias -Name Get-SchoolSectionListByTeacher -Value Get-SchoolSectionByTeacher
+Set-Alias -Name Get-SchoolStudentEnrollmentList -Value Get-SchoolStudentEnrollment
+Set-Alias -Name Get-SchoolStudentListBySection -Value Get-SchoolStudentBySection
+Set-Alias -Name Get-SchoolTermList -Value Get-SchoolTerm
+Set-Alias -Name Get-SchoolUserExtendedList -Value Get-SchoolUserExtendedByBaseRole
+Set-Alias -Name Get-SchoolUserList -Value Get-SchoolUserByRole
+Set-Alias -Name Get-SchoolUserPhoneList -Value Get-SchoolUserPhone
+Set-Alias -Name Get-SchoolUserPhoneTypeList -Value Get-SchoolUserPhoneType
+Set-Alias -Name Get-SchoolYearList -Value Get-SchoolYear
+Set-Alias -Name New-SchoolEventsCategory -Value New-SchoolEventCategory
+
 
 # Type Definitions
 

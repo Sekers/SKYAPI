@@ -5,7 +5,7 @@
 # Level_Number,yes,integer,Level number.
 # school_year,no,string,The school year to get sections for. Defaults to the current school year.
 
-function Get-SchoolAdvisoryListBySchoolLevel
+function Get-SchoolAdvisoryBySchoolLevel
 {
     [cmdletbinding()]
     Param(

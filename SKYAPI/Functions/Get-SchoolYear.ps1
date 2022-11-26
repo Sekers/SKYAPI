@@ -1,14 +1,14 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsCategoriesGet
-# Returns a collection of Content News Categories.
-# Requires the 'Parent', 'Faculty' or 'Student' role in the K12 system.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1yearsget
+# Returns a list of school years.
+# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolNewsCategories
+function Get-SchoolYear
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/news/categories'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/years'
 
     # Set the response field
     $ResponseField = "value"

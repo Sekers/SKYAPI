@@ -19,6 +19,6 @@ do{
     # $Student = Get-SchoolUser -User_IDs 4254481,4254481,4254481,4254481,4254481,4254481,4254481,4254481,4254481,4254481,4254481,4254481,4254481,4254481
 
     # Paged Test
-    [array]$list = Get-SchoolUserExtendedList -Base_Role_Ids "332,15,14"
+    [array]$list = Get-SchoolUserExtendedByBaseRole -Base_Role_Ids "332,15,14"
 }
 while (1 -eq 1)

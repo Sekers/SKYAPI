@@ -8,7 +8,7 @@
 # Marker,no,integer,Results will start with the user AFTER the specified user's ID in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
-function Get-SchoolUserExtendedList
+function Get-SchoolUserExtendedByBaseRole
 {
     [cmdletbinding()]
     param(

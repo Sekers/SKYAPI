@@ -5,7 +5,7 @@
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolRoleList
+function Get-SchoolRole
 { 
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/roles'

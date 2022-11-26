@@ -1,23 +1,14 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1levelsget
-# Returns a collection of core school levels.
-# Requires at least one of the following roles in the Education Management system:
-#   - Academic Group Manager
-#   - Activity Group Manager
-#   - Advisory Group Manager
-#   - Athletic Group Manager
-#   - Dorm Group Manager
-#   - Dorm Supervisor
-#   - Platform Manager
-#   - Schedule Manager
-#   - SKY API Data Sync
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1offeringtypesget
+# Returns a list of offering types.
+# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolLevelList
+function Get-SchoolOfferingType
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/levels'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/offeringtypes'
 
     # Set the response field
     $ResponseField = "value"

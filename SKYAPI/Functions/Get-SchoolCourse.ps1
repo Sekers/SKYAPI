@@ -5,7 +5,7 @@
 # department_id,no,integer,Identifier for a specific department.
 # level_id,no,integer,Identifier for a specific school level.
 
-function Get-SchoolCourseList
+function Get-SchoolCourse
 {
     [cmdletbinding()]
     Param(

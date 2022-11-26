@@ -5,7 +5,7 @@
 # Parameter,Required,Type,Description
 # Student_ID,yes,int,Comma delimited list of user IDs for each user you want returned.
 
-function Get-SchoolSectionListByStudent
+function Get-SchoolSectionByStudent
 {
     [cmdletbinding()]
     Param(

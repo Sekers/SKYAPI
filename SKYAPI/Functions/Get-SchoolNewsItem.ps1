@@ -1,27 +1,24 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1termsget
-# Returns a list of terms.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsItemsGet
+# Returns a collection of Content News Items.
+# Requires the 'Parent', 'Faculty' or 'Student' role in the K12 system.
 
 # Parameter,Required,Type,Description
-# school_year,no,string,The school year to get terms for. Defaults to the current school year if empty.
-# offering_type,no,integer,The offering type to filter terms by.
+# categories,no,string,comma-separated string of category IDs
 
-function Get-SchoolTermList
-{
+
+function Get-SchoolNewsItem
+{ 
     [cmdletbinding()]
-    Param(
-        [Parameter(
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$school_year,
-
+    param(
         [parameter(
+        Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$offering_type
+        [string]$categories # This doesn't need to be an array since the parameter takes comma-separated values by default.
     )
-    
+
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/terms'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/news/items'
 
     # Set the response field
     $ResponseField = "value"

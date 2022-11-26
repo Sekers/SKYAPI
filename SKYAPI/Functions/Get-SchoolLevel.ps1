@@ -1,14 +1,23 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1yearsget
-# Returns a list of school years.
-# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1levelsget
+# Returns a collection of core school levels.
+# Requires at least one of the following roles in the Education Management system:
+#   - Academic Group Manager
+#   - Activity Group Manager
+#   - Advisory Group Manager
+#   - Athletic Group Manager
+#   - Dorm Group Manager
+#   - Dorm Supervisor
+#   - Platform Manager
+#   - Schedule Manager
+#   - SKY API Data Sync
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolYearList
+function Get-SchoolLevel
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/years'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/levels'
 
     # Set the response field
     $ResponseField = "value"

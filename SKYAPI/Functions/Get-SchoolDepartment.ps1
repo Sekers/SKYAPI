@@ -1,24 +1,21 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsItemsGet
-# Returns a collection of Content News Items.
-# Requires the 'Parent', 'Faculty' or 'Student' role in the K12 system.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsDepartmentsGet
+# Returns a collection of academic departments.
 
 # Parameter,Required,Type,Description
-# categories,no,string,comma-separated string of category IDs
+# level_id,no,integer,Level number.
 
-
-function Get-SchoolNewsItems
-{ 
+function Get-SchoolDepartment
+{
     [cmdletbinding()]
-    param(
-        [parameter(
-        Mandatory=$false,
+    Param(
+        [Parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$categories # This doesn't need to be an array since the parameter takes comma-separated values by default.
+        [string]$level_id
     )
-
+    
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/news/items'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/departments'
 
     # Set the response field
     $ResponseField = "value"
@@ -27,7 +24,7 @@ function Get-SchoolNewsItems
     $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
     foreach ($parameter in $PSBoundParameters.GetEnumerator())
     {
-        $parameters.Add($parameter.Key,$parameter.Value) 
+        $parameters.Add($parameter.Key,$parameter.Value)
     }
 
     # Get the SKY API subscription key

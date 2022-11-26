@@ -1,11 +1,11 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
-# Returns a list of sections for one or more teachers.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet
+# Returns a collection of activity sections based on school level.
 
 # Parameter,Required,Type,Description
-# Teacher_ID,yes,integer,Comma delimited list of user IDs for each teacher you want returned..
+# Level_Number,yes,integer,Level number.
 # school_year,no,string,The school year to get sections for. Defaults to the current school year.
 
-function Get-SchoolSectionListByTeacher
+function Get-SchoolActivityBySchoolLevel
 {
     [cmdletbinding()]
     Param(
@@ -14,7 +14,7 @@ function Get-SchoolSectionListByTeacher
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int[]]$Teacher_ID, # Array as we loop through submitted IDs
+        [int[]]$Level_Number, # Array as we loop through submitted IDs
 
         [parameter(
         ValueFromPipeline=$true,
@@ -23,8 +23,7 @@ function Get-SchoolSectionListByTeacher
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/teachers/'
-    $endUrl = '/sections'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/activities/sections'
 
     # Set the response field
     $ResponseField = "value"
@@ -36,8 +35,8 @@ function Get-SchoolSectionListByTeacher
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
-    # Remove the $Teacher_ID parameter since we don't pass that on
-    $parameters.Remove('Teacher_ID') | Out-Null
+    # Remove the $Level_Number parameters since we don't pass them on this way
+    $parameters.Remove('Level_Number') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -47,9 +46,13 @@ function Get-SchoolSectionListByTeacher
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
     # Get data for one or more school levels
-    foreach ($uid in $Teacher_ID)
+    foreach ($level_num in $Level_Number)
     {
-        $response = Get-UnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+        # Clear out old school level parameter and add in new
+        $parameters.Remove('level_num') | Out-Null
+        $parameters.Add('level_num',$level_num) 
+        
+        $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }
 }

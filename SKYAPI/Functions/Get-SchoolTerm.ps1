@@ -1,21 +1,27 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsDepartmentsGet
-# Returns a collection of academic departments.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1termsget
+# Returns a list of terms.
 
 # Parameter,Required,Type,Description
-# level_id,no,integer,Level number.
+# school_year,no,string,The school year to get terms for. Defaults to the current school year if empty.
+# offering_type,no,integer,The offering type to filter terms by.
 
-function Get-SchoolDepartmentList
+function Get-SchoolTerm
 {
     [cmdletbinding()]
     Param(
         [Parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$level_id
+        [string]$school_year,
+
+        [parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [int]$offering_type
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/departments'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/terms'
 
     # Set the response field
     $ResponseField = "value"
@@ -24,7 +30,7 @@ function Get-SchoolDepartmentList
     $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
     foreach ($parameter in $PSBoundParameters.GetEnumerator())
     {
-        $parameters.Add($parameter.Key,$parameter.Value)
+        $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
     # Get the SKY API subscription key

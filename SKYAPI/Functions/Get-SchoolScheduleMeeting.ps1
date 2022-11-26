@@ -6,7 +6,7 @@
 # end_date,no,string,Use ISO-8601 date format: 2022-04-08.
 # offering_types,no,string,Can take a single or multiple values as a comma delimited string of integers (defaults to 1)
 
-function Get-SchoolSchedulesMeetings
+function Get-SchoolScheduleMeeting
 {
     [cmdletbinding()]
     Param(

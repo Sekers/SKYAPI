@@ -4,7 +4,7 @@
 # Parameter,Required,Type,Description
 # User_ID,yes,integer,Comma-delimited list of user IDs for each user you want returned.
 
-function Get-SchoolEducationList
+function Get-SchoolUserEducation
 {
     [cmdletbinding()]
     Param(

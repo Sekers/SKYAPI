@@ -6,7 +6,7 @@
 # User_ID,yes,integer,Comma delimited list of user IDs for each student you want returned.
 # school_year,no,string,The school year to get sections for. Defaults to the current school year.
 
-function Get-SchoolStudentEnrollmentList
+function Get-SchoolStudentEnrollment
 {
     [cmdletbinding()]
     Param(

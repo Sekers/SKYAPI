@@ -88,7 +88,7 @@ function New-SchoolUserPhone
     # Verify the phone number type doesn't already exists for any of the users.
     foreach ($uid in $User_ID)
     {
-        $UserPhoneNumbers = Get-SchoolUserPhoneList -User_ID $uid
+        $UserPhoneNumbers = Get-SchoolUserPhone -User_ID $uid
         if ($UserPhoneNumbers.type_id -contains $type_id)
         {
             throw "User $uid already has phone number of type id $type_id"

@@ -13,7 +13,7 @@
 # Marker,no,integer,Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
-function Get-SchoolUserList
+function Get-SchoolUserByRole
 {
     [cmdletbinding()]
     param(
