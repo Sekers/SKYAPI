@@ -255,3 +255,8 @@
            You can specify multiple user IDs with this function but it will not link them (each user record will have the number added without them sharing it).
 #>
 # New-SchoolUserPhone -User_Id 3154032,5942642 -number "(555) 555-5555" -type_id 331
+
+<#
+    Get-SchoolVenueBuilding Example
+#>
+# Get-SchoolVenueBuilding

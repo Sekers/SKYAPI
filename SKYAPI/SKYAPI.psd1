@@ -101,6 +101,7 @@ FunctionsToExport = @(
     'Get-SchoolUserByRole',
     'Get-SchoolUserPhone',
     'Get-SchoolUserPhoneType',
+    'Get-SchoolVenueBuilding',
     'Get-SchoolYear',
     'Get-SKYAPIConfig',
     'New-SchoolEventCategory',
