@@ -260,3 +260,8 @@
     Get-SchoolVenueBuilding Example
 #>
 # Get-SchoolVenueBuilding
+
+<#
+    Get-SchoolUserRelationship Example
+#>
+Get-SchoolUserRelationship -User_ID 3154032,5942642
