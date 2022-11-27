@@ -1,7 +1,7 @@
 ﻿# Configure script to use TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# Global Variables
+# Set Global User Data Path Variable
 New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell" -Scope Global -Force
 
 # Aliases
@@ -123,6 +123,12 @@ Function Get-SKYAPIAccessToken
                             -ContentType application/x-www-form-urlencoded `
                             -Uri $token_uri `
                             -Body $AuthorizationPostRequest
+    
+    # Add in creation timestamps for the tokens.
+    $Timestamp = $((Get-Date).ToUniversalTime().ToString("o"))
+    $Authorization | Add-Member -MemberType NoteProperty -Name "refresh_token_creation" -Value $Timestamp -Force
+    $Authorization | Add-Member -MemberType NoteProperty -Name "access_token_creation" -Value $Timestamp -Force
+
     $Authorization
 }
 
@@ -538,7 +544,7 @@ Function Get-SKYAPINewTokens
     # Get auth token
     $Authorization = Get-SKYAPIAuthToken -grant_type 'authorization_code' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authOutput["code"] -token_uri $token_uri
 
-    # Swap token for a Refresh token (which when requested returns both refresh and access tokens)
+    # Swap Refresh token for an Access token (which when requested returns both refresh and access tokens)
     $Authorization = Get-SKYAPIAccessToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authorization.refresh_token -token_uri $token_uri
 
     # Make sure path to credentials file parent folder exists and if it doesn't, create it
@@ -548,10 +554,8 @@ Function Get-SKYAPINewTokens
         New-Item -ItemType Directory -Force -Path $sky_api_tokens_file_path_ParentDir
     }
 
-    # Add Refresh & Access Token expirys to PSCustomObject and Save credentials to file
-    $Authorization | Add-Member -MemberType NoteProperty -Name "refresh_token_creation" -Value $((Get-Date).ToUniversalTime().ToString("o")) -Force
-    $Authorization | Add-Member -MemberType NoteProperty -Name "access_token_creation" -Value $((Get-Date).ToUniversalTime().ToString("o")) -Force
-    $Authorization | Select-Object access_token, refresh_token, refresh_token_creation, access_token_creation | ConvertTo-Json `
+    # Save credentials to file
+    $Authorization | ConvertTo-Json `
         | ConvertTo-SecureString -AsPlainText -Force `
         | ConvertFrom-SecureString `
         | Out-File -FilePath $sky_api_tokens_file_path -Force

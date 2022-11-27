@@ -1,27 +1,8 @@
 ####################
 # Helper Functions #
 ####################
-function Get-SchoolUserMe
-{
-    # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersMeGet
-    # Returns information about the caller.
 
-    # Parameter,Required,Type,Description
-    # No parameters accepted
-    
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/me'
-
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
-    $response
-}
+# None at this time.
 
 ###################
 # Return Function #
@@ -31,15 +12,29 @@ function Get-SKYAPIContext
     # Create the context object to return.
     $SKYAPIContext = New-Object System.Object
 
-    # Add in the connection information.
-    $SKYAPIConnectionInfo = Connect-SKYAPI -ForceRefresh -ReturnConnectionInfo
-    foreach ($infoItem in $($SKYAPIConnectionInfo.Psobject.Properties))
+    # Collect the non-sensitive session information.
+    # More info on these items here: https://developer.blackbaud.com/skyapi/docs/authorization/auth-code-flow/tutorial
+    $ObjectPropertyNames = @(
+        'environment_id'
+        'environment_name'
+        'legal_entity_id'
+        'legal_entity_name'
+        'user_id'
+        'email'
+        'family_name'
+        'given_name'
+        'mode'
+        'refresh_token_creation'
+        'access_token_creation'
+    )
+    $NonSensitiveSessionInfo = Get-SKYAPIAuthTokensFromFile | Select-Object $ObjectPropertyNames
+    foreach ($infoItem in $($NonSensitiveSessionInfo.Psobject.Properties))
     {
         $SKYAPIContext | Add-Member -MemberType NoteProperty -Name "$($infoItem.Name)" -Value $($infoItem.Value)
     }
 
-    # Add in the caller information.
-    $SKYAPIContext | Add-Member -MemberType NoteProperty -Name 'caller' -Value $(Get-SchoolUserMe)
+    # EXAMPLE: Add in the School API caller information.
+    # $SKYAPIContext | Add-Member -MemberType NoteProperty -Name 'caller' -Value $(Get-SchoolUserMe)
 
     $SKYAPIContext
 }
