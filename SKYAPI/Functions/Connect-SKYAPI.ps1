@@ -25,14 +25,20 @@ Function Connect-SKYAPI
         [string]$AuthenticationMethod
     )
 
-    # Make -ClearBrowserControlCache Parameter Only Appear if ForceReauthentication is Used
     DynamicParam
     {
+        # Initialize Parameter Dictionary
+        $ParameterDictionary = [System.Management.Automation.RuntimeDefinedParameterDictionary]::new()
+        
+        # Make -ClearBrowserControlCache Parameter Only Appear if ForceReauthentication is Used
+        # DynamicParameter1: ClearBrowserControlCache
         if ($ForceReauthentication)
-        {
+        { 
             $ParameterAttributes = [System.Management.Automation.ParameterAttribute]@{
                 ParameterSetName = "ForceReauthentication"
                 Mandatory = $false
+                ValueFromPipeline = $true
+                ValueFromPipelineByPropertyName = $true
             }
 
             $AttributeCollection = [System.Collections.ObjectModel.Collection[System.Attribute]]::new()
@@ -41,15 +47,36 @@ Function Connect-SKYAPI
             $DynamicParameter1 = [System.Management.Automation.RuntimeDefinedParameter]::new(
                 'ClearBrowserControlCache', [switch], $AttributeCollection)
 
-            $ParameterDictionary = [System.Management.Automation.RuntimeDefinedParameterDictionary]::new()
             $ParameterDictionary.Add('ClearBrowserControlCache', $DynamicParameter1)
         }
+
+        # Make -ReturnConnectionInfo Parameter Only Appear if ForceRefresh is Used
+        # DynamicParameter2: ReturnConnectionInfo
+        if ($ForceRefresh)
+        { 
+            $ParameterAttributes = [System.Management.Automation.ParameterAttribute]@{
+                ParameterSetName = "ForceRefresh"
+                Mandatory = $false
+                ValueFromPipeline = $true
+                ValueFromPipelineByPropertyName = $true
+            }
+
+            $AttributeCollection = [System.Collections.ObjectModel.Collection[System.Attribute]]::new()
+            $AttributeCollection.Add($ParameterAttributes)
+
+            $DynamicParameter2 = [System.Management.Automation.RuntimeDefinedParameter]::new(
+                'ReturnConnectionInfo', [switch], $AttributeCollection)
+
+            $ParameterDictionary.Add('ReturnConnectionInfo', $DynamicParameter2)
+        }
+
         return $ParameterDictionary
     }
     
     begin
     {
         $ClearBrowserControlCache = $PSBoundParameters['ClearBrowserControlCache']
+        $ReturnConnectionInfo = $PSBoundParameters['ReturnConnectionInfo']
     }
 
     process
@@ -136,6 +163,13 @@ Function Connect-SKYAPI
                     | ConvertTo-SecureString -AsPlainText -Force `
                     | ConvertFrom-SecureString `
                     | Out-File -FilePath $sky_api_tokens_file_path -Force
+
+            # Return the connection information, if requested.
+            if ($ReturnConnectionInfo)
+            {
+                # Return values from the access token request. More info on these items here: https://developer.blackbaud.com/skyapi/docs/authorization/auth-code-flow/tutorial
+                $Authorization | Select-Object environment_id, environment_name, legal_entity_id, legal_entity_name, user_id, email, family_name, given_name, mode, refresh_token_creation, access_token_creation
+            }
         }
     }   
 }
