@@ -12,7 +12,6 @@
 - New Endpoint: Get-SKYAPIContext > Returns cached information about the current connection to the Blackbaud SKY API.
 - New Connect-SKYAPI Parameter: ReturnConnectionInfo. Returns values when verifying the cached SKY API connection information.
 
-
 ### Other
 - Made all function/cmdlet names consistent as singular (and some other adjustments) & removed the 'List' keyword from function names (as Blackbaud has moved away from using that descriptor and it's also unnecessary). The old function names are kept as aliases so there are no breaking changes due to these renames.
 - Finished renaming all internal functions to prevent any naming conflicts with other modules.
