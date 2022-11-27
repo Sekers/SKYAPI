@@ -290,3 +290,28 @@
     Get-SchoolUserOccupation
 #>
 # Get-SchoolUserOccupation -User_ID 3154032,5942642
+
+###############################
+# Raiser's Edge API Endpoints #
+###############################
+
+<#
+    Get-ReConstituentRatingSource
+#>
+# Get-ReConstituentRatingSource
+# Get-ReConstituentRatingSource -include_inactive $true
+
+<#
+    Get-ReConstituentRelationshipType
+#>
+# Get-ReConstituentRelationshipType
+
+<#
+    Get-ReConstituentSuffix
+#>
+# Get-ReConstituentSuffix
+
+<#
+    Get-ReConstituentTitle
+#>
+# Get-ReConstituentTitle
