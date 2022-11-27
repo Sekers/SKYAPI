@@ -4,7 +4,7 @@
 # Parameter,Required,Type,Description
 # User_ID,yes,integer,Comma-delimited list of user IDs for each user you want returned.
 
-function Get-SchoolEducationList
+function Get-SchoolUserEducation
 {
     [cmdletbinding()]
     Param(
@@ -33,7 +33,7 @@ function Get-SchoolEducationList
     # Get data for one or more school levels
     foreach ($uid in $User_ID)
     {
-        $response = Get-UnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
         $response
     }
 }

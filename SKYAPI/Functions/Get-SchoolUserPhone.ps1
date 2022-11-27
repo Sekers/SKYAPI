@@ -4,7 +4,7 @@
 # Parameter,Required,Type,Description
 # User_ID,yes,int,Comma delimited list of user IDs for each user you want returned.
 
-function Get-SchoolUserPhoneList
+function Get-SchoolUserPhone
 {
     [cmdletbinding()]
     Param(
@@ -33,7 +33,7 @@ function Get-SchoolUserPhoneList
     # Get data for one or more IDs
     foreach ($uid in $User_ID)
     {
-        $response = Get-UnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
         $response
     }
 }

@@ -1,14 +1,14 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1rolesget
-# Returns a list of user roles.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1yearsget
+# Returns a list of school years.
 # Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolRoleList
+function Get-SchoolYear
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/roles'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/years'
 
     # Set the response field
     $ResponseField = "value"
@@ -20,6 +20,6 @@ function Get-SchoolRoleList
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response
 }

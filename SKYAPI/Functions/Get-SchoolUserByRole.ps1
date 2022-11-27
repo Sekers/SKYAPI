@@ -13,7 +13,7 @@
 # Marker,no,integer,Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
-function Get-SchoolUserList
+function Get-SchoolUserByRole
 {
     [cmdletbinding()]
     param(
@@ -98,6 +98,6 @@ function Get-SchoolUserList
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-PagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
+    $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
     $response
 }

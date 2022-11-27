@@ -6,7 +6,7 @@
 # end_date,no,string,Use ISO-8601 date format: 2022-04-08.
 # offering_types,no,string,Can take a single or multiple values as a comma delimited string of integers (defaults to 1)
 
-function Get-SchoolSchedulesMeetings
+function Get-SchoolScheduleMeeting
 {
     [cmdletbinding()]
     Param(
@@ -96,7 +96,7 @@ function Get-SchoolSchedulesMeetings
         $parameters.Add('end_date',$DateIterationEnd.ToString('yyyy-MM-dd'))
 
         # Get data
-        $response += Get-UnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+        $response += Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     
         # Increase Iteration Range
         $DateIterationStart = $DateIterationStart.AddDays($IterationRangeInDays)

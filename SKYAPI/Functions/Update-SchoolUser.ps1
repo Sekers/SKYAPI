@@ -206,7 +206,7 @@ function Update-SchoolUser
     {
         [hashtable]$uid_parameters = $parameters.Clone()
         $uid_parameters.Add('id',$uid)
-        $response = Update-Entity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $uid_parameters
+        $response = Update-SKYAPIEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $uid_parameters
         $response
     }
 }

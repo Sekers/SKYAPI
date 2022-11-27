@@ -1,11 +1,12 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
-# Returns a list of sections for one or more teachers.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsEnrollmentsByUser_idGet
+# Returns a collection of course sections in which the provided student(s) is/are enrolled.
+# Requires the 'Academic Group Manager' or 'Schedule Manager' role in the K12 system.
 
-# Parameter,Required,Type,Description
-# Teacher_ID,yes,integer,Comma delimited list of user IDs for each teacher you want returned..
+# Parameters
+# User_ID,yes,integer,Comma delimited list of user IDs for each student you want returned.
 # school_year,no,string,The school year to get sections for. Defaults to the current school year.
 
-function Get-SchoolSectionListByTeacher
+function Get-SchoolStudentEnrollment
 {
     [cmdletbinding()]
     Param(
@@ -14,17 +15,16 @@ function Get-SchoolSectionListByTeacher
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int[]]$Teacher_ID, # Array as we loop through submitted IDs
+        [int[]]$User_ID, # Array as we loop through submitted IDs
 
-        [parameter(
+        [Parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/teachers/'
-    $endUrl = '/sections'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/enrollments/'
 
     # Set the response field
     $ResponseField = "value"
@@ -36,8 +36,8 @@ function Get-SchoolSectionListByTeacher
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
-    # Remove the $Teacher_ID parameter since we don't pass that on
-    $parameters.Remove('Teacher_ID') | Out-Null
+    # Remove the $User_ID parameter since we don't pass that on in with the other parameters
+    $parameters.Remove('User_ID') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -46,10 +46,10 @@ function Get-SchoolSectionListByTeacher
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    # Get data for one or more school levels
-    foreach ($uid in $Teacher_ID)
+    # Get data for one or more IDs
+    foreach ($uid in $User_ID)
     {
-        $response = Get-UnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }
 }

@@ -10,7 +10,7 @@
 # public,yes,boolean,If set to True the event category is public. If set to False it is secure and only users with the allowed list of roles can see the events in the category.
 # roles,maybe,array of integer,Only accepted if public is set to false. If that is the case, it is a required parameter.
 
-function New-SchoolEventsCategory
+function New-SchoolEventCategory
 {
     [cmdletbinding()]
     Param(
@@ -113,7 +113,7 @@ function New-SchoolEventsCategory
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-        $response = Submit-Entity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+        $response = Submit-SKYAPIEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
         $response
     }
 }

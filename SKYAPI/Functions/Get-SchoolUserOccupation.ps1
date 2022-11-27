@@ -1,10 +1,12 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idGet
-# Get data for one or more user IDs.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet
+# Returns a collection of a relationships for one or more user IDs.
+# Requires at least one of the following roles in the Education Management system:
+# SKY API Data Sync
 
 # Parameter,Required,Type,Description
-# User_ID,yes,int,Comma delimited list of user IDs for each user you want returned.
+# User_ID,yes,int,Comma delimited list of user IDs you want occupations of.
 
-function Get-SchoolUser
+function Get-SchoolUserOccupation
 {
     [cmdletbinding()]
     Param(
@@ -25,11 +27,15 @@ function Get-SchoolUser
 
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/'
+    $endUrl = '/occupations'
+
+    # Set the response field
+    $ResponseField = "value"
 
     # Get data for one or more IDs
     foreach ($uid in $User_ID)
     {
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
         $response
     }
 }

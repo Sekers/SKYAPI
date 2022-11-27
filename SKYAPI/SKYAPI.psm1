@@ -1,11 +1,36 @@
 ﻿# Configure script to use TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# Global Variables
+# Set Global User Data Path Variable
 New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell" -Scope Global -Force
 
 # Aliases
 Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
+Set-Alias -Name Get-SchoolSchedulesMeetings -Value Get-SchoolScheduleMeeting
+Set-Alias -Name Get-SchoolActivityListBySchoolLevel -Value Get-SchoolActivityBySchoolLevel
+Set-Alias -Name Get-SchoolAdvisoryListBySchoolLevel -Value Get-SchoolAdvisoryBySchoolLevel
+Set-Alias -Name Get-SchoolCourseList -Value Get-SchoolCourse
+Set-Alias -Name Get-SchoolDepartmentList -Value Get-SchoolDepartment
+Set-Alias -Name Get-SchoolEducationList -Value Get-SchoolUserEducation
+Set-Alias -Name Get-SchoolGradeLevelList -Value Get-SchoolGradeLevel
+Set-Alias -Name Get-SchoolLevelList -Value Get-SchoolLevel
+Set-Alias -Name Get-SchoolNewsCategories -Value Get-SchoolNewsCategory
+Set-Alias -Name Get-SchoolNewsItems -Value Get-SchoolNewsItem
+Set-Alias -Name Get-SchoolOfferingTypeList -Value Get-SchoolOfferingType
+Set-Alias -Name Get-SchoolRoleList  -Value Get-SchoolRole
+Set-Alias -Name Get-SchoolSectionListBySchoolLevel -Value Get-SchoolSectionBySchoolLevel
+Set-Alias -Name Get-SchoolSectionListByStudent -Value Get-SchoolSectionByStudent
+Set-Alias -Name Get-SchoolSectionListByTeacher -Value Get-SchoolSectionByTeacher
+Set-Alias -Name Get-SchoolStudentEnrollmentList -Value Get-SchoolStudentEnrollment
+Set-Alias -Name Get-SchoolStudentListBySection -Value Get-SchoolStudentBySection
+Set-Alias -Name Get-SchoolTermList -Value Get-SchoolTerm
+Set-Alias -Name Get-SchoolUserExtendedList -Value Get-SchoolUserExtendedByBaseRole
+Set-Alias -Name Get-SchoolUserList -Value Get-SchoolUserByRole
+Set-Alias -Name Get-SchoolUserPhoneList -Value Get-SchoolUserPhone
+Set-Alias -Name Get-SchoolUserPhoneTypeList -Value Get-SchoolUserPhoneType
+Set-Alias -Name Get-SchoolYearList -Value Get-SchoolYear
+Set-Alias -Name New-SchoolEventsCategory -Value New-SchoolEventCategory
+
 
 # Type Definitions
 
@@ -76,12 +101,12 @@ Function Get-SKYAPIAuthToken
 }
 
 <#
-    Get-AccessToken: Uses the long life (365 days) refresh_token to get a new access_token.
+    Get-SKYAPIAccessToken: Uses the long life (365 days) refresh_token to get a new access_token.
     When you use a refresh token, you'll receive a new short-lived access token (60 minutes)
     that you can use when making subsequent calls to the SKY API.
     Using a refresh token also exchanges the current refresh token for a new one to reset the token life.
 #>
-Function Get-AccessToken
+Function Get-SKYAPIAccessToken
 {
     [CmdletBinding()]
     param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
@@ -98,6 +123,12 @@ Function Get-AccessToken
                             -ContentType application/x-www-form-urlencoded `
                             -Uri $token_uri `
                             -Body $AuthorizationPostRequest
+    
+    # Add in creation timestamps for the tokens.
+    $Timestamp = $((Get-Date).ToUniversalTime().ToString("o"))
+    $Authorization | Add-Member -MemberType NoteProperty -Name "refresh_token_creation" -Value $Timestamp -Force
+    $Authorization | Add-Member -MemberType NoteProperty -Name "access_token_creation" -Value $Timestamp -Force
+
     $Authorization
 }
 
@@ -105,7 +136,7 @@ Function Get-AccessToken
 # Helper function to get a specified nested member property of an object.
 # From: https://stackoverflow.com/questions/69368564/powershell-get-value-from-json-using-string-from-array
 # This will take an array with each item as the next property in the path, or you can use a string with a delimiter (e.g., "results.rows")
-function Resolve-MemberChain 
+function Resolve-SKYAPIMemberChain
 {
     param
     (
@@ -145,7 +176,7 @@ function Resolve-MemberChain
 # Helper to make sure Browser Emulation/Compatibility Mode is Off When Using the WebBrowser Control.
 # This function will set the Internet Explorer emulation mode for the running executable. This allows the WebBrowser control to support newer html features and improves compatibility with modern websites.
 # Modified from https://www.sapien.com/blog/2020/11/05/a-simple-fix-for-problems-with-windows-forms-webbrowser/ (see also https://bchallis.wordpress.com/2020/10/17/problems-with-the-windows-forms-webbrowser-control-and-a-simple-way-to-fix-it/)
-function Set-WebBrowserEmulation
+function Set-SKYAPIWebBrowserEmulation
 {
 	param
 	(
@@ -191,7 +222,7 @@ function Set-WebBrowserEmulation
 	[Microsoft.Win32.Registry]::SetValue('HKEY_CURRENT_USER\SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION', $ExecutableName, $version)
 }
 
-Function Show-OAuthWindow
+Function Show-SKYAPIOAuthWindow
 {
     param(
         [parameter(
@@ -312,7 +343,7 @@ Function Show-OAuthWindow
         }
         LegacyIEControl
         {
-            Set-WebBrowserEmulation
+            Set-SKYAPIWebBrowserEmulation
 
             if ($ClearBrowserControlCache)
             {
@@ -452,7 +483,7 @@ Function Show-OAuthWindow
         switch($PromptNoAuthCode_Selection)
         {
             0   { # Retry authenticating & authorizing
-                    $authOutput = Show-OAuthWindow -url $Url -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
+                    $authOutput = Show-SKYAPIOAuthWindow -url $Url -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
                     return $authOutput
                 }
             1   {
@@ -464,7 +495,7 @@ Function Show-OAuthWindow
     Return $output
 }
 
-Function Get-NewTokens
+Function Get-SKYAPINewTokens
 {
     [CmdletBinding()]
     param(
@@ -508,13 +539,13 @@ Function Get-NewTokens
     "&redirect_uri=" + [System.Web.HttpUtility]::UrlEncode($redirect_uri) +
     '&response_type=code&state=state'
 
-    $authOutput = Show-OAuthWindow -Url $strUri -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
+    $authOutput = Show-SKYAPIOAuthWindow -Url $strUri -AuthenticationMethod $AuthenticationMethod -ClearBrowserControlCache:$ClearBrowserControlCache
 
     # Get auth token
     $Authorization = Get-SKYAPIAuthToken -grant_type 'authorization_code' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authOutput["code"] -token_uri $token_uri
 
-    # Swap token for a Refresh token (which when requested returns both refresh and access tokens)
-    $Authorization = Get-AccessToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authorization.refresh_token -token_uri $token_uri
+    # Swap Refresh token for an Access token (which when requested returns both refresh and access tokens)
+    $Authorization = Get-SKYAPIAccessToken -grant_type 'refresh_token' -client_id $client_id -redirect_uri $redirect_uri -client_secret $client_secret -authCode $authorization.refresh_token -token_uri $token_uri
 
     # Make sure path to credentials file parent folder exists and if it doesn't, create it
     $sky_api_tokens_file_path_ParentDir = Split-Path -Path $sky_api_tokens_file_path
@@ -523,17 +554,15 @@ Function Get-NewTokens
         New-Item -ItemType Directory -Force -Path $sky_api_tokens_file_path_ParentDir
     }
 
-    # Add Refresh & Access Token expirys to PSCustomObject and Save credentials to file
-    $Authorization | Add-Member -MemberType NoteProperty -Name "refresh_token_creation" -Value $((Get-Date).ToUniversalTime().ToString("o")) -Force
-    $Authorization | Add-Member -MemberType NoteProperty -Name "access_token_creation" -Value $((Get-Date).ToUniversalTime().ToString("o")) -Force
-    $Authorization | Select-Object access_token, refresh_token, refresh_token_creation, access_token_creation | ConvertTo-Json `
+    # Save credentials to file
+    $Authorization | ConvertTo-Json `
         | ConvertTo-SecureString -AsPlainText -Force `
         | ConvertFrom-SecureString `
         | Out-File -FilePath $sky_api_tokens_file_path -Force
 }
 
 # Handle Common Errors > https://developer.blackbaud.com/skyapi/docs/resources/in-depth-topics/handle-common-errors
-function CatchInvokeErrors($InvokeErrorMessageRaw)
+function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
 {
     # Convert From JSON
     $InvokeErrorMessage = $InvokeErrorMessageRaw.ErrorDetails.Message | ConvertFrom-Json
@@ -606,13 +635,13 @@ function CatchInvokeErrors($InvokeErrorMessageRaw)
     }    
 }
 
-Function Get-UnpagedEntity
+Function Get-SKYAPIUnpagedEntity
 {
     [CmdletBinding()]
     param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
-    if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -652,7 +681,7 @@ Function Get-UnpagedEntity
             if ($null -ne $response_field -and "" -ne $response_field)
             {
                 # return $apiCallResult.$response_field
-                return Resolve-MemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+                return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
             }
             else # else return the entire API call result
             {
@@ -663,7 +692,7 @@ Function Get-UnpagedEntity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = CatchInvokeErrors($_)
+            $NextAction = SKYAPICatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
             $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -680,13 +709,13 @@ Function Get-UnpagedEntity
     }
 }
 
-Function Get-PagedEntity
+Function Get-SKYAPIPagedEntity
 {
     [CmdletBinding()]
     param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
 
     # Reconnect If the Access Token is Expired 
-    if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -728,7 +757,7 @@ Function Get-PagedEntity
                 # If there is a response field set for the endpoint cmdlet, return that.
                 if ($null -ne $response_field -and "" -ne $response_field)
                 {
-                    $recordsThisIteration = Resolve-MemberChain -InputObject $apiItems -MemberPath $response_field -Delimiter "."
+                    $recordsThisIteration = Resolve-SKYAPIMemberChain -InputObject $apiItems -MemberPath $response_field -Delimiter "."
                     $allRecords += $recordsThisIteration
                     $pageRecordCount = $recordsThisIteration.count
                     
@@ -781,7 +810,7 @@ Function Get-PagedEntity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = CatchInvokeErrors($_)
+            $NextAction = SKYAPICatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
             $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -798,13 +827,13 @@ Function Get-PagedEntity
     }
 }
 
-function Submit-Entity
+function Submit-SKYAPIEntity
 {
     [CmdletBinding()]
     param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
-    if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -844,7 +873,7 @@ function Submit-Entity
             if ($null -ne $response_field -and "" -ne $response_field)
             {
                 # return $apiCallResult.$response_field
-                return Resolve-MemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+                return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
             }
             else # else return the entire API call result
             {
@@ -855,7 +884,7 @@ function Submit-Entity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = CatchInvokeErrors($_)
+            $NextAction = SKYAPICatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
             $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -872,13 +901,13 @@ function Submit-Entity
     }
 }
 
-function Update-Entity
+function Update-SKYAPIEntity
 {
     [CmdletBinding()]
     param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
-    if (-NOT (Confirm-TokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -918,7 +947,7 @@ function Update-Entity
             if ($null -ne $response_field -and "" -ne $response_field)
             {
                 # return $apiCallResult.$response_field
-                return Resolve-MemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+                return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
             }
             else # else return the entire API call result
             {
@@ -929,7 +958,7 @@ function Update-Entity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = CatchInvokeErrors($_)
+            $NextAction = SKYAPICatchInvokeErrors($_)
 
             # Just in case the token was refreshed by the error catcher, update these
             $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -947,7 +976,7 @@ function Update-Entity
 }
 
 # Check to See if Refresh Token or Access Token is Expired
-function Confirm-TokenIsFresh
+function Confirm-SKYAPITokenIsFresh
 {
     param (
         [parameter(

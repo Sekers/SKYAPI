@@ -1,5 +1,25 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.2](https://github.com/Sekers/SKYAPI/tree/0.3.2) - (2022-11-26)
+
+### Features
+
+- Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
+- New Endpoint (Beta): [Get-SchoolUserMe](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersMeGet)
+- New Endpoint: [Get-SchoolUserOccupation](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet)
+- New Endpoint: [Get-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsGet)
+- New Endpoint: [Get-SchoolVenueBuilding](https://developer.sky.blackbaud.com/docs/services/school/operations/V1VenuesBuildingsGet)
+- New Endpoint: Get-SKYAPIContext > Returns cached information about the current connection to the Blackbaud SKY API.
+- New Connect-SKYAPI Parameter: ReturnConnectionInfo. Returns values when verifying the cached SKY API connection information.
+
+
+### Other
+- Made all function/cmdlet names consistent as singular (and some other adjustments) & removed the 'List' keyword from function names (as Blackbaud has moved away from using that descriptor and it's also unnecessary). The old function names are kept as aliases so there are no breaking changes due to these renames.
+- Finished renaming all internal functions to prevent any naming conflicts with other modules.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.1](https://github.com/Sekers/SKYAPI/tree/0.3.1) - (2022-11-24)
 
 ### Fixes

@@ -1,14 +1,14 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1offeringtypesget
-# Returns a list of offering types.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1rolesget
+# Returns a list of user roles.
 # Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolOfferingTypeList
+function Get-SchoolRole
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/offeringtypes'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/roles'
 
     # Set the response field
     $ResponseField = "value"
@@ -20,6 +20,6 @@ function Get-SchoolOfferingTypeList
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response
 }

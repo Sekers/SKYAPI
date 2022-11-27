@@ -8,7 +8,7 @@
 # Marker,no,integer,Results will start with the user AFTER the specified user's ID in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
-function Get-SchoolUserExtendedList
+function Get-SchoolUserExtendedByBaseRole
 {
     [cmdletbinding()]
     param(
@@ -55,6 +55,6 @@ function Get-SchoolUserExtendedList
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-PagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
+    $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
     $response
 }

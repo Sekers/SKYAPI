@@ -1,13 +1,21 @@
-# Sample Blackbaud SKY API Module Usage Script
+################################################
+# Sample Blackbaud SKY API Module Usage Script #
+################################################
+
+# Below are examples on how to use the available cmdlets & functions.
+
+###################################
+# General Use Cmdlets & Functions #
+###################################
 
 <#
-    Import the Module
+    Import the Module.
 #>
 # Import-Module SKYAPI
 # Import-Module "$PSScriptRoot\..\SKYAPI\SKYAPI.psm1"
 
 <#
-    Retrieve and Create/Update the SKY API Module Configuration File
+    Retrieve and Create/Update the SKY API Module Configuration File.
 #>
 # Get-SKYAPIConfig -ConfigPath '.\Sample_Usage_Scripts\Config\sky_api_config.json'
 # Set-SKYAPIConfig -ConfigPath '.\Sample_Usage_Scripts\Config\sky_api_config.json' -Silent -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
@@ -20,7 +28,9 @@
 # Set-SKYAPITokensFilePath -Path "$env:USERPROFILE\SKYAPI\skyapi_key.json" # The location where you want the access and refresh tokens to be stored.
 
 <#
-    Optionally, Test Connecting to the SKY API Service.
+    Verify cached tokens exist and are not expired using Connect-SKYAPI.
+    Connect-SKYAPI will automatically refresh tokens or reauthenticate to the SKY API service, if necessary.
+    You can specify the return of the connection information using the 'ReturnConnectionInfo' switch parameter.
     Optional Parameters Can Force Reauthentication or Token Refresh.
     "AuthenticationMethod" paramameter let's you specify how you want to authenticate if authentication is necessary:
     - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
@@ -34,54 +44,64 @@
 # Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
 # Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer 
 # Connect-SKYAPI -ForceRefresh
+# Connect-SKYAPI -ReturnConnectionInfo
 
 <#
-    Get-SchoolRoleList Example
+    Retrieve the Session Context Information.
 #>
-# $RoleList = Get-SchoolRoleList
+# Get-SKYAPIContext
+
+########################
+# School API Endpoints #
+########################
+
+<#
+    Get-SchoolRole
+#>
+# $RoleList = Get-SchoolRole
 # $RoleList.Count
 
 <#
-    Get-SchoolLevelList Example
+    Get-SchoolLevel
 #>
-# Get-SchoolLevelList
+# Get-SchoolLevel
 
 <#
-    Get-SchoolDepartmentList Example
-    (Use Get-SchoolLevelList to get a list of levels to filter by)
+    Get-SchoolDepartment
+    (Use Get-SchoolLevel to get a list of levels to filter by)
 #>
-#  Get-SchoolDepartmentList
-#  Get-SchoolDepartmentList -level_id 229
+#  Get-SchoolDepartment
+#  Get-SchoolDepartment -level_id 229
 
 <#
-    Get-SchoolGradeLevelList Example
+    Get-SchoolGradeLevel
 #>
-# Get-SchoolGradeLevelList
+# Get-SchoolGradeLevel
 
 <#
-    Get-SchoolOfferingTypeList Example
+    Get-SchoolOfferingType
 #>
-# Get-SchoolOfferingTypeList
+# Get-SchoolOfferingType
 
 <#
-    Get-SchoolTermList Example
-    Offering_type 1 is Academics (Use Get-SchoolOfferingTypeList to get a list)
+    Get-SchoolTerm
+    Offering_type 1 is Academics (Use Get-SchoolOfferingType to get a list)
 #>
-# Get-SchoolTermList | Where-Object {($_.offering_type -eq 1)} | Select-Object description
+# Get-SchoolTerm | Where-Object {($_.offering_type -eq 1)} | Select-Object description
 
 <#
-    Get-SchoolYearList Example
+    Get-SchoolYear
 #>
-# Get-SchoolYearList | Where-Object current_year -Match "True" | Select-Object -ExpandProperty school_year_label
+# Get-SchoolYear | Where-Object current_year -Match "True" | Select-Object -ExpandProperty school_year_label
 
 <#
-    Get-SchoolUser Example
+    Get-SchoolUser
 #>
-# Get-SchoolUser -User_Id 2230332,3243114
+# Get-SchoolUser -User_ID 2230332,3243114
 
 <#
-    Get-SchoolUserBBIDStatus Example
-    (Use Get-SchoolRoleList to get a list)
+    Get-SchoolUserBBIDStatus
+    (Use Get-SchoolRole to get a list)
     Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
@@ -93,25 +113,25 @@
 # $StudentBBIDStatus.Count
 
 <#
-    Get-SchoolUserExtended Example
+    Get-SchoolUserExtended
 #>
-# Get-SchoolUserExtended -User_Id 2230332,3243114
+# Get-SchoolUserExtended -User_ID 2230332,3243114
 
 <#
-    Get-SchoolUserList Example
-    (Use Get-SchoolRoleList to get a list)
+    Get-SchoolUserByRole
+    (Use Get-SchoolRole to get a list)
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
     The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
     because the returned object type is a PSCustomObject and not an array in those cases. 
     PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
 #>
- # $list = Get-SchoolUserList -Roles "15434,15426"
- # [array]$list = Get-SchoolUserList -Roles '15475'
+ # $list = Get-SchoolUserByRole -Roles "15434,15426"
+ # [array]$list = Get-SchoolUserByRole -Roles '15475'
  # $list.Count
 
 <#
-    Get-SchoolUserExtendedList Example
-    (Use Get-SchoolRoleList to get a list)
+    Get-SchoolUserExtendedByBaseRole
+    (Use Get-SchoolRole to get a list)
     Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
@@ -119,78 +139,78 @@
     because the returned object type is a PSCustomObject and not an array in those cases. 
     PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
 #>
-# [array]$list = Get-SchoolUserExtendedList -Base_Role_Ids "332,15,14"
+# [array]$list = Get-SchoolUserExtendedByBaseRole -Base_Role_Ids "332,15,14"
 # $list.Count
 # # Get students in grades 4-8. Roll ID 14 is Student.
-# $GoogleClassroomStudents = Get-SchoolUserExtendedList -Base_Role_Ids "14" | Where-Object {@('4','5','6','7','8') -Contains $_.student_info.grade_level} | Select-Object -Property id, email, student_info
+# $GoogleClassroomStudents = Get-SchoolUserExtendedByBaseRole -Base_Role_Ids "14" | Where-Object {@('4','5','6','7','8') -Contains $_.student_info.grade_level} | Select-Object -Property id, email, student_info
 
 <#
-    Get-SchoolStudentEnrollmentList Example
+    Get-SchoolStudentEnrollment
 #>
-# $StudentEnrollmentList = Get-SchoolStudentEnrollmentList -User_ID 3243114
+# $StudentEnrollmentList = Get-SchoolStudentEnrollment -User_ID 3243114
 # $StudentEnrollmentList.Count
 
 <#
-    Get-SchoolActivityListBySchoolLevel Example
-    (Use Get-SchoolLevelList to get a list of levels to filter by)
+    Get-SchoolActivityBySchoolLevel
+    (Use Get-SchoolLevel to get a list of levels to filter by)
 #>
-#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityListBySchoolLevel -Level_Number 228,229
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityBySchoolLevel -Level_Number 228,229
 #  $SchoolActivityListBySchoolLevel.Count
 #  $SchoolActivityListBySchoolLevel[0]
 #  $SchoolActivityListBySchoolLevel[1]
-#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
-    Get-SchoolAdvisoryListBySchoolLevel Example
-    (Use Get-SchoolLevelList to get a list of levels to filter by)
+    Get-SchoolAdvisoryBySchoolLevel
+    (Use Get-SchoolLevel to get a list of levels to filter by)
 #>
-#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryListBySchoolLevel -Level_Number 228,229
+#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryBySchoolLevel -Level_Number 228,229
 #  $SchoolAdvisoryListBySchoolLevel.Count
 #  $SchoolAdvisoryListBySchoolLevel[0]
 #  $SchoolAdvisoryListBySchoolLevel[1]
-#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
-    Get-SchoolSectionListBySchoolLevel Example
-    (Use Get-SchoolLevelList to get a list of levels to filter by)
+    Get-SchoolSectionBySchoolLevel
+    (Use Get-SchoolLevel to get a list of levels to filter by)
 #>
-#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionListBySchoolLevel -Level_Number 228,229
+#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionBySchoolLevel -Level_Number 228,229
 #  $SchoolSectionListBySchoolLevel.Count
 #  $SchoolSectionListBySchoolLevel[0]
 #  $SchoolSectionListBySchoolLevel[1]
-#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionListBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
-    Get-SchoolSectionListByStudent Example
+    Get-SchoolSectionByStudent
 #>
-# [array]$SectionListByStudent = Get-SchoolSectionListByStudent -Student_ID 6111769,2772870
+# [array]$SectionListByStudent = Get-SchoolSectionByStudent -Student_ID 6111769,2772870
 # $SectionListByStudent.Count
 
 <#
-    Get-SchoolSectionListByTeacher Example
+    Get-SchoolSectionByTeacher
 #>
-# [array]$SectionListByTeacher = Get-SchoolSectionListByTeacher -Teacher_ID 1757293,2878846
+# [array]$SectionListByTeacher = Get-SchoolSectionByTeacher -Teacher_ID 1757293,2878846
 # $SectionListByTeacher.Count
 
 <#
-    Get-SchoolCourseList Example
+    Get-SchoolCourse
 #>
-# $courseList = Get-SchoolCourseList -level_id 229 | Where-Object inactive -Match "false"
+# $courseList = Get-SchoolCourse -level_id 229 | Where-Object inactive -Match "false"
 # $courseList 
 
 <#
-    Get-SchoolEducationList Example
+    Get-SchoolUserEducation
 #>
-# Get-SchoolEducationList -User_ID 1757293,2878846
+# Get-SchoolUserEducation -User_ID 1757293,2878846
 
 <#
-    Get-SchoolStudentListBySection Example
-    (Use Get-SchoolSectionListBySchoolLevel to get a list)
+    Get-SchoolStudentBySection
+    (Use Get-SchoolSectionBySchoolLevel to get a list)
 #>
-# Get-SchoolStudentListBySection -Section_ID "93054528"
+# Get-SchoolStudentBySection -Section_ID "93054528"
 
 <#
-    Get-SchoolList Example
+    Get-SchoolList
     NOTE: This replaces 'Get-SchoolLegacyList' which is being deprecated 2023-01-01
 #>
 # [array]$SchoolList = Get-SchoolList -List_ID 105627
@@ -201,57 +221,72 @@
 # }
 
 <#
-    Get-SchoolListOfLists Example
+    Get-SchoolListOfLists
 #>
 # Get-SchoolListOfLists
 
 <#
-    Get-SchoolNewsCategories Example
+    Get-SchoolNewsCategory
 #>
-# Get-SchoolNewsCategories
+# Get-SchoolNewsCategory
 
 <#
-    Get-SchoolNewsItems Example
+    Get-SchoolNewsItem
 #>
-# Get-SchoolNewsItems
-# Get-SchoolNewsItems -categories '12027,3154'
+# Get-SchoolNewsItem
+# Get-SchoolNewsItem -categories '12027,3154'
 
 <#
-    Get-SchoolSchedulesMeetings
-    (Use Get-SchoolOfferingTypeList to get a list of offering types)
+    Get-SchoolScheduleMeeting
+    (Use Get-SchoolOfferingType to get a list of offering types)
     Note: offering_types defaults to 1 (Academics) if not specified.
 #>
-# Get-SchoolSchedulesMeetings "2022-11-01"
-# Get-SchoolSchedulesMeetings "2022-11-01" -end_date '2022-11-30' -offering_types '1,3'
-# Get-SchoolSchedulesMeetings "2022-11-01" | where-object faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
+# Get-SchoolScheduleMeeting "2022-11-01"
+# Get-SchoolScheduleMeeting "2022-11-01" -end_date '2022-11-30' -offering_types '1,3'
+# Get-SchoolScheduleMeeting "2022-11-01" | where-object faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
 
 <#
-    New-SchoolEventsCategory Example
+    New-SchoolEventCategory
 #>
-# New-SchoolEventsCategory -description "My Events Category" -public $true -include_brief_description $true -include_long_description $true
-# New-SchoolEventsCategory -description "My Events Category" -public $false -roles 12342,19302
-# New-SchoolEventsCategory -description "My Events Category" -public $true "http://www.example.com/calendar/test_calendar.ics"
+# New-SchoolEventCategory -description "My Events Category" -public $true -include_brief_description $true -include_long_description $true
+# New-SchoolEventCategory -description "My Events Category" -public $false -roles 12342,19302
+# New-SchoolEventCategory -description "My Events Category" -public $true "http://www.example.com/calendar/test_calendar.ics"
 
 <#
-    Update-SchoolUser Example
+    Update-SchoolUser
 #>
 # Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
 # Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
 
 <#
-    Get-SchoolUserPhoneTypeList Example
+    Get-SchoolUserPhoneType
 #>
-# Get-SchoolUserPhoneTypeList
+# Get-SchoolUserPhoneType
 
 <#
-    Get-SchoolUserPhoneList Example
+    Get-SchoolUserPhone
 #>
-#  [array]$PhoneNumbersByUser = Get-SchoolUserPhoneList -User_ID 3154032,5942642
+#  [array]$PhoneNumbersByUser = Get-SchoolUserPhone -User_ID 3154032,5942642
 
 <#
-    New-SchoolUserPhone Example
-    (Use Get-SchoolUserPhoneTypeList to get a list of phone types)
+    New-SchoolUserPhone
+    (Use Get-SchoolUserPhoneType to get a list of phone types)
     Notes: Linking using the -links parameter doesn't currently work and Blackbaud is looking into the issue with the endpoint.
            You can specify multiple user IDs with this function but it will not link them (each user record will have the number added without them sharing it).
 #>
-# New-SchoolUserPhone -User_Id 3154032,5942642 -number "(555) 555-5555" -type_id 331
+# New-SchoolUserPhone -User_ID 3154032,5942642 -number "(555) 555-5555" -type_id 331
+
+<#
+    Get-SchoolVenueBuilding
+#>
+# Get-SchoolVenueBuilding
+
+<#
+    Get-SchoolUserRelationship
+#>
+# Get-SchoolUserRelationship -User_ID 3154032,5942642
+
+<#
+    Get-SchoolUserOccupation
+#>
+# Get-SchoolUserOccupation -User_ID 3154032,5942642

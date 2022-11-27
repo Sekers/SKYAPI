@@ -1,11 +1,11 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet
-# Returns a collection of activity sections based on school level.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdvisoriesSectionsGet
+# Returns a collection of advisory sections based on school level.
 
 # Parameter,Required,Type,Description
 # Level_Number,yes,integer,Level number.
 # school_year,no,string,The school year to get sections for. Defaults to the current school year.
 
-function Get-SchoolActivityListBySchoolLevel
+function Get-SchoolAdvisoryBySchoolLevel
 {
     [cmdletbinding()]
     Param(
@@ -23,7 +23,7 @@ function Get-SchoolActivityListBySchoolLevel
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/activities/sections'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/advisories/sections'
 
     # Set the response field
     $ResponseField = "value"
@@ -52,7 +52,7 @@ function Get-SchoolActivityListBySchoolLevel
         $parameters.Remove('level_num') | Out-Null
         $parameters.Add('level_num',$level_num) 
         
-        $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }
 }

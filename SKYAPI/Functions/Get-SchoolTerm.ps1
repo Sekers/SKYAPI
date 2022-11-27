@@ -1,27 +1,27 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsCoursesGet
-# Returns the course list
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1termsget
+# Returns a list of terms.
 
 # Parameter,Required,Type,Description
-# department_id,no,integer,Identifier for a specific department.
-# level_id,no,integer,Identifier for a specific school level.
+# school_year,no,string,The school year to get terms for. Defaults to the current school year if empty.
+# offering_type,no,integer,The offering type to filter terms by.
 
-function Get-SchoolCourseList
+function Get-SchoolTerm
 {
     [cmdletbinding()]
     Param(
         [Parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$department_id,
+        [string]$school_year,
 
         [parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$level_id
+        [int]$offering_type
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/courses'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/terms'
 
     # Set the response field
     $ResponseField = "value"
@@ -40,6 +40,6 @@ function Get-SchoolCourseList
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-UnpagedEntity -uid $teacher_id -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     $response
 }

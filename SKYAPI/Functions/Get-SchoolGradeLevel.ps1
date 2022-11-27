@@ -1,13 +1,13 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet
-# Returns a collection of phone types.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/v1gradelevelsget
+# Returns a list of grade levels.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolUserPhoneTypeList
+function Get-SchoolGradeLevel
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/phonetypes'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/gradelevels'
 
     # Set the response field
     $ResponseField = "value"
@@ -19,6 +19,6 @@ function Get-SchoolUserPhoneTypeList
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response
 }

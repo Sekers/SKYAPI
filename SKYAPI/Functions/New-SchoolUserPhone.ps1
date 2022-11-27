@@ -1,5 +1,5 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost
-# Creates a new phone record for the specified user_id and returns the ID of the phone number created.
+# Creates a new phone record for the specified user IDs and returns the ID of the phone number created.
 
 # Parameter,Required,Type,Description
 # User_ID,yes,int,Comma delimited list of the user IDs.
@@ -88,7 +88,7 @@ function New-SchoolUserPhone
     # Verify the phone number type doesn't already exists for any of the users.
     foreach ($uid in $User_ID)
     {
-        $UserPhoneNumbers = Get-SchoolUserPhoneList -User_ID $uid
+        $UserPhoneNumbers = Get-SchoolUserPhone -User_ID $uid
         if ($UserPhoneNumbers.type_id -contains $type_id)
         {
             throw "User $uid already has phone number of type id $type_id"
@@ -98,7 +98,7 @@ function New-SchoolUserPhone
     # Set data for one or more IDs
     foreach ($uid in $User_ID)
     {      
-        $response = Submit-Entity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+        $response = Submit-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
         $response
     }
 }

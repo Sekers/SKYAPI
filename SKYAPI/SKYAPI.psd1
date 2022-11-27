@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.1'
+ModuleVersion = '0.3.2'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -72,40 +72,45 @@ PowerShellVersion = '5.1'
 FunctionsToExport = @(
     'Set-SKYAPIConfigFilePath',
     'Set-SKYAPITokensFilePath',
-    'Get-SKYAPIAuthTokensFromFile',
+    'Get-SKYAPIConfig',
+    'Set-SKYAPIConfig',
     'Connect-SKYAPI',
-    'Get-SchoolActivityListBySchoolLevel',
-    'Get-SchoolAdvisoryListBySchoolLevel',
-    'Get-SchoolCourseList',
-    'Get-SchoolDepartmentList',
-    'Get-SchoolEducationList',
-    'Get-SchoolGradeLevelList',
-    'Get-SchoolLevelList',
+    'Get-SKYAPIContext',
+    'Get-SKYAPIAuthTokensFromFile',
+    'Get-SchoolActivityBySchoolLevel',
+    'Get-SchoolAdvisoryBySchoolLevel',
+    'Get-SchoolCourse',
+    'Get-SchoolDepartment',
+    'Get-SchoolUserEducation',
+    'Get-SchoolGradeLevel',
+    'Get-SchoolLevel',
     'Get-SchoolList',
     'Get-SchoolListOfLists',
-    'Get-SchoolNewsCategories',
-    'Get-SchoolNewsItems',
-    'Get-SchoolOfferingTypeList',
-    'Get-SchoolRoleList',
-    'Get-SchoolSchedulesMeetings',
-    'Get-SchoolSectionListBySchoolLevel',
-    'Get-SchoolSectionListByStudent',
-    'Get-SchoolSectionListByTeacher',
-    'Get-SchoolStudentEnrollmentList',
-    'Get-SchoolStudentListBySection',
-    'Get-SchoolTermList',
+    'Get-SchoolNewsCategory',
+    'Get-SchoolNewsItem',
+    'Get-SchoolOfferingType',
+    'Get-SchoolRole',
+    'Get-SchoolScheduleMeeting',
+    'Get-SchoolSectionBySchoolLevel',
+    'Get-SchoolSectionByStudent',
+    'Get-SchoolSectionByTeacher',
+    'Get-SchoolStudentEnrollment',
+    'Get-SchoolStudentBySection',
+    'Get-SchoolTerm',
     'Get-SchoolUser',
     'Get-SchoolUserBBIDStatus',
+    'Get-SchoolUserByRole',
     'Get-SchoolUserExtended',
-    'Get-SchoolUserExtendedList',
-    'Get-SchoolUserList',
-    'Get-SchoolUserPhoneList',
-    'Get-SchoolUserPhoneTypeList',
-    'Get-SchoolYearList',
-    'Get-SKYAPIConfig',
-    'New-SchoolEventsCategory',
+    'Get-SchoolUserExtendedByBaseRole',
+    'Get-SchoolUserMe',
+    'Get-SchoolUserOccupation',
+    'Get-SchoolUserPhone',
+    'Get-SchoolUserPhoneType',
+    'Get-SchoolUserRelationship',
+    'Get-SchoolVenueBuilding',
+    'Get-SchoolYear',
+    'New-SchoolEventCategory',
     'New-SchoolUserPhone',
-    'Set-SKYAPIConfig',
     'Update-SchoolUser'
 )
 
@@ -116,9 +121,7 @@ CmdletsToExport = @()
 VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @(
-    'Get-SchoolLegacyList'
-)
+AliasesToExport = @()
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

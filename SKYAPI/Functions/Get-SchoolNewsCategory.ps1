@@ -5,7 +5,7 @@
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolNewsCategories
+function Get-SchoolNewsCategory
 { 
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/news/categories'
@@ -20,6 +20,6 @@ function Get-SchoolNewsCategories
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-UnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response
 }

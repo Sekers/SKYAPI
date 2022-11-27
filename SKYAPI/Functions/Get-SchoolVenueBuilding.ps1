@@ -1,14 +1,14 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsGet
-# Returns a list of basic or advanced lists the authorized user has access to.
-# Requires the 'Platform Manager' role in the Education Management system.
+# https://developer.sky.blackbaud.com/docs/services/school/operations/V1VenuesBuildingsGet
+# Returns a collection of buildings.
+# Requires the 'Team Schedule Manager', 'Coach', 'Athletic Group Manager' or 'Pending Coach' role in the K12 system.
 
 # Parameter,Required,Type,Description
 # No parameters accepted
 
-function Get-SchoolListOfLists
+function Get-SchoolVenueBuilding
 { 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/lists'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/venues/buildings'
 
     # Set the response field
     $ResponseField = "value"
