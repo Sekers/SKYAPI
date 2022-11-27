@@ -1,5 +1,5 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEmploymentGet
-# Returns a collection phone numbers for one or more user IDs.
+# Returns the employment details for one or more user IDs.
 # Requires at least one of the following roles in the Education Management system:
 #   - SKY API Data Sync
 
