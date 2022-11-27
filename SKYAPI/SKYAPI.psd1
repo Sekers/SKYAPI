@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.2'
+ModuleVersion = '0.3.3'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -121,7 +121,33 @@ CmdletsToExport = @()
 VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+AliasesToExport = @(
+    'Get-SchoolLegacyList',
+    'Get-SchoolSchedulesMeetings',
+    'Get-SchoolActivityListBySchoolLevel',
+    'Get-SchoolAdvisoryListBySchoolLevel',
+    'Get-SchoolCourseList',
+    'Get-SchoolDepartmentList',
+    'Get-SchoolEducationList',
+    'Get-SchoolGradeLevelList',
+    'Get-SchoolLevelList',
+    'Get-SchoolNewsCategories',
+    'Get-SchoolNewsItems',
+    'Get-SchoolOfferingTypeList',
+    'Get-SchoolRoleList',
+    'Get-SchoolSectionListBySchoolLevel',
+    'Get-SchoolSectionListByStudent',
+    'Get-SchoolSectionListByTeacher',
+    'Get-SchoolStudentEnrollmentList',
+    'Get-SchoolStudentListBySection',
+    'Get-SchoolTermList',
+    'Get-SchoolUserExtendedList',
+    'Get-SchoolUserList',
+    'Get-SchoolUserPhoneList',
+    'Get-SchoolUserPhoneTypeList',
+    'Get-SchoolYearList',
+    'New-SchoolEventsCategory'
+)
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
