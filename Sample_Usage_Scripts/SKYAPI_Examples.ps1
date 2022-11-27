@@ -291,6 +291,16 @@
 #>
 # Get-SchoolUserOccupation -User_ID 3154032,5942642
 
+<#
+    Get-SchoolUserGenderType
+#>
+# Get-SchoolUserGenderType
+
+<#
+    Get-SchoolUserEmployment
+#>
+# Get-SchoolUserEmployment -User_ID 3154032,5942642
+
 ###############################
 # Raiser's Edge API Endpoints #
 ###############################
