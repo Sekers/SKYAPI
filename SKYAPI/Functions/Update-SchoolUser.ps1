@@ -171,9 +171,9 @@ function Update-SchoolUser
         [string]$prefix,
 
         [Parameter(
-            ValueFromPipeline=$true,
-            ValueFromPipelineByPropertyName=$true)]
-            [string]$suffix
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$suffix
     )
     
     # Set the endpoints
