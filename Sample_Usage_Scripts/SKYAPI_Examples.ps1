@@ -22,6 +22,7 @@
 <#
     Optionally, Test Connecting to the SKY API Service.
     Optional Parameters Can Force Reauthentication or Token Refresh.
+    When forcing a token refresh, you can additionally specify the return of the connection information using the 'ReturnConnectionInfo' switch parameter.
     "AuthenticationMethod" paramameter let's you specify how you want to authenticate if authentication is necessary:
     - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
                               Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
@@ -34,6 +35,7 @@
 # Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
 # Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer 
 # Connect-SKYAPI -ForceRefresh
+# Connect-SKYAPI -ForceRefresh -ReturnConnectionInfo
 
 <#
     Get-SchoolRole Example
@@ -269,4 +271,4 @@
 <#
     Get-SchoolUserOccupation Example
 #>
-Get-SchoolUserOccupation -User_ID 3154032,5942642
+# Get-SchoolUserOccupation -User_ID 3154032,5942642
