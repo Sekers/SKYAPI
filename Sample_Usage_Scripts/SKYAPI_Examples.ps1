@@ -77,7 +77,7 @@
 <#
     Get-SchoolUser Example
 #>
-# Get-SchoolUser -User_Id 2230332,3243114
+# Get-SchoolUser -User_ID 2230332,3243114
 
 <#
     Get-SchoolUserBBIDStatus Example
@@ -95,7 +95,7 @@
 <#
     Get-SchoolUserExtended Example
 #>
-# Get-SchoolUserExtended -User_Id 2230332,3243114
+# Get-SchoolUserExtended -User_ID 2230332,3243114
 
 <#
     Get-SchoolUserByRole Example
@@ -254,7 +254,7 @@
     Notes: Linking using the -links parameter doesn't currently work and Blackbaud is looking into the issue with the endpoint.
            You can specify multiple user IDs with this function but it will not link them (each user record will have the number added without them sharing it).
 #>
-# New-SchoolUserPhone -User_Id 3154032,5942642 -number "(555) 555-5555" -type_id 331
+# New-SchoolUserPhone -User_ID 3154032,5942642 -number "(555) 555-5555" -type_id 331
 
 <#
     Get-SchoolVenueBuilding Example
@@ -264,4 +264,9 @@
 <#
     Get-SchoolUserRelationship Example
 #>
-Get-SchoolUserRelationship -User_ID 3154032,5942642
+# Get-SchoolUserRelationship -User_ID 3154032,5942642
+
+<#
+    Get-SchoolUserOccupation Example
+#>
+Get-SchoolUserOccupation -User_ID 3154032,5942642

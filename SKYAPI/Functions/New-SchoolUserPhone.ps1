@@ -1,5 +1,5 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost
-# Creates a new phone record for the specified user_id and returns the ID of the phone number created.
+# Creates a new phone record for the specified user IDs and returns the ID of the phone number created.
 
 # Parameter,Required,Type,Description
 # User_ID,yes,int,Comma delimited list of the user IDs.
