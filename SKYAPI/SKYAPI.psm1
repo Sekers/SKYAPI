@@ -31,7 +31,6 @@ Set-Alias -Name Get-SchoolUserPhoneTypeList -Value Get-SchoolUserPhoneType
 Set-Alias -Name Get-SchoolYearList -Value Get-SchoolYear
 Set-Alias -Name New-SchoolEventsCategory -Value New-SchoolEventCategory
 
-
 # Type Definitions
 
 # Public Enum
