@@ -1,6 +1,6 @@
 # Changelog for SKYAPI PowerShell Module
 
-## [0.3.2](https://github.com/Sekers/SKYAPI/tree/0.3.2) - (2022-11-26)
+## [0.3.3](https://github.com/Sekers/SKYAPI/tree/0.3.3) - (2022-11-26)
 
 ### Features
 
