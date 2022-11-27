@@ -1,7 +1,7 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet
 # Returns a collection of a relationships for one or more user IDs.
 # Requires at least one of the following roles in the Education Management system:
-# SKY API Data Sync
+#   - SKY API Data Sync
 
 # Parameter,Required,Type,Description
 # User_ID,yes,int,Comma delimited list of user IDs you want occupations of.

@@ -1,9 +1,9 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPatch
 # Updates the record of a single user. Returns the ID of the user just updated upon success.
 # Requires at least one of the following roles in the Education Management system:
-# - Platform Manager
-# - Page Manager
-# - Content Editor
+#   - Platform Manager
+#   - Page Manager
+#   - Content Editor
 
 # Parameter,Required,Type,Description
 # User_ID,yes,int,Comma delimited list of user IDs for each user you want to update.
