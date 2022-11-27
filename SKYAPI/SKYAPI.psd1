@@ -72,8 +72,11 @@ PowerShellVersion = '5.1'
 FunctionsToExport = @(
     'Set-SKYAPIConfigFilePath',
     'Set-SKYAPITokensFilePath',
-    'Get-SKYAPIAuthTokensFromFile',
+    'Get-SKYAPIConfig',
+    'Set-SKYAPIConfig',
     'Connect-SKYAPI',
+    'Get-SKYAPIContext',
+    'Get-SKYAPIAuthTokensFromFile',
     'Get-SchoolActivityBySchoolLevel',
     'Get-SchoolAdvisoryBySchoolLevel',
     'Get-SchoolCourse',
@@ -105,10 +108,8 @@ FunctionsToExport = @(
     'Get-SchoolUserRelationship',
     'Get-SchoolVenueBuilding',
     'Get-SchoolYear',
-    'Get-SKYAPIConfig',
     'New-SchoolEventCategory',
     'New-SchoolUserPhone',
-    'Set-SKYAPIConfig',
     'Update-SchoolUser'
 )
 
