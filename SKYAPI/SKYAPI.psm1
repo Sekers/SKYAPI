@@ -123,7 +123,7 @@ Function Get-SKYAPIAccessToken
                             -Uri $token_uri `
                             -Body $AuthorizationPostRequest
     
-    # Add in creation timestamps for the tokens.
+    # Add in creation timestamps for the tokens (NOTE THIS IS UTC).
     $Timestamp = $((Get-Date).ToUniversalTime().ToString("o"))
     $Authorization | Add-Member -MemberType NoteProperty -Name "refresh_token_creation" -Value $Timestamp -Force
     $Authorization | Add-Member -MemberType NoteProperty -Name "access_token_creation" -Value $Timestamp -Force

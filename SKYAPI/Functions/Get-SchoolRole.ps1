@@ -1,6 +1,15 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/v1rolesget
-# Returns a list of user roles.
-# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
+# Returns a collection of core school user roles.
+# Requires at least one of the following roles in the Education Management system:
+#   - Academic Group Manager
+#   - Activity Group Manager
+#   - Advisory Group Manager
+#   - Athletic Group Manager
+#   - Dorm Group Manager
+#   - Dorm Supervisor
+#   - Platform Manager
+#   - Schedule Manager
+#   - SKY API Data Sync
 
 # Parameter,Required,Type,Description
 # No parameters accepted
