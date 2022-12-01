@@ -774,17 +774,17 @@ Function Get-SKYAPIPagedEntity
                 {
                     NEXT_RECORD_NUMBER
                     {
-                        [int]$params['Marker'] += $page_limit
+                        [int]$params['marker'] += $page_limit
                         $Request.Query = $params.ToString()
                     }
                     LAST_USER_ID
                     {
-                        [int]$params['Marker'] = $allRecords[-1].id
+                        [int]$params['marker'] = $allRecords[-1].id
                         $Request.Query = $params.ToString()
                     }
                     NEXT_PAGE
                     {
-                        [int]$params['Page'] += 1
+                        [int]$params['page'] += 1
                         $Request.Query = $params.ToString()
                     }
                 }
