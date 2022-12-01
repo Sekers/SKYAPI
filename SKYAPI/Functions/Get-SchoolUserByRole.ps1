@@ -10,7 +10,7 @@
 # maiden_name,no,string,Filter results by maiden name.
 # grad_year,no,string,The beginning date in a school year (ex. 2017).
 # end_grad_year,no,string,The end date in a school year (ex. 2018). Enter a grad_year and end_grad_year to find matching results in the date range.
-# Marker,no,integer,Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
+# marker,no,integer,Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
 function Get-SchoolUserByRole
@@ -56,7 +56,7 @@ function Get-SchoolUserByRole
         [parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$Marker,
+        [int]$marker,
 
         [parameter(
         ValueFromPipeline=$true,
@@ -84,11 +84,11 @@ function Get-SchoolUserByRole
     }
 
     # Set/Replace Marker parameter to 1 if not set or 0. That way it can do pagination properly.
-    if ($null -eq $Marker -or $Marker -eq '' -or $Marker -eq 0)
+    if ($null -eq $marker -or $marker -eq '' -or $marker -eq 0)
     {
-        $parameters.Remove('Marker') | Out-Null
-        $Marker = 1
-        $parameters.Add('Marker',$Marker)
+        $parameters.Remove('marker') | Out-Null
+        $marker = 1
+        $parameters.Add('marker',$marker)
     }
 
     # Get the SKY API subscription key

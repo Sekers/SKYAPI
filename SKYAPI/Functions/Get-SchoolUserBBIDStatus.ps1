@@ -5,7 +5,7 @@
 
 # Parameter,Required,Type,Description
 # base_role_ids,yes,string,Comma delimited list of base role IDs to get users for.
-# Marker,no,integer,Results will start with the user AFTER the specified user's ID in the result set.
+# marker,no,integer,Results will start with the user AFTER the specified user's ID in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
 function Get-SchoolUserBBIDStatus
@@ -21,7 +21,7 @@ function Get-SchoolUserBBIDStatus
         [parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$Marker,
+        [int]$marker,
 
         [parameter(
         ValueFromPipeline=$true,

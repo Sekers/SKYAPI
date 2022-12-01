@@ -5,7 +5,7 @@
 
 # Parameter,Required,Type,Description
 # list_id,yes,integer,Comma delimited list of list IDs to get results (will return combined results even if lists have different headers)
-# Page,no,integer,Results will start with this page of results in the result set.
+# page,no,integer,Results will start with this page of results in the result set.
 # ResponseLimit,no,integer,Limits response to this number of results.
 
 function Get-SchoolList
@@ -21,7 +21,7 @@ function Get-SchoolList
         [parameter(
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$Page,
+        [int]$page,
 
         [parameter(
         ValueFromPipeline=$true,
@@ -49,11 +49,11 @@ function Get-SchoolList
     }
    
     # Set/Replace Page parameter to 1 if not set or 0. That way it can do pagination properly.
-    if ($null -eq $Page -or $Page -eq '' -or $Page -eq 0)
+    if ($null -eq $page -or $page -eq '' -or $page -eq 0)
     {
-        $parameters.Remove('Page') | Out-Null
-        [int]$Page = 1
-        $parameters.Add('Page',$Page)
+        $parameters.Remove('page') | Out-Null
+        [int]$page = 1
+        $parameters.Add('page',$page)
     }
 
     # Remove the $List_ID parameter since it is passed on in the URL
