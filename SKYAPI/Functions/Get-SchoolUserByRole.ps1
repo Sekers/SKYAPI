@@ -91,6 +91,9 @@ function Get-SchoolUserByRole
         $parameters.Add('marker',$marker)
     }
 
+    # Remove the ResponseLimit parameter since it is handled differently.
+    $parameters.Remove('ResponseLimit') | Out-Null
+
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
     $sky_api_subscription_key = $sky_api_config.api_subscription_key

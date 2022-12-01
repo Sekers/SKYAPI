@@ -56,8 +56,9 @@ function Get-SchoolList
         $parameters.Add('page',$page)
     }
 
-    # Remove the $List_ID parameter since it is passed on in the URL
+    # Remove the $List_ID & ResponseLimit parameters since they are passed on in the URL or handled differently.
     $parameters.Remove('List_ID') | Out-Null
+    $parameters.Remove('ResponseLimit') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
