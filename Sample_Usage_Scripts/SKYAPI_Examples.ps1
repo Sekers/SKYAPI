@@ -92,6 +92,7 @@
 <#
     Get-SchoolYear
 #>
+# Get-SchoolYear
 # Get-SchoolYear | Where-Object current_year -Match "True" | Select-Object -ExpandProperty school_year_label
 
 <#
@@ -300,6 +301,16 @@
     Get-SchoolUserEmployment
 #>
 # Get-SchoolUserEmployment -User_ID 3154032,5942642
+
+<#
+    Get-SchoolEnrollment
+#>
+# Get-SchoolEnrollment -School_Year '2022-2023'
+# Get-SchoolEnrollment -School_Year '2021-2022','2022-2023'
+# Get-SchoolEnrollment -School_Year '2022-2023' -school_level_id 228
+# Get-SchoolEnrollment -School_Year '2022-2023' -grade_level_id 559
+# Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150
+# Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150 -offset 50
 
 ###############################
 # Raiser's Edge API Endpoints #

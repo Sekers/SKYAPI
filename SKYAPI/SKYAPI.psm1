@@ -44,6 +44,7 @@ if ("MarkerType" -as [type]) {} else {
 Add-Type -TypeDefinition @"
 public enum MarkerType {
     NEXT_RECORD_NUMBER,
+    OFFSET,
     LAST_USER_ID,
     NEXT_PAGE
 }
@@ -775,6 +776,11 @@ Function Get-SKYAPIPagedEntity
                     NEXT_RECORD_NUMBER
                     {
                         [int]$params['marker'] += $page_limit
+                        $Request.Query = $params.ToString()
+                    }
+                    OFFSET
+                    {
+                        [int]$params['offset'] += $page_limit
                         $Request.Query = $params.ToString()
                     }
                     LAST_USER_ID
