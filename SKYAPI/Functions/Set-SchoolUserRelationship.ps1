@@ -1,22 +1,53 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsPost
-# Creates relationship records for the specified user IDs.
-# Note that this endpoint will also update optional relationship parameters, other than relationship type, if the relationship already exists.
-# Requires at least one of the following roles in the Education Management system:
-#   - Payment Services Manager
-#   - Integration Manager
-#   - Contact Card Manager
-#   - Platform Manager
-
-# Parameter,Required,Type,Description
-# User_ID,yes,int,Comma delimited list of the user IDs you want to create the relationship for. These would be the "right" users.
-# Left_User_ID,yes,int,Comma delimited list of the user IDs the other individuals in the relationship with the persons specified in User_ID. These would be the "left" users.
-# relationship_type,yes,string,The nature of the relationship; modeled where left_user 'is a' relationship to this individual.
-# give_parental_access,no,boolean,Sets 'Give Parental Access' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
-# list_as_parent,no,boolean,Sets 'List as a Parent' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
-# tuition_responsible_signer,no,boolean,Sets 'Responsible for Signing Contract' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
-
 function Set-SchoolUserRelationship
 {
+    <#
+        .LINK
+        Repo: https://github.com/Sekers/SKYAPI
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsPost
+        
+        .SYNOPSIS
+        Creates relationship records for the specified user IDs.
+        This endpoint will also update optional relationship parameters, other than relationship type, if the relationship already exists.
+
+        .DESCRIPTION
+        Creates relationship records for the specified user IDs.
+        This endpoint will also update optional relationship parameters, other than relationship type, if the relationship already exists.
+
+        Requires at least one of the following roles in the Education Management system:
+        - Payment Services Manager
+        - Integration Manager
+        - Contact Card Manager
+        - Platform Manager
+
+        .PARAMETER User_ID
+        Required. Comma delimited list of the user IDs you want to create the relationship for. These would be the "right" users.
+        .PARAMETER Left_User_ID
+        Required. Comma delimited list of the user IDs the other individuals in the relationship with the persons specified in User_ID. These would be the "left" users.
+        .PARAMETER relationship_type
+        Required. The nature of the relationship; modeled where left_user 'is a' relationship to this individual.
+        .PARAMETER give_parental_access
+        Sets 'Give Parental Access' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
+        .PARAMETER list_as_parent
+        Sets 'List as a Parent' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
+        .PARAMETER tuition_responsible_signer
+        Sets 'Responsible for Signing Contract' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
+        .PARAMETER ReturnRelationshipInfo
+        Returns the relationship data for any created/updated relationships. Disabled by default to allow for better performance since it requires an additional API call for each relationship.
+
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023'
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2021-2022','2022-2023'
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -school_level_id 228
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -grade_level_id 559
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150 -offset 50
+    #>
+
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -62,19 +93,28 @@ function Set-SchoolUserRelationship
         [string]$relationship_type,
 
         [Parameter(
+        Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$give_parental_access,
 
         [Parameter(
+        Position=4,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$list_as_parent,
 
         [Parameter(
+        Position=5,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [bool]$tuition_responsible_signer
+        [bool]$tuition_responsible_signer,
+
+        [Parameter(
+        Position=6,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRelationshipInfo
     )
   
     # Map the key code relationship types to the "left" relationship name.
@@ -189,7 +229,11 @@ function Set-SchoolUserRelationship
                    
             $null = Submit-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
             
-            Get-SchoolUserRelationship -User_ID $uid | Where-Object {($_.user_one_id -eq $left_user) -and ($_.user_two_id -eq $uid) -and ($_.user_one_role -eq $($RelationshipTypeCodeMapping_Left.$relationship_type))} # Note: 'user one' is the "left" relationship and 'user two' is the "right" relationship.
+            # Only return created/updated relationship data if requested. Disabled by default to allow for better performance since it requires a second API call.
+            if ($ReturnRelationshipInfo)
+            {
+                Get-SchoolUserRelationship -User_ID $uid | Where-Object {($_.user_one_id -eq $left_user) -and ($_.user_two_id -eq $uid) -and ($_.user_one_role -eq $($RelationshipTypeCodeMapping_Left.$relationship_type))} # Note: 'user one' is the "left" relationship and 'user two' is the "right" relationship.
+            }
         }
     }
 }
