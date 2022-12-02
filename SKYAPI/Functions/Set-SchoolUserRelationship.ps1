@@ -1,6 +1,6 @@
 # https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsPost
-# Creates a relationship record for the specified user IDs.
-# Note that this endpoint will also update relationship parameters, other than relationship type, if the relationship already exists.
+# Creates relationship records for the specified user IDs.
+# Note that this endpoint will also update optional relationship parameters, other than relationship type, if the relationship already exists.
 # Requires at least one of the following roles in the Education Management system:
 #   - Payment Services Manager
 #   - Integration Manager

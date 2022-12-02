@@ -212,7 +212,7 @@
 
 <#
     Get-SchoolList
-    NOTE: This replaces 'Get-SchoolLegacyList' which is being deprecated 2023-01-01
+    Note: this replaces 'Get-SchoolLegacyList' which was deprecated 2023-01-01
 #>
 # [array]$SchoolList = Get-SchoolList -List_ID 105627
 # foreach ($ListItem in $SchoolList)
@@ -314,6 +314,9 @@
 
 <#
     Set-SchoolUserRelationship
+    Notes: Creates relationship records for the specified user IDs.
+           This endpoint will also update optional relationship parameters,
+           other than relationship type, if the relationship already exists.
 #>
 # Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 2574354 -relationship_type Sibling_Sibling
 # Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374,1574389 -relationship_type Sibling_Sibling
