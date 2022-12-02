@@ -118,6 +118,7 @@ FunctionsToExport = @(
     'Get-SchoolYear',
     'New-SchoolEventCategory',
     'New-SchoolUserPhone',
+    'Set-SchoolUserRelationship',
     'Update-SchoolUser'
 )
 

@@ -312,6 +312,14 @@
 # Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150
 # Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150 -offset 50
 
+<#
+    Set-SchoolUserRelationship
+#>
+# Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 2574354 -relationship_type Sibling_Sibling
+# Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374,1574389 -relationship_type Sibling_Sibling
+# Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374 -relationship_type Parent_Child -give_parental_access $true -list_as_parent $false -tuition_responsible_signer $false
+# Set-SchoolUserRelationship -User_ID 1574497,1574461 -Left_User_ID 1574374,1574389 -relationship_type Grandparent_Grandchild -give_parental_access $true
+
 ###############################
 # Raiser's Edge API Endpoints #
 ###############################
