@@ -30,13 +30,13 @@ function New-SchoolUserPhone
         [int[]]$User_ID, # Array as we loop through submitted IDs
 
         [Parameter(
-        #Mandatory=$true,
+        Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$number,
 
         [Parameter(
-        #Mandatory=$true,
+        Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$type_id,
