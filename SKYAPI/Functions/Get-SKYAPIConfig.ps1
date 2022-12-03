@@ -3,12 +3,20 @@
 function Get-SKYAPIConfig
 {
     <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
         .SYNOPSIS
         Get the configuration and secrets to connect to your Blackbaud SKY API application.
+
         .DESCRIPTION
         Get the configuration and secrets to connect to your Blackbaud SKY API application.
+
+        .PARAMETER ConfigPath
+        Optional. If not provided, the function will use the path used in the current session (if set).
+
         .EXAMPLE
-        Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        Get-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json'
     #>
 
     [CmdletBinding()]

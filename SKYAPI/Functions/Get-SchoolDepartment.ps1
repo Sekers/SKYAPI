@@ -1,14 +1,35 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsDepartmentsGet
-# Returns a collection of academic departments.
-
-# Parameter,Required,Type,Description
-# level_id,no,integer,Level number.
-
 function Get-SchoolDepartment
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsDepartmentsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of academic departments.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of academic departments.
+        Requires at least one of the following roles in the Education Management system:
+          - Academic Group Manager
+          - Platform Manager
+
+        .PARAMETER level_id
+        Optional parameter to specify a school level ID to limit response to departments of a specific school level.
+        Use Get-SchoolLevel to get a list of levels to filter by.
+
+        .EXAMPLE
+        Get-SchoolDepartment
+        .EXAMPLE
+        Get-SchoolDepartment -level_id 229
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
+        Position=0,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$level_id

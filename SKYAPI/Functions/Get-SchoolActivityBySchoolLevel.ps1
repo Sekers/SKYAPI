@@ -1,12 +1,32 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet
-# Returns a collection of activity sections based on school level.
-
-# Parameter,Required,Type,Description
-# Level_Number,yes,integer,Level number.
-# school_year,no,string,The school year to get sections for. Defaults to the current school year.
-
 function Get-SchoolActivityBySchoolLevel
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of activity sections based on school level.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of activity sections based on school level.
+        Requires the following role in the Education Management system:
+          - Activity Group Manager
+
+        .PARAMETER Level_Number
+        Required. Array of school level IDs to get activity sections for.
+        Use Get-SchoolLevel to get a list of school level IDs to specify.
+        .PARAMETER school_year
+        The school year to get activity sections for. Defaults to the current school year if not specified.
+
+        .EXAMPLE
+        Get-SchoolActivityBySchoolLevel -Level_Number 228,229
+        .EXAMPLE
+        Get-SchoolAdvisoryBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -17,6 +37,7 @@ function Get-SchoolActivityBySchoolLevel
         [int[]]$Level_Number, # Array as we loop through submitted IDs
 
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year

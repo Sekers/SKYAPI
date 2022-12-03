@@ -83,7 +83,7 @@ function Set-SKYAPITokensFilePath
 Function Get-SKYAPIAuthToken
 {
     [CmdletBinding()]
-    param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
+    Param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
 
     #Build token request
     $AuthorizationPostRequest = 'grant_type=' + $grant_type + '&' +
@@ -109,7 +109,7 @@ Function Get-SKYAPIAuthToken
 Function Get-SKYAPIAccessToken
 {
     [CmdletBinding()]
-    param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
+    Param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
 
     #Build token request
     $AuthorizationPostRequest = 'grant_type=' + $grant_type + '&' +
@@ -224,7 +224,7 @@ function Set-SKYAPIWebBrowserEmulation
 
 Function Show-SKYAPIOAuthWindow
 {
-    param(
+    Param(
         [parameter(
         Position=0,
         Mandatory=$true,
@@ -498,7 +498,7 @@ Function Show-SKYAPIOAuthWindow
 Function Get-SKYAPINewTokens
 {
     [CmdletBinding()]
-    param(
+    Param(
         [parameter(
             Position=0,
             Mandatory=$false,
@@ -638,7 +638,7 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
 Function Get-SKYAPIUnpagedEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -712,7 +712,7 @@ Function Get-SKYAPIUnpagedEntity
 Function Get-SKYAPIPagedEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -835,7 +835,7 @@ Function Get-SKYAPIPagedEntity
 function Submit-SKYAPIEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -909,7 +909,7 @@ function Submit-SKYAPIEntity
 function Update-SKYAPIEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))

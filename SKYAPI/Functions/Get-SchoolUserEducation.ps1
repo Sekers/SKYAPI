@@ -1,11 +1,25 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEducationGet
-# Education list 
-
-# Parameter,Required,Type,Description
-# User_ID,yes,integer,Comma-delimited list of user IDs for each user you want returned.
-
 function Get-SchoolUserEducation
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEducationGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns the education details for one or more user IDs.
+
+        .DESCRIPTION
+        Education Management School API - Returns the education details for one or more user IDs.
+
+        .PARAMETER User_ID
+        Required. Array of user IDs for each user's education details you want returned.
+
+        .EXAMPLE
+        Get-SchoolUserEducation -User_ID 1757293,2878846
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(

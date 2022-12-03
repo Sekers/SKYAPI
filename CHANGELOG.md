@@ -102,7 +102,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 ### Features
 
 - Replaced the soon to be deprecated WebBrowser Class (IE popup window for authentication & authorization) with the Microsoft Edge WebView2 control. See [Issue #7](https://github.com/Sekers/SKYAPI/issues/7).
-- Added the "AuthenticationMethod" paramameter to the "Connect-SKYAPI" cmdlet which let's you specify how you want to authenticate if authentication is necessary:
+- Added the "AuthenticationMethod" parameter to the "Connect-SKYAPI" cmdlet which let's you specify how you want to authenticate if authentication is necessary:
     - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
                               Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
     - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.

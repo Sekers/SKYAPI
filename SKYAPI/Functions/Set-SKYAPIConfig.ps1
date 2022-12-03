@@ -3,7 +3,7 @@ function Set-SKYAPIConfig
 {
     <#
         .LINK
-        Repo: https://github.com/Sekers/SKYAPI
+        https://github.com/Sekers/SKYAPI/wiki
         
         .SYNOPSIS
         Set the configurations and secrets to connect to your Blackbaud SKY API application.
@@ -34,9 +34,9 @@ function Set-SKYAPIConfig
         .EXAMPLE
         Set-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         .EXAMPLE
-        Set-SKYAPIConfig -ConfigPath '.\Sample Usage Script\sky_api_config.json' -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+        Set-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json' -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
         .EXAMPLE
-        Set-SKYAPIConfig -ConfigPath '.\Sample Usage Script\sky_api_config.json' -Silent -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+        Set-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json' -Silent -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
     #>
 
     [CmdletBinding()]

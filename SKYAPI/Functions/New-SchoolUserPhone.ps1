@@ -1,25 +1,44 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost
-# Creates a new phone record for the specified user IDs and returns the ID of the phone number created.
-
-# Parameter,Required,Type,Description
-# User_ID,yes,int,Comma delimited list of the user IDs.
-# number,yes,string,The phone number.
-# type_id,yes,int,The type ID of the specified phone number. The type ID corresponds with the type of phone number (ex. Cell, Work, Home).
-# links,no,array of objects,Each PSObject should match the PhoneTypeLink Model (https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost#PhoneTypeLink).
-# Schema:
-#    "links": [
-#        {
-#        "id": 0,
-#        "shared": true,
-#        "shared_relationship": "string",
-#        "shared_user": "string",
-#        "type_id": "string",
-#        "user_id": 0
-#        }
-#    ]
-
 function New-SchoolUserPhone
-{
+{ 
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost
+        
+        .SYNOPSIS
+        Education Management School API - Creates a new phone record for the specified user IDs and returns the ID of the phone number created.
+
+        .DESCRIPTION
+        Education Management School API - Creates a new phone record for the specified user IDs and returns the ID of the phone number created.
+
+        .PARAMETER User_ID,
+        Required. Array of the user IDs.
+        .PARAMETER number
+        Required. The phone number.
+        .PARAMETER type_id
+        Required. The type ID of the specified phone number. The type ID corresponds with the type of phone number (ex. Cell, Work, Home).
+        Use Get-SchoolUserPhoneType to get a list of phone types.
+        .PARAMETER links
+        Optional array of PhoneTypeLink objects for linking. Each PSObject should match the PhoneTypeLink Model.
+        More Info: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost#PhoneTypeLink
+        Schema:
+           "links": [
+               {
+               "id": 0,
+               "shared": true,
+               "shared_relationship": "string",
+               "shared_user": "string",
+               "type_id": "string",
+               "user_id": 0
+               }
+           ]
+
+        .EXAMPLE
+        New-SchoolUserPhone -User_ID 3154032,5942642 -number "(555) 555-5555" -type_id 331
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -30,18 +49,21 @@ function New-SchoolUserPhone
         [int[]]$User_ID, # Array as we loop through submitted IDs
 
         [Parameter(
+        Position=1,
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$number,
 
-        [Parameter(
+        [Parameter( 
+        Position=2,
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$type_id,
 
         [Parameter(
+        Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [array]$links # Optional array of PhoneTypeLink objects for linking.

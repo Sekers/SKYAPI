@@ -1,11 +1,22 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1gradelevelsget
-# Returns a list of grade levels.
-
-# Parameter,Required,Type,Description
-# No parameters accepted
-
 function Get-SchoolGradeLevel
-{ 
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1gradelevelsget
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of grade levels.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of grade levels.
+
+        .EXAMPLE
+        Get-SchoolGradeLevel
+    #>
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/gradelevels'
 

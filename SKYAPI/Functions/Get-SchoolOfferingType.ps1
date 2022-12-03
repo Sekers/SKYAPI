@@ -1,12 +1,23 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1offeringtypesget
-# Returns a list of offering types.
-# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
-
-# Parameter,Required,Type,Description
-# No parameters accepted
-
 function Get-SchoolOfferingType
-{ 
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1offeringtypesget
+        
+        .SYNOPSIS
+        Education Management School API - Returns a list of offering types.
+
+        .DESCRIPTION
+        Education Management School API - Returns a list of offering types.
+        Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the Education Management system.
+
+        .EXAMPLE
+        Get-SchoolOfferingType
+    #>
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/offeringtypes'
 

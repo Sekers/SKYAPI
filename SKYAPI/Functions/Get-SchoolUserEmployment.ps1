@@ -1,13 +1,28 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEmploymentGet
-# Returns the employment details for one or more user IDs.
-# Requires at least one of the following roles in the Education Management system:
-#   - SKY API Data Sync
-
-# Parameter,Required,Type,Description
-# User_ID,yes,int,Comma delimited list of user IDs for each user you want returned.
-
 function Get-SchoolUserEmployment
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEmploymentGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns the employment details for one or more user IDs.
+
+        .DESCRIPTION
+        Education Management School API - Returns the employment details for one or more user IDs.
+
+        Requires at least one of the following roles in the Education Management system:
+          - SKY API Data Sync
+
+        .PARAMETER User_ID
+        Required. Array of user IDs for each user you want returned.
+
+        .EXAMPLE
+        Get-SchoolUserEmployment -User_ID 3154032,5942642
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(

@@ -1,43 +1,79 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersEnrollmentsGet
-# Returns a collection of users and their enrollments for a single school year.
-# Requires at least one of the following roles in the Education Management system:
-#   - Admissions manager
-#   - Platform manager
-#   - SKY API Data Sync
-
-# Parameter,Required,Type,Description
-# School_Year,yes,string,Comma delimited list of school year labels to get enrollments for returned.
-# school_level_id,no,int,The school level Id to return enrollments for.
-# grade_level_id,no,int,The grade level Id to return enrollments for.
-# offset,no,int,The record to start the next collection on. Defaults to 0.
-# ResponseLimit,no,int,Limits response to this number of results for EACH school year label submitted. Note that this is in place of the 'limit' parameter of the API endpoint so we can have more than the endpoint's max limit returned using additional calls.
-
 function Get-SchoolEnrollment
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersEnrollmentsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of users and their school enrollment information for the specified school years.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of users and their school enrollment information for the specified school years.
+        Requires at least one of the following roles in the Education Management system:
+        - Admissions manager
+        - Platform manager
+        - SKY API Data Sync
+
+        .PARAMETER School_Year
+        Required. Array of school year labels to get enrollments for returned.
+        .PARAMETER school_level_id
+        Optional parameter to show enrollemts only for a specific school level.
+        Use Get-SchoolLevel to get a list of school levels.
+        .PARAMETER grade_level_id
+        Optional parameter to show enrollemts only for a specific grade level.
+        Use Get-SchoolGradeLevel to get a list of school grade levels.
+        .PARAMETER offset
+        The record to start the next collection on. Defaults to 0 if not specified.
+        .PARAMETER ResponseLimit
+        Limits response to this number of results for EACH school year label submitted.
+        Note that this is in place of the 'limit' parameter of the API endpoint so we can have more than the endpoint's max limit returned using additional calls.
+
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023'
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2021-2022','2022-2023'
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -school_level_id 228
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -grade_level_id 559
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150
+        .EXAMPLE
+        Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150 -offset 50
+    #>
+    
     [cmdletbinding()]
-    param(
+    Param(
         [parameter(
+        Position=0,
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string[]]$School_Year, # Array as we loop through submitted years.
         
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$school_level_id,
         
         [parameter(
+        Position=2,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$grade_level_id,
        
         [parameter(
+        Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$offset,
 
         [parameter(
+        Position=4,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$ResponseLimit

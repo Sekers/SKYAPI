@@ -2,15 +2,17 @@ function Set-SchoolUserRelationship
 {
     <#
         .LINK
-        Repo: https://github.com/Sekers/SKYAPI
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
         Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsPost
         
         .SYNOPSIS
-        Creates relationship records for the specified user IDs.
+        Education Management School API - Creates relationship records for the specified user IDs.
         This endpoint will also update optional relationship parameters, other than relationship type, if the relationship already exists.
 
         .DESCRIPTION
-        Creates relationship records for the specified user IDs.
+        Education Management School API - Creates relationship records for the specified user IDs.
         This endpoint will also update optional relationship parameters, other than relationship type, if the relationship already exists.
 
         Requires at least one of the following roles in the Education Management system:
@@ -20,9 +22,9 @@ function Set-SchoolUserRelationship
         - Platform Manager
 
         .PARAMETER User_ID
-        Required. Comma delimited list of the user IDs you want to create the relationship for. These would be the "right" users.
+        Required. Array of the user IDs you want to create the relationship for. These would be the "right" users.
         .PARAMETER Left_User_ID
-        Required. Comma delimited list of the user IDs the other individuals in the relationship with the persons specified in User_ID. These would be the "left" users.
+        Required. Array of the user IDs the other individuals in the relationship with the persons specified in User_ID. These would be the "left" users.
         .PARAMETER relationship_type
         Required. The nature of the relationship; modeled where left_user 'is a' relationship to this individual.
         .PARAMETER give_parental_access

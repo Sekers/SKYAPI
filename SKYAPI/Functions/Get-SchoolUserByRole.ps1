@@ -1,64 +1,98 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1usersget
-# Returns a paginated list of users, limited to 100 users per page.
-# Requires the 'Platform Manager', 'Billing Clerk', 'Password Manager' or'Contact Card Manager' role in the K12 system.
-
-# Parameter,Required,Type,Description
-# roles,yes,string,Comma delimited list of base role IDs to get users for.
-# first_name,no,string,Filter results by first name.
-# last_name,no,string,Filter results by last name.
-# email,no,string,Filter results by e-mail.
-# maiden_name,no,string,Filter results by maiden name.
-# grad_year,no,string,The beginning date in a school year (ex. 2017).
-# end_grad_year,no,string,The end date in a school year (ex. 2018). Enter a grad_year and end_grad_year to find matching results in the date range.
-# marker,no,integer,Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
-# ResponseLimit,no,integer,Limits response to this number of results.
-
 function Get-SchoolUserByRole
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1usersget
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of users of the specified role(s) with basic user details.
+        
+        .DESCRIPTION
+        Education Management School API - Returns a collection of users of the specified role(s) with basic user details.
+        You can specify optional parameters to filter results by name, email address and graduation year.
+
+        Requires the 'Platform Manager', 'Billing Clerk', 'Password Manager' or'Contact Card Manager' role in the Education Management system.
+
+        .PARAMETER roles
+        Required. Comma delimited list of role IDs to get users for.
+        Note: This parameter is passed on directly to the API endpoint and should be a string, not an array.
+        .PARAMETER first_name
+        Filter results by first name.
+        .PARAMETER last_name
+        Filter results by last name.
+        .PARAMETER email
+        Filter results by e-mail.
+        .PARAMETER maiden_name
+        Filter results by maiden name.
+        .PARAMETER grad_year
+        The beginning date in a school year (ex. 2017).
+        .PARAMETER end_grad_year
+        The end date in a school year (ex. 2018). Enter a grad_year and end_grad_year to find matching results in the date range.
+        .PARAMETER marker
+        Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
+        .PARAMETER ResponseLimit
+        Limits response to this number of results.
+
+        .EXAMPLE
+        Get-SchoolUserByRole -Roles "15434,15426"
+    #>
+    
     [cmdletbinding()]
-    param(
+    Param(
         [parameter(
+        Position=0,
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$roles, # This doesn't need to be an array since the parameter takes comma-separated values by default.
         
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$first_name,
         
         [parameter(
+        Position=2,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$last_name,
        
         [parameter(
+        Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$email,
         
         [parameter(
+        Position=4,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$maiden_name,
         
         [parameter(
+        Position=5,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$grad_year,
         
         [parameter(
+        Position=6,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$end_grad_year,
        
         [parameter(
+        Position=7,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$marker,
 
         [parameter(
+        Position=8,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$ResponseLimit

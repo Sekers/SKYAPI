@@ -1,12 +1,23 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsGet
-# Returns a list of basic or advanced lists the authorized user has access to.
-# Requires the 'Platform Manager' role in the Education Management system.
-
-# Parameter,Required,Type,Description
-# No parameters accepted
-
 function Get-SchoolListOfLists
-{ 
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of basic and advanced lists the authorized user has access to.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of basic and advanced lists the authorized user has access to.
+        Requires the 'Platform Manager' role in the Education Management system.
+
+        .EXAMPLE
+        Get-SchoolListOfLists
+    #>
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/lists'
 

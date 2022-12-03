@@ -1,7 +1,52 @@
 Function Connect-SKYAPI
 {
+        <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
+
+        .SYNOPSIS
+        Education Management School API - Verify cached tokens exist and are not expired using Connect-SKYAPI.
+        Connect-SKYAPI will automatically refresh tokens or reauthenticate to the SKY API service, if necessary.
+
+        .DESCRIPTION
+        Education Management School API - Verify cached tokens exist and are not expired using Connect-SKYAPI.
+        Connect-SKYAPI will automatically refresh tokens or reauthenticate to the SKY API service, if necessary.
+
+        .PARAMETER ForceReauthentication
+        Forces reauthentication.
+        .PARAMETER ForceRefresh
+        Forces token refresh.
+        .PARAMETER ClearBrowserControlCache 
+        Used in conjunction with 'ForceReauthentication'. Clears the Microsoft Edge WebView2 or Internet Explorer control browser cache. Useful when troubleshooting authentication.
+        .PARAMETER AuthenticationMethod
+        Let's you specify how you want to authenticate if authentication is necessary:
+        - EdgeWebView2 (default):   Opens a web browser window using Microsoft Edge WebView2 for authentication.
+                                    Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
+        - LegacyIEControl:          Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
+        - MiniHTTPServer:           Alternate method of capturing the authentication using your user account's default web browser
+                                    and listening for the authentication response using a temporary HTTP server hosted by the module.
+        .PARAMETER ReturnConnectionInfo
+        Returns connection information after performing function.
+
+        .EXAMPLE
+        Connect-SKYAPI
+        .EXAMPLE
+        Connect-SKYAPI -ForceReauthentication
+        .EXAMPLE
+        Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
+        .EXAMPLE
+        Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer
+        .EXAMPLE
+        Connect-SKYAPI -ForceRefresh
+        .EXAMPLE
+        Connect-SKYAPI -ReturnConnectionInfo
+    #>
+
     [CmdletBinding(DefaultParameterSetName='NoParameters')]
-    param(
+    Param(
         [parameter(
         Position=0,
         ParameterSetName = 'ForceReauthentication',

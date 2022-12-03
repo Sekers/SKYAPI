@@ -1,36 +1,63 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost
-# Creates a new Events Category & returns its ID.
-# Requires the 'Content Manager' or 'Platform Manager' role in the K12 system.
-
-# Parameter,Required,Type,Description
-# description,yes,string,The name of the event category.
-# calendar_url,no,string,The URL of the ICS feed used to populate the event category.
-# include_brief_description,no,boolean,Only accepted if calendar_url is not provided. If set to True, brief description is included in events in the category.
-# include_long_description,no,boolean,Only accepted if calendar_url is not provided. If set to True, long description is included in events in the category.
-# public,yes,boolean,If set to True the event category is public. If set to False it is secure and only users with the allowed list of roles can see the events in the category.
-# roles,maybe,array of integer,Only accepted if public is set to false. If that is the case, it is a required parameter.
-
 function New-SchoolEventCategory
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost
+        
+        .SYNOPSIS
+        Education Management School API - Creates a new Events Category & returns its ID.
+
+        .DESCRIPTION
+        Education Management School API - Creates a new Events Category & returns its ID.
+        Requires the 'Content Manager' or 'Platform Manager' role in the Education Management system.
+
+        .PARAMETER description
+        Required. The name of the event category.
+        .PARAMETER calendar_url
+        The URL of the ICS feed used to populate the event category.
+        .PARAMETER include_brief_description
+        Only accepted if calendar_url is not provided. If set to True, brief description is included in events in the category.
+        .PARAMETER include_long_description
+        Only accepted if calendar_url is not provided. If set to True, long description is included in events in the category.
+        .PARAMETER public
+        Required. If set to True the event category is public. If set to False it is secure and only users with the allowed list of roles can see the events in the category.
+        .PARAMETER roles
+        Potentially Required. Array of integer. Only accepted if the 'public' parameter is set to false. If that is the case, it is a required parameter.
+
+        .EXAMPLE
+        New-SchoolEventCategory -description "My Events Category" -public $true -include_brief_description $true -include_long_description $true
+        .EXAMPLE
+        New-SchoolEventCategory -description "My Events Category" -public $false -roles 12342,19302
+        .EXAMPLE
+        New-SchoolEventCategory -description "My Events Category" -public $true "http://www.example.com/calendar/test_calendar.ics"
+ 
+    #>
+    
     [cmdletbinding()]
     Param(
         [parameter(
+        Position=0,
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$description,
 
         [parameter(
-            ValueFromPipeline=$true,
-            ValueFromPipelineByPropertyName=$true)]
-            [string]$calendar_url,
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$calendar_url,
 
         [parameter(
-            ParameterSetName = 'EventSecurity',
-            Mandatory=$true,
-            ValueFromPipeline=$true,
-            ValueFromPipelineByPropertyName=$true)]
-            [bool]$public
+        Position=2,
+        ParameterSetName = 'EventSecurity',
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$public
     )
 
     DynamicParam

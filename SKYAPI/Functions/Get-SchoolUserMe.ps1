@@ -1,11 +1,22 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersMeGet
-# Returns information about the caller.
-
-# Parameter,Required,Type,Description
-# No parameters accepted
-
 function Get-SchoolUserMe
-{  
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersMeGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns information about the caller.
+
+        .DESCRIPTION
+        Education Management School API - Returns information about the caller.
+
+        .EXAMPLE
+        Get-SchoolUserMe
+    #>
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/me'
 
