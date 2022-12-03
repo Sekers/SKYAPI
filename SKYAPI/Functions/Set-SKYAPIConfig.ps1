@@ -1,10 +1,16 @@
+# TODO Encrypted option sky API config
 function Set-SKYAPIConfig
 {
     <#
+        .LINK
+        Repo: https://github.com/Sekers/SKYAPI
+        
         .SYNOPSIS
         Set the configurations and secrets to connect to your Blackbaud SKY API application.
+
         .DESCRIPTION
         Set the configurations and secrets to connect to your Blackbaud SKY API application.
+
         .PARAMETER api_subscription_key
         Blackbaud requires you to have an approved subscription key to a specific API before you can use the
         SKY API console. This subscription key is associated with your Blackbaud developer account.
@@ -24,6 +30,7 @@ function Set-SKYAPIConfig
         .PARAMETER token_uri
         OAuth 2.0 endpoint for Token refreshes.
         Default is https://oauth2.sky.blackbaud.com/token
+
         .EXAMPLE
         Set-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         .EXAMPLE

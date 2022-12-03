@@ -1,3 +1,5 @@
+# TODO Encrypted option sky API config
+
 function Get-SKYAPIConfig
 {
     <#
