@@ -1,16 +1,34 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsItemsGet
-# Returns a collection of Content News Items.
-# Requires the 'Parent', 'Faculty' or 'Student' role in the K12 system.
-
-# Parameter,Required,Type,Description
-# categories,no,string,comma-separated string of category IDs
-
-
 function Get-SchoolNewsItem
-{ 
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsItemsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of Content News Items.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of Content News Items.
+        Requires the 'Parent', 'Faculty' or 'Student' role in the Education Management system.
+
+        .PARAMETER categories
+        Comma-separated string of category IDs to optionally filter by.
+        Use Get-SchoolNewsCategory to get a list of news categories to filter by.
+
+        .EXAMPLE
+        Get-SchoolNewsItem
+        .EXAMPLE
+        Get-SchoolNewsItem -categories '12027,3154'
+        
+    #>
+    
     [cmdletbinding()]
-    param(
+    Param(
         [parameter(
+        Position=0,
         Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]

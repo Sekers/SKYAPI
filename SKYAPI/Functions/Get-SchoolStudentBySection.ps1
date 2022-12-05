@@ -1,11 +1,26 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idStudentsGet
-# Returns a list of students in the provided section(s)
-
-# Parameter,Required,Type,Description
-# Section_ID,yes,integer,Comma-delimited list of user IDs for each user you want returned.
-
 function Get-SchoolStudentBySection
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idStudentsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a list of students in the provided section(s).
+
+        .DESCRIPTION
+        Education Management School API - Returns a list of students in the provided section(s).
+
+        .PARAMETER Section_ID
+        Required. Array of section IDs to get students of.
+        Use Get-SchoolSectionBySchoolLevel to get a list of section IDs for a school level.
+
+        .EXAMPLE
+        Get-SchoolStudentBySection -Section_ID 93054528,92486528
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(

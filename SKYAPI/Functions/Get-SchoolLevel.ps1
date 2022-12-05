@@ -1,21 +1,32 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1levelsget
-# Returns a collection of core school levels.
-# Requires at least one of the following roles in the Education Management system:
-#   - Academic Group Manager
-#   - Activity Group Manager
-#   - Advisory Group Manager
-#   - Athletic Group Manager
-#   - Dorm Group Manager
-#   - Dorm Supervisor
-#   - Platform Manager
-#   - Schedule Manager
-#   - SKY API Data Sync
-
-# Parameter,Required,Type,Description
-# No parameters accepted
-
 function Get-SchoolLevel
-{ 
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1levelsget
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of core school levels.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of core school levels.
+        Requires at least one of the following roles in the Education Management system:
+        - Academic Group Manager
+        - Activity Group Manager
+        - Advisory Group Manager
+        - Athletic Group Manager
+        - Dorm Group Manager
+        - Dorm Supervisor
+        - Platform Manager
+        - Schedule Manager
+        - SKY API Data Sync
+
+        .EXAMPLE
+        Get-SchoolLevel
+    #>
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/levels'
 

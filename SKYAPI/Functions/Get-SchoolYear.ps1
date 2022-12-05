@@ -1,12 +1,26 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1yearsget
-# Returns a list of school years.
-# Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the K12 system.
-
-# Parameter,Required,Type,Description
-# No parameters accepted
-
 function Get-SchoolYear
-{ 
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1yearsget
+        
+        .SYNOPSIS
+        Education Management School API - Returns a list of school years.
+
+        .DESCRIPTION
+        Education Management School API - Returns a list of school years.
+        Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the Education Management system. 
+
+        .EXAMPLE
+        Get-SchoolYear
+        .EXAMPLE
+        Get-SchoolYear | Where-Object current_year -Match "True" | Select-Object -ExpandProperty school_year_label
+ 
+    #>
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/years'
 

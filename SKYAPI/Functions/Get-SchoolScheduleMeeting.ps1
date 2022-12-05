@@ -1,13 +1,35 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet
-# Returns a list of section meetings for a given date. When end_date is supplied a range of meetings between the given dates is returned.
-
-# Parameter,Required,Type,Description
-# start_date,yes,string,Use ISO-8601 date format: 2022-04-01.
-# end_date,no,string,Use ISO-8601 date format: 2022-04-08.
-# offering_types,no,string,Can take a single or multiple values as a comma delimited string of integers (defaults to 1)
-
 function Get-SchoolScheduleMeeting
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a list of section meetings for a given date.
+
+        .DESCRIPTION
+        Education Management School API - Returns a list of section meetings for a given date.
+        When end_date is supplied a range of meetings between the given dates is returned.
+
+        .PARAMETER start_date
+        Required. Start date of events you want returned. Use ISO-8601 date format (e.g., 2022-04-01).
+        .PARAMETER end_date
+        End date of events you want returned. Use ISO-8601 date format (2022-04-08).
+        .PARAMETER offering_types
+        Can take a single or multiple values as a comma delimited string of integers (defaults to 1 'Academics').
+        Use Get-SchoolOfferingType to get a list of offering types.
+
+        .EXAMPLE
+        Get-SchoolScheduleMeeting "2022-11-01"
+        .EXAMPLE
+        Get-SchoolScheduleMeeting "2022-11-01" -end_date '2022-11-30' -offering_types '1,3'
+        .EXAMPLE
+        Get-SchoolScheduleMeeting "2022-11-01" | Where-Object faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -18,14 +40,16 @@ function Get-SchoolScheduleMeeting
         [string]$start_date,
 
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$end_date,
 
         [parameter(
-            ValueFromPipeline=$true,
-            ValueFromPipelineByPropertyName=$true)]
-            [string]$offering_types
+        Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$offering_types
     )
        
     # Set the endpoints

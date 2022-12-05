@@ -1,12 +1,23 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsCategoriesGet
-# Returns a collection of Content News Categories.
-# Requires the 'Parent', 'Faculty' or 'Student' role in the K12 system.
-
-# Parameter,Required,Type,Description
-# No parameters accepted
-
 function Get-SchoolNewsCategory
-{ 
+{
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsCategoriesGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of Content News Categories.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of Content News Categories.
+        Requires the 'Parent', 'Faculty' or 'Student' role in the Education Management system.
+
+        .EXAMPLE
+        Get-SchoolNewsCategory
+    #>
+    
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/news/categories'
 

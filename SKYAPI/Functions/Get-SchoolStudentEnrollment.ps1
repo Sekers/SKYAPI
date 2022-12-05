@@ -1,13 +1,30 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsEnrollmentsByUser_idGet
-# Returns a collection of course sections in which the provided student(s) is/are enrolled.
-# Requires the 'Academic Group Manager' or 'Schedule Manager' role in the K12 system.
-
-# Parameters
-# User_ID,yes,integer,Comma delimited list of user IDs for each student you want returned.
-# school_year,no,string,The school year to get sections for. Defaults to the current school year.
-
 function Get-SchoolStudentEnrollment
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsEnrollmentsByUser_idGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of course sections in which the provided student(s) is/are enrolled.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of course sections in which the provided student(s) is/are enrolled.
+        Requires the 'Academic Group Manager' or 'Schedule Manager' role in the Education Management system.
+
+        .PARAMETER User_ID
+        Required. Array of user IDs of each student's course section enrollments you want returned.
+        .PARAMETER school_year
+        The school year to get sections for. Defaults to the current school year if not specified.
+
+        .EXAMPLE
+        Get-SchoolStudentEnrollment -User_ID 3294459,3300981
+        .EXAMPLE
+        Get-SchoolStudentEnrollment -User_ID 3294459 -school_year "2021-2022"
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -18,6 +35,7 @@ function Get-SchoolStudentEnrollment
         [int[]]$User_ID, # Array as we loop through submitted IDs
 
         [Parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year

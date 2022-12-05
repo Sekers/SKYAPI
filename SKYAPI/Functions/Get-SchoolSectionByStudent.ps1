@@ -1,12 +1,28 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsStudentByStudent_idSectionsGet
-# Returns a collection of sections for the specified student_id(s).
-# Note: Academic Group Managers cannot use this endpoint. The user requesting the information must be the student, parent of the student or faculty member associated with the student.
-
-# Parameter,Required,Type,Description
-# Student_ID,yes,int,Comma delimited list of user IDs for each user you want returned.
-
 function Get-SchoolSectionByStudent
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsStudentByStudent_idSectionsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of sections for the specified student ID(s).
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of sections for the specified student ID(s).
+        Note: Academic Group Managers cannot use this endpoint.
+        The user requesting the information must be the student, parent of the student or faculty member associated with the student.
+
+        .PARAMETER Student_ID
+        Required. Array of user IDs for each student you want sections for returned.
+
+        .EXAMPLE
+        Get-SchoolSectionByStudent -Student_ID 6111769,2772870
+        
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(

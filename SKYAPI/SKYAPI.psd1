@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.3'
+ModuleVersion = '0.3.4'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -77,11 +77,15 @@ FunctionsToExport = @(
     'Connect-SKYAPI',
     'Get-SKYAPIContext',
     'Get-SKYAPIAuthTokensFromFile',
+    'Get-ReConstituentRatingSource',
+    'Get-ReConstituentRelationshipType',
+    'Get-ReConstituentSuffix',
+    'Get-ReConstituentTitle',
     'Get-SchoolActivityBySchoolLevel',
     'Get-SchoolAdvisoryBySchoolLevel',
     'Get-SchoolCourse',
     'Get-SchoolDepartment',
-    'Get-SchoolUserEducation',
+    'Get-SchoolEnrollment',
     'Get-SchoolGradeLevel',
     'Get-SchoolLevel',
     'Get-SchoolList',
@@ -100,8 +104,11 @@ FunctionsToExport = @(
     'Get-SchoolUser',
     'Get-SchoolUserBBIDStatus',
     'Get-SchoolUserByRole',
+    'Get-SchoolUserEducation',
+    'Get-SchoolUserEmployment',
     'Get-SchoolUserExtended',
     'Get-SchoolUserExtendedByBaseRole',
+    'Get-SchoolUserGenderType',
     'Get-SchoolUserMe',
     'Get-SchoolUserOccupation',
     'Get-SchoolUserPhone',
@@ -111,6 +118,8 @@ FunctionsToExport = @(
     'Get-SchoolYear',
     'New-SchoolEventCategory',
     'New-SchoolUserPhone',
+    'Remove-SchoolUserRelationship',
+    'Set-SchoolUserRelationship',
     'Update-SchoolUser'
 )
 

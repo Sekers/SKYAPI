@@ -1,13 +1,27 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet
-# Returns a collection of a relationships for one or more user IDs.
-# Requires at least one of the following roles in the Education Management system:
-# SKY API Data Sync
-
-# Parameter,Required,Type,Description
-# User_ID,yes,int,Comma delimited list of user IDs you want occupations of.
-
 function Get-SchoolUserOccupation
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of a relationships for one or more user IDs.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of a relationships for one or more user IDs.
+        Requires at least one of the following roles in the Education Management system:
+          - SKY API Data Sync
+
+        .PARAMETER User_ID
+        Required. Array of user IDs you want occupations of.
+
+        .EXAMPLE
+        Get-SchoolUserOccupation -User_ID 3154032,5942642
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(

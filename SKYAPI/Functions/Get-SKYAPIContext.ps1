@@ -9,6 +9,20 @@
 ###################
 function Get-SKYAPIContext
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .SYNOPSIS
+        Retrieve the Session Context Information.
+
+        .DESCRIPTION
+        Retrieve the Session Context Information. 
+
+        .EXAMPLE
+        Get-SKYAPIContext
+    #>
+    
     # Create the context object to return.
     $SKYAPIContext = New-Object System.Object
 

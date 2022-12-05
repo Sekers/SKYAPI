@@ -1,20 +1,43 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/v1termsget
-# Returns a list of terms.
-
-# Parameter,Required,Type,Description
-# school_year,no,string,The school year to get terms for. Defaults to the current school year if empty.
-# offering_type,no,integer,The offering type to filter terms by.
-
 function Get-SchoolTerm
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1termsget
+        
+        .SYNOPSIS
+        Education Management School API - Returns a list of terms.
+
+        .DESCRIPTION
+        Education Management School API - Returns a list of terms.
+
+        .PARAMETER school_year
+        The school year to get terms for. Defaults to the current school year if not specified.
+        .PARAMETER offering_type
+        The offering type ID to filter terms by.
+        Use Get-SchoolOfferingType to get a list of offering type IDs.
+
+        .EXAMPLE
+        Get-SchoolTerm
+        .EXAMPLE
+        Get-SchoolTerm -school_year '2021-2022'
+        .EXAMPLE
+        Note: offering_type 1 is Academics
+        Get-SchoolTerm -offering_type 1 | Select-Object description
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
+        Position=0,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year,
 
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$offering_type

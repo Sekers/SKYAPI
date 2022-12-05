@@ -1,29 +1,124 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsAdvancedByList_idGet
-# Returns a paginated collection of results from a basic or advanced list.
-# The page size is 1000 rows.
-# This is an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/docs/services/school/operations/V1LegacyListsByList_idGet).
-
-# Parameter,Required,Type,Description
-# list_id,yes,integer,Comma delimited list of list IDs to get results (will return combined results even if lists have different headers)
-# Page,no,integer,Results will start with this page of results in the result set.
-# ResponseLimit,no,integer,Limits response to this number of results.
+# This function has an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/docs/services/school/operations/V1LegacyListsByList_idGet).
 
 function Get-SchoolList
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsAdvancedByList_idGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of results from a basic or advanced list.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of results from a basic or advanced list.
+        The requested list must have access permissions enabled for a role listed below or the user requesting the list needs read permission to that list.
+        Requires one of the following roles in the Education Management system:
+          - Page Manager
+          - Content Editor
+          - Teacher
+          - Coach
+          - Community Group Manager
+          - Mentor Manager
+          - Alumni Group Manager
+          - Athletic Group Manager
+          - Academic Group Manager
+          - System Group Manager
+          - Content Manager
+          - Community Group Owner
+          - Dorm Group Manager
+          - Activity Group Manager
+          - Advisory Group Manager
+          - Advisor
+          - Dorm Supervisor
+          - Activity Leader
+          - Pending Teacher
+          - Pending Advisor
+          - Pending Dorm Supervisor
+          - Pending Activity Leader
+          - Platform Manager
+
+        .PARAMETER List_ID
+        Required. Array of list IDs to get results of.
+        When multiple list IDs are specified, the function will return combined results even if lists have different headers.
+        Use Get-SchoolListOfLists to get a collection of basic and advanced lists the authorized user has access to.
+        .PARAMETER page
+        Results will start with this page of results in the result set. Defaults to 1 if not specified.
+        .PARAMETER ResponseLimit
+        Limits response to this number of results.
+
+        .EXAMPLE
+        [array]$SchoolList = Get-SchoolList -List_ID 30631,52631
+
+        .EXAMPLE
+        The way list results collections are returned are fairly unique and diffferent than most other endpoints.
+        You can use the following trick store a list of values for a specific header.
+        Change the Where-Object filter (i.e., 'First Name') value to the header label you want returned.
+
+        [array]$SchoolList = Get-SchoolList -List_ID 30631
+        [array]$ArrayOfFirstNames = foreach ($listItem in $SchoolList)
+        {
+            $listItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "First Name"} | Select-Object -ExpandProperty value
+        }
+
+        $ArrayOfFirstNames
+
+        .EXAMPLE
+        The way list results collections are returned are fairly unique and diffferent than most other endpoints.
+        You can use the following trick to have a usable PowerShell ArrayList of the returned results.
+        Below is an example that builds an ArrayList with the following header values for each School Advisory section returned:
+          - Group Identifier
+          - E-Mail
+          - First Name
+          - Last Name
+        Change these values to the header labels you want returned and create/remove headers as desired.
+
+        $AdvisorySectionListID = 52631
+        $Classes = [System.Collections.ArrayList]::new()
+        
+        [array]$AdvisorySectionList = Get-SchoolList -List_ID $AdvisorySectionListID
+        foreach ($advisory in $AdvisorySectionList)
+        {
+            # Get the advisory's group identifier and teacher information from the ID in the advisory.
+            [string]$AdvisoryGroupId = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "Group Identifier"} | Select-Object -ExpandProperty value
+            [string]$AdvisoryFacultyEmail = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "E-Mail"} | Select-Object -ExpandProperty value
+            [string]$AdvisoryFacultyFirstName = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "First Name"} | Select-Object -ExpandProperty value
+            [string]$AdvisoryFacultyLastName = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "Last Name"} | Select-Object -ExpandProperty value
+            
+            # Build the 'Class' section object.
+            $Class = New-Object System.Object
+            $Class | Add-Member -MemberType NoteProperty -Name "offering_type" -Value "Advisory" # Tip: you can add additional values to the ArrayList if you want.
+            $Class | Add-Member -MemberType NoteProperty -Name "section" -Value $AdvisoryGroupId
+            $Class | Add-Member -MemberType NoteProperty -Name "teacher_email" -Value $AdvisoryFacultyEmail
+            $Class | Add-Member -MemberType NoteProperty -Name "teacher_firstname" -Value $AdvisoryFacultyFirstName
+            $Class | Add-Member -MemberType NoteProperty -Name "teacher_lastname" -Value $AdvisoryFacultyLastName
+            
+            # Add the class object to classes ArrayList
+            $null = $Classes.Add($Class)
+        }
+
+        $Classes
+    #>
+    
     [cmdletbinding()]
-    param(
+    Param(
         [parameter(
+        Position=0,
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int[]]$List_ID, # Array as we loop through submitted IDs. Enpoint only takes one item and cannot handle comma-separated values.
        
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$Page,
+        [int]$page,
 
         [parameter(
+        Position=2,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$ResponseLimit
@@ -49,15 +144,16 @@ function Get-SchoolList
     }
    
     # Set/Replace Page parameter to 1 if not set or 0. That way it can do pagination properly.
-    if ($null -eq $Page -or $Page -eq '' -or $Page -eq 0)
+    if ($null -eq $page -or $page -eq '' -or $page -eq 0)
     {
-        $parameters.Remove('Page') | Out-Null
-        [int]$Page = 1
-        $parameters.Add('Page',$Page)
+        $parameters.Remove('page') | Out-Null
+        [int]$page = 1
+        $parameters.Add('page',$page)
     }
 
-    # Remove the $List_ID parameter since it is passed on in the URL
+    # Remove the $List_ID & ResponseLimit parameters since they are passed on in the URL or handled differently.
     $parameters.Remove('List_ID') | Out-Null
+    $parameters.Remove('ResponseLimit') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path

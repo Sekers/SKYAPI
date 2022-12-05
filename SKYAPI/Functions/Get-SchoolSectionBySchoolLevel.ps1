@@ -1,12 +1,30 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsGet
-# Returns a collection of academic sections based on school level.
-
-# Parameter,Required,Type,Description
-# Level_Number,yes,integer,Level number.
-# school_year,no,string,The school year to get sections for. Defaults to the current school year.
-
 function Get-SchoolSectionBySchoolLevel
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of academic sections based on school level.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of academic sections based on school level.
+
+        .PARAMETER Level_Number
+        Required. Array of school level IDs for each school level you want sections for returned.
+        Use Get-SchoolLevel to get a list of school levels.
+        .PARAMETER school_year
+        The school year to get sections for. Defaults to the current school year if not specified.
+
+        .EXAMPLE
+        Get-SchoolSectionBySchoolLevel -Level_Number 228,229
+        .EXAMPLE
+        Get-SchoolSectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -17,6 +35,7 @@ function Get-SchoolSectionBySchoolLevel
         [int[]]$Level_Number, # Array as we loop through submitted IDs
 
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year

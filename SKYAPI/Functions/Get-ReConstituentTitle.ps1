@@ -1,24 +1,24 @@
-function Get-SchoolUserPhoneType
+function Get-ReConstituentTitle
 {
     <#
         .LINK
         https://github.com/Sekers/SKYAPI/wiki
-        
+
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListTitles
         
         .SYNOPSIS
-        Education Management School API - Returns a collection of phone types.
+        Raiser's Edge Constituent API - Returns a list of available constituent title types.
 
         .DESCRIPTION
-        Education Management School API - Returns a collection of phone types.
+        Raiser's Edge Constituent API - Returns a list of available constituent title types.
 
         .EXAMPLE
-        Get-SchoolUserPhoneType
+        Get-ReConstituentTitle
     #>
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/phonetypes'
+    $endpoint = 'https://api.sky.blackbaud.com/constituent/v1/titles'
 
     # Set the response field
     $ResponseField = "value"

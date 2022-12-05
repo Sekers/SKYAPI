@@ -1,11 +1,25 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsGet
-# Returns a collection of a relationships for one or more user IDs.
-
-# Parameter,Required,Type,Description
-# User_ID,yes,int,Comma delimited list of user IDs you want relationships of.
-
 function Get-SchoolUserRelationship
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of a relationships for one or more user IDs.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of a relationships for one or more user IDs.
+
+        .PARAMETER User_ID
+        Required. Array of user IDs you want the relationships of.
+   
+        .EXAMPLE
+        Get-SchoolUserRelationship -User_ID 3154032,5942642
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(

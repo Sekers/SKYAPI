@@ -1,12 +1,29 @@
-# https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
-# Returns a list of sections for one or more teachers.
-
-# Parameter,Required,Type,Description
-# Teacher_ID,yes,integer,Comma delimited list of user IDs for each teacher you want returned..
-# school_year,no,string,The school year to get sections for. Defaults to the current school year.
-
 function Get-SchoolSectionByTeacher
 {
+    <#
+        .LINK
+        https://github.com/Sekers/SKYAPI/wiki
+        
+        .LINK
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
+        
+        .SYNOPSIS
+        Education Management School API - Returns a collection of sections for one or more teachers.
+
+        .DESCRIPTION
+        Education Management School API - Returns a collection of sections for one or more teachers.
+
+        .PARAMETER Teacher_ID
+        Required. Array of user IDs for each teacher you want sections for returned.
+        .PARAMETER school_year
+        The school year to get sections for. Defaults to the current school year.
+
+        .EXAMPLE
+        Get-SchoolSectionByTeacher -Teacher_ID 1757293,2878846
+        .EXAMPLE
+        Get-SchoolSectionByTeacher -Teacher_ID 1757293 -school_year '2021-2022'
+    #>
+    
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -17,6 +34,7 @@ function Get-SchoolSectionByTeacher
         [int[]]$Teacher_ID, # Array as we loop through submitted IDs
 
         [parameter(
+        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year

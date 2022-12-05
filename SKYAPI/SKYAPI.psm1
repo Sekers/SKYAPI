@@ -44,6 +44,7 @@ if ("MarkerType" -as [type]) {} else {
 Add-Type -TypeDefinition @"
 public enum MarkerType {
     NEXT_RECORD_NUMBER,
+    OFFSET,
     LAST_USER_ID,
     NEXT_PAGE
 }
@@ -82,7 +83,7 @@ function Set-SKYAPITokensFilePath
 Function Get-SKYAPIAuthToken
 {
     [CmdletBinding()]
-    param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
+    Param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
 
     #Build token request
     $AuthorizationPostRequest = 'grant_type=' + $grant_type + '&' +
@@ -108,7 +109,7 @@ Function Get-SKYAPIAuthToken
 Function Get-SKYAPIAccessToken
 {
     [CmdletBinding()]
-    param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
+    Param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
 
     #Build token request
     $AuthorizationPostRequest = 'grant_type=' + $grant_type + '&' +
@@ -123,7 +124,7 @@ Function Get-SKYAPIAccessToken
                             -Uri $token_uri `
                             -Body $AuthorizationPostRequest
     
-    # Add in creation timestamps for the tokens.
+    # Add in creation timestamps for the tokens (NOTE THIS IS UTC).
     $Timestamp = $((Get-Date).ToUniversalTime().ToString("o"))
     $Authorization | Add-Member -MemberType NoteProperty -Name "refresh_token_creation" -Value $Timestamp -Force
     $Authorization | Add-Member -MemberType NoteProperty -Name "access_token_creation" -Value $Timestamp -Force
@@ -223,7 +224,7 @@ function Set-SKYAPIWebBrowserEmulation
 
 Function Show-SKYAPIOAuthWindow
 {
-    param(
+    Param(
         [parameter(
         Position=0,
         Mandatory=$true,
@@ -497,7 +498,7 @@ Function Show-SKYAPIOAuthWindow
 Function Get-SKYAPINewTokens
 {
     [CmdletBinding()]
-    param(
+    Param(
         [parameter(
             Position=0,
             Mandatory=$false,
@@ -637,7 +638,7 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
 Function Get-SKYAPIUnpagedEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -711,7 +712,7 @@ Function Get-SKYAPIUnpagedEntity
 Function Get-SKYAPIPagedEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -774,17 +775,22 @@ Function Get-SKYAPIPagedEntity
                 {
                     NEXT_RECORD_NUMBER
                     {
-                        [int]$params['Marker'] += $page_limit
+                        [int]$params['marker'] += $page_limit
+                        $Request.Query = $params.ToString()
+                    }
+                    OFFSET
+                    {
+                        [int]$params['offset'] += $page_limit
                         $Request.Query = $params.ToString()
                     }
                     LAST_USER_ID
                     {
-                        [int]$params['Marker'] = $allRecords[-1].id
+                        [int]$params['marker'] = $allRecords[-1].id
                         $Request.Query = $params.ToString()
                     }
                     NEXT_PAGE
                     {
-                        [int]$params['Page'] += 1
+                        [int]$params['page'] += 1
                         $Request.Query = $params.ToString()
                     }
                 }
@@ -826,10 +832,84 @@ Function Get-SKYAPIPagedEntity
     }
 }
 
+Function Remove-SKYAPIEntity
+{
+    [CmdletBinding()]
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+
+    # Reconnect If the Access Token is Expired 
+    if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    {
+        Connect-SKYAPI -ForceRefresh
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+        $authorisation.access_token = $($AuthTokensFromFile.access_token)
+        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+    }
+    
+    # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
+    $fullUri = $url + $uid + $endUrl
+    $Request = [System.UriBuilder]$fullUri
+    
+    if ($null -ne $params -and $params -ne '') {
+        $Request.Query = $params.ToString()
+    }
+    
+    # Run Invoke Command and Catch Responses
+    [int]$InvokeCount = 0
+    [int]$MaxInvokeCount = 5
+    do
+    {      
+        $InvokeCount += 1
+        $NextAction = $null
+        try
+        {
+            $apiCallResult =
+            Invoke-RestMethod   -Method Delete `
+                                -ContentType application/json `
+                                -Headers @{
+                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                        'bb-api-subscription-key' = ($api_key)} `
+                                -Uri $($Request.Uri.AbsoluteUri)
+        
+            # If there is a response field set for the endpoint cmdlet, return that.
+            if ($null -ne $response_field -and "" -ne $response_field)
+            {
+                # return $apiCallResult.$response_field
+                return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+            }
+            else # else return the entire API call result
+            {
+                return $apiCallResult
+            }
+        }
+        catch
+        {
+            # Process Invoke Error
+            $LastCaughtError = ($_)
+            $NextAction = SKYAPICatchInvokeErrors($_)
+
+            # Just in case the token was refreshed by the error catcher, update these
+            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+            $authorisation.access_token = $($AuthTokensFromFile.access_token)
+            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        }
+    }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
+
+    if ($InvokeCount -ge $MaxInvokeCount)
+    {
+        throw $LastCaughtError
+    }
+}
+
 function Submit-SKYAPIEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -903,7 +983,7 @@ function Submit-SKYAPIEntity
 function Update-SKYAPIEntity
 {
     [CmdletBinding()]
-    param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))

@@ -17,8 +17,8 @@
 <#
     Retrieve and Create/Update the SKY API Module Configuration File.
 #>
-# Get-SKYAPIConfig -ConfigPath '.\Sample_Usage_Scripts\Config\sky_api_config.json'
-# Set-SKYAPIConfig -ConfigPath '.\Sample_Usage_Scripts\Config\sky_api_config.json' -Silent -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+# Get-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json'
+# Set-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json' -Silent -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 <#
     Set the Necessary File Paths.
@@ -32,7 +32,7 @@
     Connect-SKYAPI will automatically refresh tokens or reauthenticate to the SKY API service, if necessary.
     You can specify the return of the connection information using the 'ReturnConnectionInfo' switch parameter.
     Optional Parameters Can Force Reauthentication or Token Refresh.
-    "AuthenticationMethod" paramameter let's you specify how you want to authenticate if authentication is necessary:
+    "AuthenticationMethod" parameter let's you specify how you want to authenticate if authentication is necessary:
     - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
                               Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
     - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
@@ -42,7 +42,7 @@
 # Connect-SKYAPI
 # Connect-SKYAPI -ForceReauthentication
 # Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
-# Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer 
+# Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer
 # Connect-SKYAPI -ForceRefresh
 # Connect-SKYAPI -ReturnConnectionInfo
 
@@ -54,6 +54,11 @@
 ########################
 # School API Endpoints #
 ########################
+
+<#
+    Get-SchoolUserMe
+#>
+# Get-SchoolUserMe
 
 <#
     Get-SchoolRole
@@ -85,13 +90,16 @@
 
 <#
     Get-SchoolTerm
-    Offering_type 1 is Academics (Use Get-SchoolOfferingType to get a list)
+    offering_type 1 is Academics (Use Get-SchoolOfferingType to get a list)
 #>
-# Get-SchoolTerm | Where-Object {($_.offering_type -eq 1)} | Select-Object description
+# Get-SchoolTerm
+# Get-SchoolTerm -school_year '2021-2022'
+# Get-SchoolTerm -offering_type 1 | Select-Object description
 
 <#
     Get-SchoolYear
 #>
+# Get-SchoolYear
 # Get-SchoolYear | Where-Object current_year -Match "True" | Select-Object -ExpandProperty school_year_label
 
 <#
@@ -101,7 +109,7 @@
 
 <#
     Get-SchoolUserBBIDStatus
-    (Use Get-SchoolRole to get a list)
+    (Use Get-SchoolRole to get a list of school roles)
     Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
@@ -119,7 +127,7 @@
 
 <#
     Get-SchoolUserByRole
-    (Use Get-SchoolRole to get a list)
+    (Use Get-SchoolRole to get a list of school roles)
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
     The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
     because the returned object type is a PSCustomObject and not an array in those cases. 
@@ -131,24 +139,25 @@
 
 <#
     Get-SchoolUserExtendedByBaseRole
-    (Use Get-SchoolRole to get a list)
+    (Use Get-SchoolRole to get a list of base roles)
     Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
-    because they are in the "Admin Team" role which has the same base_role_id as Staff.
+    because they are in the "Admin Team" role which has the same base_role_id as Staff. This parameter is passed on directly to the
+    API endpoint and should be a string, not an array.
     Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
     The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
     because the returned object type is a PSCustomObject and not an array in those cases. 
     PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
 #>
-# [array]$list = Get-SchoolUserExtendedByBaseRole -Base_Role_Ids "332,15,14"
+# [array]$list = Get-SchoolUserExtendedByBaseRole -base_role_ids "332,15,14"
 # $list.Count
-# # Get students in grades 4-8. Roll ID 14 is Student.
-# $GoogleClassroomStudents = Get-SchoolUserExtendedByBaseRole -Base_Role_Ids "14" | Where-Object {@('4','5','6','7','8') -Contains $_.student_info.grade_level} | Select-Object -Property id, email, student_info
+# # Get students in grades 4-8. Roll ID 14 is the 'Student' base role in this case.
+# Get-SchoolUserExtendedByBaseRole -base_role_ids "14" | Where-Object {@('4','5','6','7','8') -Contains $_.student_info.grade_level} | Select-Object -Property id, email, student_info
 
 <#
     Get-SchoolStudentEnrollment
 #>
-# $StudentEnrollmentList = Get-SchoolStudentEnrollment -User_ID 3243114
-# $StudentEnrollmentList.Count
+# Get-SchoolStudentEnrollment -User_ID 3294459,3300981
+# Get-SchoolStudentEnrollment -User_ID 3294459 -school_year "2021-2022"
 
 <#
     Get-SchoolActivityBySchoolLevel
@@ -162,7 +171,7 @@
 
 <#
     Get-SchoolAdvisoryBySchoolLevel
-    (Use Get-SchoolLevel to get a list of levels to filter by)
+    (Use Get-SchoolLevel to get a list of school level IDs to specify)
 #>
 #  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryBySchoolLevel -Level_Number 228,229
 #  $SchoolAdvisoryListBySchoolLevel.Count
@@ -172,7 +181,7 @@
 
 <#
     Get-SchoolSectionBySchoolLevel
-    (Use Get-SchoolLevel to get a list of levels to filter by)
+    (Use Get-SchoolLevel to get a list of school levels)
 #>
 #  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionBySchoolLevel -Level_Number 228,229
 #  $SchoolSectionListBySchoolLevel.Count
@@ -189,14 +198,17 @@
 <#
     Get-SchoolSectionByTeacher
 #>
-# [array]$SectionListByTeacher = Get-SchoolSectionByTeacher -Teacher_ID 1757293,2878846
-# $SectionListByTeacher.Count
+# Get-SchoolSectionByTeacher -Teacher_ID 1757293,2878846
+# Get-SchoolSectionByTeacher -Teacher_ID 1757293 -school_year '2021-2022'
 
 <#
     Get-SchoolCourse
+    (Use Get-SchoolDepartment to get a list of academic departments)
+    (Use Get-SchoolLevel to get a list of school levels)
 #>
-# $courseList = Get-SchoolCourse -level_id 229 | Where-Object inactive -Match "false"
-# $courseList 
+# Get-SchoolCourse
+# Get-SchoolCourse -department_id 8706 -level_id 453
+# Get-SchoolCourse -level_id 229 | Where-Object -Property "inactive" -Match "false"
 
 <#
     Get-SchoolUserEducation
@@ -205,20 +217,18 @@
 
 <#
     Get-SchoolStudentBySection
-    (Use Get-SchoolSectionBySchoolLevel to get a list)
+    (Use Get-SchoolSectionBySchoolLevel to get a list of section IDs for a school level)
 #>
-# Get-SchoolStudentBySection -Section_ID "93054528"
+# Get-SchoolStudentBySection -Section_ID 93054528,92486528
 
 <#
     Get-SchoolList
-    NOTE: This replaces 'Get-SchoolLegacyList' which is being deprecated 2023-01-01
+    Note: this replaces 'Get-SchoolLegacyList' which was deprecated 2023-01-01
+    (Use Get-SchoolListOfLists to get a collection of basic and advanced lists the authorized user has access to)
+    Tip: The resulting collection of list results can be hard to work with.
+         For more complex examples, use the comment-based help: Get-Help Get-SchoolList -Examples 
 #>
-# [array]$SchoolList = Get-SchoolList -List_ID 105627
-# foreach ($ListItem in $SchoolList)
-# {
-#     $GroupID = $ListItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "Group Identifier"} | Select-Object -ExpandProperty value  
-#     write-host $GroupID
-# }
+# [array]$SchoolList = Get-SchoolList -List_ID 30631,52631
 
 <#
     Get-SchoolListOfLists
@@ -232,6 +242,7 @@
 
 <#
     Get-SchoolNewsItem
+    (Use Get-SchoolNewsCategory to get a list of news categories to filter by)
 #>
 # Get-SchoolNewsItem
 # Get-SchoolNewsItem -categories '12027,3154'
@@ -266,7 +277,7 @@
 <#
     Get-SchoolUserPhone
 #>
-#  [array]$PhoneNumbersByUser = Get-SchoolUserPhone -User_ID 3154032,5942642
+#  Get-SchoolUserPhone -User_ID 3154032,5942642
 
 <#
     New-SchoolUserPhone
@@ -290,3 +301,64 @@
     Get-SchoolUserOccupation
 #>
 # Get-SchoolUserOccupation -User_ID 3154032,5942642
+
+<#
+    Get-SchoolUserGenderType
+#>
+# Get-SchoolUserGenderType
+
+<#
+    Get-SchoolUserEmployment
+#>
+# Get-SchoolUserEmployment -User_ID 3154032,5942642
+
+<#
+    Get-SchoolEnrollment
+    (Use Get-SchoolLevel to get a list of school levels)
+    (Use Get-SchoolGradeLevel to get a list of school grade levels)
+#>
+# Get-SchoolEnrollment -School_Year '2022-2023'
+# Get-SchoolEnrollment -School_Year '2021-2022','2022-2023'
+# Get-SchoolEnrollment -School_Year '2022-2023' -school_level_id 228
+# Get-SchoolEnrollment -School_Year '2022-2023' -grade_level_id 559
+# Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150
+# Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150 -offset 50
+
+<#
+    Set-SchoolUserRelationship
+    Notes: Creates relationship records for the specified user IDs.
+           This endpoint will also update optional relationship parameters,
+           other than relationship type, if the relationship already exists.
+           Use the 'ReturnRelationshipInfo' switch to return the created/updated relationship information.
+           Using 'ReturnRelationshipInfo' lowers performance a little bit.
+#>
+# Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 2574354 -relationship_type Sibling_Sibling
+# Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 2574354 -relationship_type Sibling_Sibling -ReturnRelationshipInfo
+# Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374,1574389 -relationship_type Sibling_Sibling
+# Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374 -relationship_type Parent_Child -give_parental_access $true -list_as_parent $false -tuition_responsible_signer $false
+# Set-SchoolUserRelationship -User_ID 1574497,1574461 -Left_User_ID 1574374,1574389 -relationship_type Grandparent_Grandchild -give_parental_access $true
+
+###############################
+# Raiser's Edge API Endpoints #
+###############################
+
+<#
+    Get-ReConstituentRatingSource
+#>
+# Get-ReConstituentRatingSource
+# Get-ReConstituentRatingSource -include_inactive $true
+
+<#
+    Get-ReConstituentRelationshipType
+#>
+# Get-ReConstituentRelationshipType
+
+<#
+    Get-ReConstituentSuffix
+#>
+# Get-ReConstituentSuffix
+
+<#
+    Get-ReConstituentTitle
+#>
+# Get-ReConstituentTitle
