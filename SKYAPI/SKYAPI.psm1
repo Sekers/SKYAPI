@@ -832,6 +832,80 @@ Function Get-SKYAPIPagedEntity
     }
 }
 
+Function Remove-SKYAPIEntity
+{
+    [CmdletBinding()]
+    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+
+    # Reconnect If the Access Token is Expired 
+    if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
+    {
+        Connect-SKYAPI -ForceRefresh
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+        $authorisation.access_token = $($AuthTokensFromFile.access_token)
+        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+    }
+    
+    # Create Request Uri
+    $uid = [uri]::EscapeDataString($uid)
+    $fullUri = $url + $uid + $endUrl
+    $Request = [System.UriBuilder]$fullUri
+    
+    if ($null -ne $params -and $params -ne '') {
+        $Request.Query = $params.ToString()
+    }
+    
+    # Run Invoke Command and Catch Responses
+    [int]$InvokeCount = 0
+    [int]$MaxInvokeCount = 5
+    do
+    {      
+        $InvokeCount += 1
+        $NextAction = $null
+        try
+        {
+            $apiCallResult =
+            Invoke-RestMethod   -Method Delete `
+                                -ContentType application/json `
+                                -Headers @{
+                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                        'bb-api-subscription-key' = ($api_key)} `
+                                -Uri $($Request.Uri.AbsoluteUri)
+        
+            # If there is a response field set for the endpoint cmdlet, return that.
+            if ($null -ne $response_field -and "" -ne $response_field)
+            {
+                # return $apiCallResult.$response_field
+                return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+            }
+            else # else return the entire API call result
+            {
+                return $apiCallResult
+            }
+        }
+        catch
+        {
+            # Process Invoke Error
+            $LastCaughtError = ($_)
+            $NextAction = SKYAPICatchInvokeErrors($_)
+
+            # Just in case the token was refreshed by the error catcher, update these
+            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+            $authorisation.access_token = $($AuthTokensFromFile.access_token)
+            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
+            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
+            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        }
+    }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
+
+    if ($InvokeCount -ge $MaxInvokeCount)
+    {
+        throw $LastCaughtError
+    }
+}
+
 function Submit-SKYAPIEntity
 {
     [CmdletBinding()]
