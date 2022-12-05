@@ -24,7 +24,7 @@ function Set-SchoolUserRelationship
         .PARAMETER User_ID
         Required. Array of the user IDs you want to create the relationship for. These would be the "right" users.
         .PARAMETER Left_User_ID
-        Required. Array of the user IDs the other individuals in the relationship with the persons specified in User_ID. These would be the "left" users.
+        Required. Array of the user IDs of the other individuals in the relationship with the person(s) specified in User_ID. These would be the "left" users.
         .PARAMETER relationship_type
         Required. The nature of the relationship; modeled where left_user 'is a' relationship to this individual.
         .PARAMETER give_parental_access
@@ -37,17 +37,21 @@ function Set-SchoolUserRelationship
         Returns the relationship data for any created/updated relationships. Disabled by default to allow for better performance since it requires an additional API call for each relationship.
 
         .EXAMPLE
-        Get-SchoolEnrollment -School_Year '2022-2023'
+        Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374 -relationship_type Sibling_Sibling
         .EXAMPLE
-        Get-SchoolEnrollment -School_Year '2021-2022','2022-2023'
+        Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374 -relationship_type Sibling_Sibling -ReturnRelationshipInfo
         .EXAMPLE
-        Get-SchoolEnrollment -School_Year '2022-2023' -school_level_id 228
+        Set-SchoolUserRelationship -User_ID 1574497, 1574374 -Left_User_ID 3294373,3294382 -relationship_type Parent_Child
         .EXAMPLE
-        Get-SchoolEnrollment -School_Year '2022-2023' -grade_level_id 559
-        .EXAMPLE
-        Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150
-        .EXAMPLE
-        Get-SchoolEnrollment -School_Year '2022-2023' -ResponseLimit 150 -offset 50
+        $RelationshipParams = @{
+            User_ID  = 1574497 
+            Left_User_ID = 3294373
+            relationship_type = 'Parent_Child'
+            give_parental_access = $true 
+            list_as_parent = $true 
+            tuition_responsible_signer = $true
+        }
+        Set-SchoolUserRelationship @RelationshipParams
     #>
 
     [cmdletbinding()]
