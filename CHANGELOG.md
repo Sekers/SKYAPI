@@ -1,5 +1,33 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.4](https://github.com/Sekers/SKYAPI/tree/0.3.4) - (2022-12-04)
+
+### Fixes
+
+- Stopped sending an erroneously sent parameter to the Get-SchoolList Blackbaud SKY API endpoint. It doesn't affect anything but is unnecessary.
+- Made the 'number' & 'type_id' parameters of the New-SchoolUserPhone function mandatory as the API endpoint requires them.
+
+### Features
+
+- Module now works with DELETE endpoints, thus allowing for REMOVE-* PowerShell functions against the SKY API.
+- All functions/cmdlets have [comment-based help](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comment_based_help) (i.e., Get-Help [FunctionName]).
+- All functions/cmdlets now have consistent [positional parameter values](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/types-of-cmdlet-parameters#positional-and-named-parameters) for all non-dynamic parameters.
+- New Endpoint: [Get-ReConstituentRatingSource](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListRatingSources)
+- New Endpoint: [Get-ReConstituentRelationshipType](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListRelationshipTypes)
+- New Endpoint: [Get-ReConstituentSuffix](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListSuffixes)
+- New Endpoint: [Get-ReConstituentTitle](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListTitles)
+- New Endpoint: [Get-SchoolEnrollment](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersEnrollmentsGet)
+- New Endpoint: [Get-SchoolUserEmployment](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEmploymentGet)
+- New Endpoint: [Get-SchoolUserGenderType](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersGendertypesGet)
+- New Endpoint: [Remove-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsDelete)
+- New Endpoint: [Set-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsPost)
+
+### Other
+- Fixed the casing of some passed/passthru parameters to the Blackbaud SKY API lowercase to match the API documentation as they had accidentally been made camelcase like non-API passed parameters.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.3](https://github.com/Sekers/SKYAPI/tree/0.3.3) - (2022-11-26)
 
 ### Features
