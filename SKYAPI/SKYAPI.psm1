@@ -638,7 +638,15 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
 Function Get-SKYAPIUnpagedEntity
 {
     [CmdletBinding()]
-    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param(
+        $uid,
+        $url,
+        $endUrl,
+        $api_key,
+        $authorisation,
+        $params,
+        $response_field,
+        [switch]$ReturnRaw)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -669,23 +677,38 @@ Function Get-SKYAPIUnpagedEntity
         $NextAction = $null
         try
         {
-            $apiCallResult =
-            Invoke-RestMethod   -Method Get `
-                                -ContentType application/json `
-                                -Headers @{
-                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
-                                        'bb-api-subscription-key' = ($api_key)} `
-                                -Uri $($Request.Uri.AbsoluteUri)
-        
-            # If there is a response field set for the endpoint cmdlet, return that.
-            if ($null -ne $response_field -and "" -ne $response_field)
+            if ($ReturnRaw)
             {
-                # return $apiCallResult.$response_field
-                return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+                $apiCallResult =
+                Invoke-WebRequest   -Method Get `
+                                    -ContentType application/json `
+                                    -Headers @{
+                                            'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                            'bb-api-subscription-key' = ($api_key)} `
+                                    -Uri $($Request.Uri.AbsoluteUri)
+                
+                return $apiCallResult.Content
             }
-            else # else return the entire API call result
+            else
             {
-                return $apiCallResult
+                $apiCallResult =
+                Invoke-RestMethod   -Method Get `
+                                    -ContentType application/json `
+                                    -Headers @{
+                                            'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                            'bb-api-subscription-key' = ($api_key)} `
+                                    -Uri $($Request.Uri.AbsoluteUri)
+            
+                # If there is a response field set for the endpoint cmdlet, return that.
+                if ($null -ne $response_field -and "" -ne $response_field)
+                {
+                    # return $apiCallResult.$response_field
+                    return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+                }
+                else # else return the entire API call result
+                {
+                    return $apiCallResult
+                }
             }
         }
         catch
@@ -1119,6 +1142,15 @@ function Get-SKYAPIAuthTokensFromFile
     }
     
     $AuthTokensFromFile
+}
+
+# Fix date-only fields since the API returns dates with improper time values (sends it as -05:00 or sometimes -04:00).
+# Converting to UTC should resolve the issue (though it makes the unused time portion 5 AM or 4AM, the date is accurate).
+function Repair-SkyApiDate
+{
+    param ([DateTime]$Date)
+    $Date = (($(Get-Date($Date).ToUniversalTime()).ToString('o')) -split "T")[0] # Can't use -AsUTC since that's PS Core only (not Windows PS 5.1).
+    $Date
 }
 
 # Import the functions
