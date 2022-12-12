@@ -15,6 +15,8 @@ function Get-SchoolUserExtended
 
         .PARAMETER User_ID
         Required. Array of user IDs for each user you want returned.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolUserExtended -User_ID 2230332,3243114
