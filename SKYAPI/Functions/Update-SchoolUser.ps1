@@ -43,7 +43,7 @@ function Update-SchoolUser
         .PARAMETER custom_field_ten,
         A custom field on the user profile (ten of ten).
         .PARAMETER dob
-        The birthday of a user.
+        The birthday of a user (e.g., 1980-01-23).
         .PARAMETER deceased
         Set to true if user is deceased.
         .PARAMETER email
@@ -158,7 +158,7 @@ function Update-SchoolUser
         Position=12,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [datetime]$dob,
+        [string]$dob,
 
         [Parameter(
         Position=13,
