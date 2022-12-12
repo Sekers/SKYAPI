@@ -27,7 +27,13 @@ function Get-SchoolUser
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int[]]$User_ID # Array as we loop through submitted IDs
+        [int[]]$User_ID, # Array as we loop through submitted IDs
+
+        [parameter(
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Get the SKY API subscription key
@@ -43,7 +49,18 @@ function Get-SchoolUser
     # Get data for one or more IDs
     foreach ($uid in $User_ID)
     {
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+            $response
+            continue
+        }
+
         $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
+
+        # Fix date-only fields since the API returns dates with improper time values.
+        $response.dob = Repair-SkyApiDate -Date $response.dob
+
         $response
     }
 }
