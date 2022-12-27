@@ -13,15 +13,24 @@ function Get-ReConstituentSuffix
         .DESCRIPTION
         Raiser's Edge Constituent API - Returns a list of available constituent suffix types.
 
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
+
         .EXAMPLE
         Get-ReConstituentSuffix
     #>
+
+    [cmdletbinding()]
+    param(
+        [Parameter(
+        Position=0,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
+    )
     
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/constituent/v1/suffixes'
-
-    # Set the response field
-    $ResponseField = "value"
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -30,6 +39,17 @@ function Get-ReConstituentSuffix
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+    if ($ReturnRaw)
+    {
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+    }
+    else
+    {
+        # Set the response field
+        $ResponseField = "value"
+        
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+    }
+
     $response
 }

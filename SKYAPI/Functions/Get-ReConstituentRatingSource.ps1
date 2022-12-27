@@ -16,6 +16,8 @@ function Get-ReConstituentRatingSource
         .PARAMETER include_inactive
         Set this parameter to True to include inactive sources in the response. Defaults to False if not specified.
         TODO: VERIFY THIS DEFAULTS to FALSE
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-ReConstituentRatingSource
@@ -29,21 +31,27 @@ function Get-ReConstituentRatingSource
         Position=0,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [bool]$include_inactive # TODO: NEED TO TEST THIS ACTUALLY WORKS IF SET TO TRUE!
+        [bool]$include_inactive, # TODO: NEED TO TEST THIS ACTUALLY WORKS IF SET TO TRUE!
+
+        [Parameter(
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
 
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/constituent/v1/ratings/sources'
     
-    # Set the response field
-    $ResponseField = "value"
-
     # Set the parameters
     $parameters = @{}
     foreach ($parameter in $PSBoundParameters.GetEnumerator())
     {
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
+
+    # Remove the $ReturnRaw parameter since we don't pass it on to the API.
+    $parameters.Remove('ReturnRaw') | Out-Null
     
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -52,6 +60,17 @@ function Get-ReConstituentRatingSource
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+    if ($ReturnRaw)
+    {
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+    }
+    else
+    {
+        # Set the response field
+        $ResponseField = "value"
+
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+    }
+    
     $response
 }

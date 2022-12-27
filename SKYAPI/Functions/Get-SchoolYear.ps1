@@ -36,9 +36,6 @@ function Get-SchoolYear
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/years'
 
-    # Set the response field
-    $ResponseField = "value"
-
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
@@ -48,11 +45,15 @@ function Get-SchoolYear
 
     if ($ReturnRaw)
     {
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField -ReturnRaw
-        $response
-        continue
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+    }
+    else
+    {
+        # Set the response field
+        $ResponseField = "value"
+
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     }
 
-    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response
 }
