@@ -31,6 +31,9 @@ function Get-ReConstituentSuffix
     
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/constituent/v1/suffixes'
+    
+    # Set the response field
+    $ResponseField = "value"
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -42,14 +45,9 @@ function Get-ReConstituentSuffix
     if ($ReturnRaw)
     {
         $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        return $response
     }
-    else
-    {
-        # Set the response field
-        $ResponseField = "value"
-        
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
-    }
-
+    
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response
 }

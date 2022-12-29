@@ -22,6 +22,8 @@ function Get-SchoolCourse
         .PARAMETER level_id
         Identifier for a specific school level to optionally filter by.
         Use Get-SchoolLevel to get a list of school levels.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolCourse
@@ -43,7 +45,13 @@ function Get-SchoolCourse
         Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$level_id
+        [int]$level_id,
+
+        [Parameter(
+        Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Set the endpoints
@@ -59,12 +67,21 @@ function Get-SchoolCourse
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
+    # Remove the $ReturnRaw parameter since we don't pass it on to the API.
+    $parameters.Remove('ReturnRaw') | Out-Null
+
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
     $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+    if ($ReturnRaw)
+    {
+        $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        return $response
+    }
 
     $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     $response

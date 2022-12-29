@@ -54,14 +54,14 @@ function Get-SchoolUser
         if ($ReturnRaw)
         {
             $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+            $response
+            continue
         }
-        else
-        {
-            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
 
-            # Fix date-only fields since the API returns dates with improper time values.
-            $response.dob = Repair-SkyApiDate -Date $response.dob
-        }
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
+
+        # Fix date-only fields since the API returns dates with improper time values.
+        $response.dob = Repair-SkyApiDate -Date $response.dob
 
         $response
     }

@@ -42,6 +42,9 @@ function Get-ReConstituentRatingSource
 
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/constituent/v1/ratings/sources'
+
+    # Set the response field
+    $ResponseField = "value"
     
     # Set the parameters
     $parameters = @{}
@@ -63,14 +66,9 @@ function Get-ReConstituentRatingSource
     if ($ReturnRaw)
     {
         $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        return $response
     }
-    else
-    {
-        # Set the response field
-        $ResponseField = "value"
 
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
-    }
-    
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     $response
 }

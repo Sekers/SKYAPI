@@ -20,6 +20,8 @@ function Get-SchoolActivityBySchoolLevel
         Use Get-SchoolLevel to get a list of school level IDs to specify.
         .PARAMETER school_year
         The school year to get activity sections for. Defaults to the current school year if not specified.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolActivityBySchoolLevel -Level_Number 228,229
@@ -40,7 +42,13 @@ function Get-SchoolActivityBySchoolLevel
         Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$school_year
+        [string]$school_year,
+
+        [Parameter(
+        Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Set the endpoints
@@ -56,8 +64,9 @@ function Get-SchoolActivityBySchoolLevel
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
-    # Remove the $Level_Number parameters since we don't pass them on this way
+    # Remove parameters since we don't pass them on this way
     $parameters.Remove('Level_Number') | Out-Null
+    $parameters.Remove('ReturnRaw') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -71,7 +80,14 @@ function Get-SchoolActivityBySchoolLevel
     {
         # Clear out old school level parameter and add in new
         $parameters.Remove('level_num') | Out-Null
-        $parameters.Add('level_num',$level_num) 
+        $parameters.Add('level_num',$level_num)
+
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+            $response
+            continue
+        }
         
         $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response

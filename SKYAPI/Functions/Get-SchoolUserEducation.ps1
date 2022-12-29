@@ -15,6 +15,8 @@ function Get-SchoolUserEducation
 
         .PARAMETER User_ID
         Required. Array of user IDs for each user's education details you want returned.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolUserEducation -User_ID 1757293,2878846
@@ -27,7 +29,13 @@ function Get-SchoolUserEducation
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int[]]$User_ID # Array as we loop through submitted IDs. Enpoint only takes one item and cannot handle comma-separated values.
+        [int[]]$User_ID, # Array as we loop through submitted IDs. Enpoint only takes one item and cannot handle comma-separated values.
+
+        [Parameter(
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Set the endpoints
@@ -44,9 +52,16 @@ function Get-SchoolUserEducation
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    # Get data for one or more school levels
+    # Get data for one or more user IDs
     foreach ($uid in $User_ID)
     {
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+            $response
+            continue
+        }
+
         $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
         $response
     }

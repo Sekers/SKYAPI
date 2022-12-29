@@ -16,6 +16,8 @@ function Get-SchoolStudentBySection
         .PARAMETER Section_ID
         Required. Array of section IDs to get students of.
         Use Get-SchoolSectionBySchoolLevel to get a list of section IDs for a school level.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolStudentBySection -Section_ID 93054528,92486528
@@ -28,7 +30,13 @@ function Get-SchoolStudentBySection
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int[]]$Section_ID # Array as we loop through submitted IDs
+        [int[]]$Section_ID, # Array as we loop through submitted IDs
+
+        [Parameter(
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Set the endpoints
@@ -48,6 +56,13 @@ function Get-SchoolStudentBySection
     # Get data for one or more school levels
     foreach ($uid in $Section_ID)
     {
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+            $response
+            continue
+        }
+
         $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
         $response
     }

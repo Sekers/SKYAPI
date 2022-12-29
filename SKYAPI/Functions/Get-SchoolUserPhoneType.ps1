@@ -13,10 +13,22 @@ function Get-SchoolUserPhoneType
         .DESCRIPTION
         Education Management School API - Returns a collection of phone types.
 
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
+
         .EXAMPLE
         Get-SchoolUserPhoneType
     #>
     
+    [cmdletbinding()]
+    param(
+        [Parameter(
+        Position=0,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
+    )
+
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/phonetypes'
 
@@ -29,6 +41,12 @@ function Get-SchoolUserPhoneType
 
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+    if ($ReturnRaw)
+    {
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        return $response
+    }
 
     $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response

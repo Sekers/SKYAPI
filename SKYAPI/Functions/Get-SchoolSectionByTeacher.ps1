@@ -17,6 +17,8 @@ function Get-SchoolSectionByTeacher
         Required. Array of user IDs for each teacher you want sections for returned.
         .PARAMETER school_year
         The school year to get sections for. Defaults to the current school year.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolSectionByTeacher -Teacher_ID 1757293,2878846
@@ -37,7 +39,13 @@ function Get-SchoolSectionByTeacher
         Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$school_year
+        [string]$school_year,
+
+        [Parameter(
+        Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Set the endpoints
@@ -54,8 +62,9 @@ function Get-SchoolSectionByTeacher
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
-    # Remove the $Teacher_ID parameter since we don't pass that on
+    # Remove parameters since we don't pass them on this way
     $parameters.Remove('Teacher_ID') | Out-Null
+    $parameters.Remove('ReturnRaw') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -67,6 +76,14 @@ function Get-SchoolSectionByTeacher
     # Get data for one or more school levels
     foreach ($uid in $Teacher_ID)
     {
+
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+            $response
+            continue
+        }
+
         $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }
