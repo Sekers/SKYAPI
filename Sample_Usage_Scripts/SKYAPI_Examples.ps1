@@ -222,6 +222,13 @@
 # Get-SchoolStudentBySection -Section_ID 93054528,92486528
 
 <#
+    Get-SchoolAssignmentBySection
+    (To get a list of assignment type IDs, create an Advanced List from the web app using Academic Group > Assignment Type)
+#>
+# Get-SchoolAssignmentBySection -Section_ID 82426521,93054528
+# Get-SchoolAssignmentBySection -Section_ID 82426521 -types '293,294' -filter 'future' -search 'Final'
+
+<#
     Get-SchoolList
     Note: this replaces 'Get-SchoolLegacyList' which was deprecated 2023-01-01
     (Use Get-SchoolListOfLists to get a collection of basic and advanced lists the authorized user has access to)
