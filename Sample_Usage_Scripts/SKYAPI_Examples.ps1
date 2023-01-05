@@ -229,6 +229,13 @@
 # Get-SchoolAssignmentBySection -Section_ID 82426521 -types '293,294' -filter 'future' -search 'Final'
 
 <#
+    Get-SchoolAssignmentByStudent
+    (Requires at least one of the following roles in the Education Management system: Student, Parent)
+#>
+# Get-SchoolAssignmentByStudent -Student_ID 3294459,3300981 -start_date "2022-11-07"
+# Get-SchoolAssignmentByStudent -Student_ID 3294459 -start_date "2022-11-07" -end_date "2022-11-13" -section_ids "82426521,93054528"
+
+<#
     Get-SchoolList
     Note: this replaces 'Get-SchoolLegacyList' which was deprecated 2023-01-01
     (Use Get-SchoolListOfLists to get a collection of basic and advanced lists the authorized user has access to)

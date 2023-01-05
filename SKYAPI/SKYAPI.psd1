@@ -84,6 +84,7 @@ FunctionsToExport = @(
     'Get-SchoolActivityBySchoolLevel',
     'Get-SchoolAdvisoryBySchoolLevel',
     'Get-SchoolAssignmentBySection',
+    'Get-SchoolAssignmentByStudent',
     'Get-SchoolCourse',
     'Get-SchoolDepartment',
     'Get-SchoolEnrollment',
