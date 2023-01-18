@@ -36,6 +36,7 @@ Set-Alias -Name New-SchoolEventsCategory -Value New-SchoolEventCategory
 # Public Enum
 # Name: MarkerType
 # Value: NEXT_RECORD_NUMBER - Use the record number as the marker value to return the next set of results. For example: marker=101 will return the second set of results.
+# Value: OFFSET - The record to start the next collection on.
 # Value: LAST_USER_ID - Use the last user's ID as the marker value to return the next set of results.
 # Value: NEXT_PAGE - Use the page number as the marker value to return the next set of results. For example: page=2 will return the second set of results.
 
