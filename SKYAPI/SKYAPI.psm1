@@ -434,7 +434,7 @@ Function Show-SKYAPIOAuthWindow
             $WebView2.CreationProperties.UserDataFolder = $sky_api_user_data_path
 
             # Clear WebView2 cache in the previously specified UserDataFolder
-            # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control
+            # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control (newer version possibly required)
             if ($ClearBrowserControlCache)
             {
                 Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse -ErrorAction Ignore
