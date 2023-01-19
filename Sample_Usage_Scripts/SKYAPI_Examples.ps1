@@ -3,6 +3,8 @@
 ################################################
 
 # Below are examples on how to use the available cmdlets & functions.
+# Note: Most endpoints also support the 'ReturnRaw' switch parameter to return the original JSON response from the Blackbaud SKY API.
+#       Otherwise, they will usually return the data in a custom PSObject or Hashtable object that has a property for each field in the JSON string.
 
 ###################################
 # General Use Cmdlets & Functions #
