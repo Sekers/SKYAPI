@@ -69,7 +69,8 @@ function Get-SchoolUserExtended
         $response.enroll_date = Repair-SkyApiDate -Date $response.enroll_date
         $response.last_sync_date = Repair-SkyApiDate -Date $response.last_sync_date # Not 100% sure if I need to fix this one since it might actually be storing time information (I don't have a record with this set properly to test). However, I don't think this stores time so we are probably good.
 
-        # TODO - OK SO CHECK CREATING THESE VIA THE API BECAUSE IT SETS A TIME??? THE WEBSITE DOESN'T BUT SHOWS A TIME. SO CRAPPY!!!!!!!!!!
+        # TODO - There is a bug with the dates not appearing correctly on the website when submitting occupations on this endpoint. I have a support request open with Blackbaud
+        #        They were able to replicate the issue and have passed it on to the product development team for further review.
         foreach ($occupation in $response.occupations)
         {
             $index = $response.occupations.IndexOf($occupation)

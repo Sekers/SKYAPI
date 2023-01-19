@@ -1,5 +1,7 @@
-# TODO THIS ONE IS NOT READY DUE TO SOME WORK NEEDED AS WELL AS BUGS IN THE ENDPOINT WITH DATES.
-function New-SchoolUserOccupation # TODO or Set-*
+# TODO - There is a bug with the dates not appearing correctly on the website when submitting occupations on this endpoint. I have a support request open with Blackbaud
+#        They were able to replicate the issue and have passed it on to the product development team for further review.
+
+function New-SchoolUserOccupation
 { 
     <#
         .LINK
@@ -46,7 +48,26 @@ function New-SchoolUserOccupation # TODO or Set-*
         Indicates if this is the individuals current employer.
         
         .EXAMPLE
-        
+        New-SchoolUserOccupation -User_ID 3156271, 3294459 -business_name "Don's Auto" -job_title "Director of Shiny Things" -current $true
+        .EXAMPLE
+        $params = @{
+            '-User_ID'          = 3156271
+            'business_name'     = "Don's Auto"
+            'job_title'         = "Director of Shiny Things"
+            'business_url'      = "https://donsauto.com"
+            'industry'          = "Automotive"
+            'organization'      = "Don's Group"
+            'occupation'        = "Mechanical Technician"
+            'matching_gift'     = $true
+            'begin_date'        = "2020-07-01"
+            'end_date'          = "2023-06-30"
+            'specialty'         = "Classic Cars"
+            'parent_company'    = "Don's Group"
+            'job_function'      = "Rebuilds classic cars into shiny new beasts."
+            'years_employed'    = 3
+            'current'           = $false
+        }
+        New-SchoolUserOccupation @params
     #>
     
     [cmdletbinding()]
@@ -62,76 +83,82 @@ function New-SchoolUserOccupation # TODO or Set-*
         Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
+        [string]$business_name,
+
+        [Parameter(
+        Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
         [string]$job_title,
 
         [Parameter( 
-        Position=2,
+        Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$business_url,
 
         [Parameter(
-        Position=3,
+        Position=4,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$industry,
 
         [Parameter(
-        Position=4,
+        Position=5,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$organization,
 
         [Parameter(
-        Position=5,
+        Position=6,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$occupation,
 
         [Parameter(
-        Position=6,
+        Position=7,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$matching_gift,
 
         [Parameter(
-        Position=7,
+        Position=8,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$begin_date,
 
         [Parameter(
-        Position=8,
+        Position=9,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$end_date,
 
         [Parameter(
-        Position=9,
+        Position=10,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$specialty,
 
         [Parameter(
-        Position=10,
+        Position=11,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$parent_company,
 
         [Parameter(
-        Position=11,
+        Position=12,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$job_function,
 
         [Parameter(
-        Position=12,
+        Position=13,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$years_employed,
 
         [Parameter(
-        Position=13,
+        Position=14,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$current                                         
@@ -157,18 +184,6 @@ function New-SchoolUserOccupation # TODO or Set-*
 
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Verify the phone number type doesn't already exists for any of the users.
-    foreach ($uid in $User_ID)
-    {
-        # $UserPhoneNumbers = Get-SchoolUserPhone -User_ID $uid
-        # if ($UserPhoneNumbers.type_id -contains $type_id)
-        # {
-        #     throw "User $uid already has phone number of type id $type_id"
-        # }
-
-
-    }
     
     # Set data for one or more IDs
     foreach ($uid in $User_ID)

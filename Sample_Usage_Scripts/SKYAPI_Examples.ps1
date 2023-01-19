@@ -313,6 +313,29 @@
 # New-SchoolUserPhone -User_ID 3154032,5942642 -number "(555) 555-5555" -type_id 331
 
 <#
+    New-SchoolUserOccupation
+#>
+# New-SchoolUserOccupation -User_ID 3156271, 3294459 -business_name "Don's Auto" -job_title "Director of Shiny Things" -current $true
+# $params = @{
+#     '-User_ID'          = 3156271
+#     'business_name'     = "Don's Auto"
+#     'job_title'         = "Director of Shiny Things"
+#     'business_url'      = "https://donsauto.com"
+#     'industry'          = "Automotive"
+#     'organization'      = "Don's Group"
+#     'occupation'        = "Mechanical Technician"
+#     'matching_gift'     = $true
+#     'begin_date'        = "2020-07-01"
+#     'end_date'          = "2023-06-30"
+#     'specialty'         = "Classic Cars"
+#     'parent_company'    = "Don's Group"
+#     'job_function'      = "Rebuilds classic cars into shiny new beasts."
+#     'years_employed'    = 3
+#     'current'           = $false
+# }
+# New-SchoolUserOccupation @params
+
+<#
     Get-SchoolVenueBuilding
 #>
 # Get-SchoolVenueBuilding
