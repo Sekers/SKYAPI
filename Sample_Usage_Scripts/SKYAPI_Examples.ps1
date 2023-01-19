@@ -253,7 +253,7 @@
 #>
 # [array]$SchoolList = Get-SchoolList -List_ID 30631,52631
 # $SchoolList = Get-SchoolList -List_ID 30631 -ConvertTo Array
-# Get-SchoolList -List_ID 30631 Array | Export-Csv -Path "C:\ScriptExports\school_list.csv" -NoTypeInformation
+# Get-SchoolList -List_ID 30631 -ConvertTo Array | Export-Csv -Path "C:\ScriptExports\school_list.csv" -NoTypeInformation
 
 <#
     Get-SchoolListOfLists
