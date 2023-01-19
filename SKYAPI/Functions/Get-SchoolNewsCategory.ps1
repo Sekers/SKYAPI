@@ -14,10 +14,22 @@ function Get-SchoolNewsCategory
         Education Management School API - Returns a collection of Content News Categories.
         Requires the 'Parent', 'Faculty' or 'Student' role in the Education Management system.
 
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
+
         .EXAMPLE
         Get-SchoolNewsCategory
     #>
     
+    [cmdletbinding()]
+    param(
+        [Parameter(
+        Position=0,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
+    )
+
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/news/categories'
 
@@ -30,6 +42,12 @@ function Get-SchoolNewsCategory
 
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+    if ($ReturnRaw)
+    {
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        return $response
+    }
 
     $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response

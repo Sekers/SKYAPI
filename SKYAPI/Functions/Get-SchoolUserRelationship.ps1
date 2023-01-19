@@ -15,6 +15,8 @@ function Get-SchoolUserRelationship
 
         .PARAMETER User_ID
         Required. Array of user IDs you want the relationships of.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
    
         .EXAMPLE
         Get-SchoolUserRelationship -User_ID 3154032,5942642
@@ -27,7 +29,13 @@ function Get-SchoolUserRelationship
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int[]]$User_ID # Array as we loop through submitted IDs
+        [int[]]$User_ID, # Array as we loop through submitted IDs
+
+        [Parameter(
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Get the SKY API subscription key
@@ -47,6 +55,13 @@ function Get-SchoolUserRelationship
     # Get data for one or more IDs
     foreach ($uid in $User_ID)
     {
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+            $response
+            continue
+        }
+
         $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
         $response
     }

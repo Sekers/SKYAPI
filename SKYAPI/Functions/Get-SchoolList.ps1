@@ -48,58 +48,21 @@ function Get-SchoolList
         Results will start with this page of results in the result set. Defaults to 1 if not specified.
         .PARAMETER ResponseLimit
         Limits response to this number of results.
+        .PARAMETER ConvertTo
+        The way list results collections are returned by the API is fairly unique and different than most other endpoints, making them difficult
+        to work with at times. Use this parameter to instead return the results as an Array of PowerShell objects.
 
         .EXAMPLE
-        [array]$SchoolList = Get-SchoolList -List_ID 30631,52631
+        Get-SchoolList -List_ID 30631,52631
 
         .EXAMPLE
-        The way list results collections are returned are fairly unique and diffferent than most other endpoints.
-        You can use the following trick store a list of values for a specific header.
-        Change the Where-Object filter (i.e., 'First Name') value to the header label you want returned.
-
-        [array]$SchoolList = Get-SchoolList -List_ID 30631
-        [array]$ArrayOfFirstNames = foreach ($listItem in $SchoolList)
-        {
-            $listItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "First Name"} | Select-Object -ExpandProperty value
-        }
-
-        $ArrayOfFirstNames
+        Get-SchoolList -List_ID 30631 -ConvertTo Array
 
         .EXAMPLE
-        The way list results collections are returned are fairly unique and diffferent than most other endpoints.
-        You can use the following trick to have a usable PowerShell ArrayList of the returned results.
-        Below is an example that builds an ArrayList with the following header values for each School Advisory section returned:
-          - Group Identifier
-          - E-Mail
-          - First Name
-          - Last Name
-        Change these values to the header labels you want returned and create/remove headers as desired.
+        You can easily export to CSV when you use the 'ConvertTo' switch parameter.
 
-        $AdvisorySectionListID = 52631
-        $Classes = [System.Collections.ArrayList]::new()
-        
-        [array]$AdvisorySectionList = Get-SchoolList -List_ID $AdvisorySectionListID
-        foreach ($advisory in $AdvisorySectionList)
-        {
-            # Get the advisory's group identifier and teacher information from the ID in the advisory.
-            [string]$AdvisoryGroupId = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "Group Identifier"} | Select-Object -ExpandProperty value
-            [string]$AdvisoryFacultyEmail = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "E-Mail"} | Select-Object -ExpandProperty value
-            [string]$AdvisoryFacultyFirstName = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "First Name"} | Select-Object -ExpandProperty value
-            [string]$AdvisoryFacultyLastName = $advisory | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq "Last Name"} | Select-Object -ExpandProperty value
-            
-            # Build the 'Class' section object.
-            $Class = New-Object System.Object
-            $Class | Add-Member -MemberType NoteProperty -Name "offering_type" -Value "Advisory" # Tip: you can add additional values to the ArrayList if you want.
-            $Class | Add-Member -MemberType NoteProperty -Name "section" -Value $AdvisoryGroupId
-            $Class | Add-Member -MemberType NoteProperty -Name "teacher_email" -Value $AdvisoryFacultyEmail
-            $Class | Add-Member -MemberType NoteProperty -Name "teacher_firstname" -Value $AdvisoryFacultyFirstName
-            $Class | Add-Member -MemberType NoteProperty -Name "teacher_lastname" -Value $AdvisoryFacultyLastName
-            
-            # Add the class object to classes ArrayList
-            $null = $Classes.Add($Class)
-        }
-
-        $Classes
+        $SchoolList = Get-SchoolList -List_ID 30631 -ConvertTo Array
+        $SchoolList | Export-Csv -Path "C:\ScriptExports\school_list.csv" -NoTypeInformation
     #>
     
     [cmdletbinding()]
@@ -121,7 +84,14 @@ function Get-SchoolList
         Position=2,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$ResponseLimit
+        [int]$ResponseLimit,
+
+        [parameter(
+        Position=3,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [ValidateSet("Array")]
+        [string]$ConvertTo
     )
     
     # Set API responses per page limit.
@@ -162,10 +132,40 @@ function Get-SchoolList
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    # Get data for one or more IDs
+    # Get the data for one or more List IDs.
     foreach ($uid in $List_ID)
     {
+
         $response = Get-SKYAPIPagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
-        $response
+        
+        # Check to see if the data should be returned in a different format or as is.
+        switch ($ConvertTo)
+        {
+            Array
+            {               
+                $Array = foreach ($listItem in $response)
+                {
+                    # Get the column headers.
+                    $ColumnHeaders = $listItem | Select-Object -ExpandProperty "columns" | Select-Object -ExpandProperty name
+
+                    # Build the list item object.
+                    $ArrayItem = New-Object System.Object
+                    foreach ($columnHeader in $ColumnHeaders)
+                    {
+                        [string]$HeaderValue = $listItem | Select-Object -ExpandProperty "columns" | Where-Object {$_.name -eq $columnHeader} | Select-Object -ExpandProperty value
+                        $ArrayItem | Add-Member -MemberType NoteProperty -Name $columnHeader -Value $HeaderValue
+                    }
+                   
+                    # Output list item object.
+                    $ArrayItem
+                }
+
+                return $Array
+            }
+            Default # Return the result as is.
+            {
+                return $response
+            }
+        }
     }
 }

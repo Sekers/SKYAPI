@@ -18,6 +18,8 @@ function Get-SchoolStudentEnrollment
         Required. Array of user IDs of each student's course section enrollments you want returned.
         .PARAMETER school_year
         The school year to get sections for. Defaults to the current school year if not specified.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolStudentEnrollment -User_ID 3294459,3300981
@@ -38,7 +40,13 @@ function Get-SchoolStudentEnrollment
         Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$school_year
+        [string]$school_year,
+
+        [Parameter(
+        Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Set the endpoints
@@ -54,8 +62,9 @@ function Get-SchoolStudentEnrollment
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
-    # Remove the $User_ID parameter since we don't pass that on in with the other parameters
+    # Remove parameters since we don't pass them on with the other parameters
     $parameters.Remove('User_ID') | Out-Null
+    $parameters.Remove('ReturnRaw') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -67,6 +76,13 @@ function Get-SchoolStudentEnrollment
     # Get data for one or more IDs
     foreach ($uid in $User_ID)
     {
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+            $response
+            continue
+        }
+
         $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }

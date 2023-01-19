@@ -13,12 +13,21 @@ function Get-ReConstituentRelationshipType
         .DESCRIPTION
         Raiser's Edge Constituent API - Returns a list of available constituent suffix types.
 
-        .PARAMETER 
-        Required. 
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-ReConstituentRelationshipType
     #>
+
+    [cmdletbinding()]
+    param(
+        [Parameter(
+        Position=0,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
+    )
     
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/constituent/v1/relationshiptypes'
@@ -33,6 +42,12 @@ function Get-ReConstituentRelationshipType
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
+    if ($ReturnRaw)
+    {
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        return $response
+    }
+    
     $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
     $response
 }

@@ -36,6 +36,7 @@ Set-Alias -Name New-SchoolEventsCategory -Value New-SchoolEventCategory
 # Public Enum
 # Name: MarkerType
 # Value: NEXT_RECORD_NUMBER - Use the record number as the marker value to return the next set of results. For example: marker=101 will return the second set of results.
+# Value: OFFSET - The record to start the next collection on.
 # Value: LAST_USER_ID - Use the last user's ID as the marker value to return the next set of results.
 # Value: NEXT_PAGE - Use the page number as the marker value to return the next set of results. For example: page=2 will return the second set of results.
 
@@ -433,7 +434,7 @@ Function Show-SKYAPIOAuthWindow
             $WebView2.CreationProperties.UserDataFolder = $sky_api_user_data_path
 
             # Clear WebView2 cache in the previously specified UserDataFolder
-            # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control
+            # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control (newer version possibly required)
             if ($ClearBrowserControlCache)
             {
                 Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse -ErrorAction Ignore
@@ -619,12 +620,16 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
         500 # Internal Server Error.
         {
             # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
+            # The other option would be to use the exponential backoff method where You can periodically retry a failed request over an increasing amount of time to handle errors
+            # related to rate limits, network volume, or response time. For example, you might retry a failed request after one second, then after two seconds, and then after four seconds.
             Start-Sleep -Seconds 5
             'retry'
         }
         503 # The service is currently unavailable.
         {
             # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
+            # The other option would be to use the exponential backoff method where You can periodically retry a failed request over an increasing amount of time to handle errors
+            # related to rate limits, network volume, or response time. For example, you might retry a failed request after one second, then after two seconds, and then after four seconds.
             Start-Sleep -Seconds 5
             'retry'
         }
@@ -638,7 +643,15 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
 Function Get-SKYAPIUnpagedEntity
 {
     [CmdletBinding()]
-    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field)
+    Param(
+        $uid,
+        $url,
+        $endUrl,
+        $api_key,
+        $authorisation,
+        $params,
+        $response_field,
+        [switch]$ReturnRaw)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -669,23 +682,38 @@ Function Get-SKYAPIUnpagedEntity
         $NextAction = $null
         try
         {
-            $apiCallResult =
-            Invoke-RestMethod   -Method Get `
-                                -ContentType application/json `
-                                -Headers @{
-                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
-                                        'bb-api-subscription-key' = ($api_key)} `
-                                -Uri $($Request.Uri.AbsoluteUri)
-        
-            # If there is a response field set for the endpoint cmdlet, return that.
-            if ($null -ne $response_field -and "" -ne $response_field)
+            if ($ReturnRaw)
             {
-                # return $apiCallResult.$response_field
-                return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+                $apiCallResult =
+                Invoke-WebRequest   -Method Get `
+                                    -ContentType application/json `
+                                    -Headers @{
+                                            'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                            'bb-api-subscription-key' = ($api_key)} `
+                                    -Uri $($Request.Uri.AbsoluteUri)
+                
+                return $apiCallResult.Content
             }
-            else # else return the entire API call result
+            else
             {
-                return $apiCallResult
+                $apiCallResult =
+                Invoke-RestMethod   -Method Get `
+                                    -ContentType application/json `
+                                    -Headers @{
+                                            'Authorization' = ("Bearer "+ $($authorisation.access_token))
+                                            'bb-api-subscription-key' = ($api_key)} `
+                                    -Uri $($Request.Uri.AbsoluteUri)
+            
+                # If there is a response field set for the endpoint cmdlet, return that.
+                if ($null -ne $response_field -and "" -ne $response_field)
+                {
+                    # return $apiCallResult.$response_field
+                    return Resolve-SKYAPIMemberChain -InputObject $apiCallResult -MemberPath $response_field -Delimiter "."
+                }
+                else # else return the entire API call result
+                {
+                    return $apiCallResult
+                }
             }
         }
         catch
@@ -1119,6 +1147,15 @@ function Get-SKYAPIAuthTokensFromFile
     }
     
     $AuthTokensFromFile
+}
+
+# Fix date-only fields since the API returns dates with improper time values (sends it as -05:00 or sometimes -04:00).
+# Converting to UTC should resolve the issue (though it makes the unused time portion 5 AM or 4AM, the date is accurate).
+function Repair-SkyApiDate
+{
+    param ([DateTime]$Date)
+    $Date = (($(Get-Date($Date).ToUniversalTime()).ToString('o')) -split "T")[0] # Can't use -AsUTC since that's PS Core only (not Windows PS 5.1).
+    $Date
 }
 
 # Import the functions

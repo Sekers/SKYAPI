@@ -3,6 +3,8 @@
 ################################################
 
 # Below are examples on how to use the available cmdlets & functions.
+# Note: Most endpoints also support the 'ReturnRaw' switch parameter to return the original JSON response from the Blackbaud SKY API.
+#       Otherwise, they will usually return the data in a custom PSObject or Hashtable object that has a property for each field in the JSON string.
 
 ###################################
 # General Use Cmdlets & Functions #
@@ -101,6 +103,13 @@
 #>
 # Get-SchoolYear
 # Get-SchoolYear | Where-Object current_year -Match "True" | Select-Object -ExpandProperty school_year_label
+
+<#
+    Get-SchoolCycleBySection
+    (Use Get-SchoolTerm to get a list of term/duration IDs)
+#>
+# Get-SchoolCycleBySection -Section_ID 82426521,93054528
+# Get-SchoolCycleBySection -Section_ID 82426521 -duration_id 142312 -group_type 1
 
 <#
     Get-SchoolUser
@@ -222,6 +231,20 @@
 # Get-SchoolStudentBySection -Section_ID 93054528,92486528
 
 <#
+    Get-SchoolAssignmentBySection
+    (To get a list of assignment type IDs, create an Advanced List from the web app using Academic Group > Assignment Type)
+#>
+# Get-SchoolAssignmentBySection -Section_ID 82426521,93054528
+# Get-SchoolAssignmentBySection -Section_ID 82426521 -types '293,294' -filter 'future' -search 'Final'
+
+<#
+    Get-SchoolAssignmentByStudent
+    (Requires at least one of the following roles in the Education Management system: Student, Parent)
+#>
+# Get-SchoolAssignmentByStudent -Student_ID 3294459,3300981 -start_date "2022-11-07"
+# Get-SchoolAssignmentByStudent -Student_ID 3294459 -start_date "2022-11-07" -end_date "2022-11-13" -section_ids "82426521,93054528"
+
+<#
     Get-SchoolList
     Note: this replaces 'Get-SchoolLegacyList' which was deprecated 2023-01-01
     (Use Get-SchoolListOfLists to get a collection of basic and advanced lists the authorized user has access to)
@@ -229,6 +252,8 @@
          For more complex examples, use the comment-based help: Get-Help Get-SchoolList -Examples 
 #>
 # [array]$SchoolList = Get-SchoolList -List_ID 30631,52631
+# $SchoolList = Get-SchoolList -List_ID 30631 -ConvertTo Array
+# Get-SchoolList -List_ID 30631 -ConvertTo Array | Export-Csv -Path "C:\ScriptExports\school_list.csv" -NoTypeInformation
 
 <#
     Get-SchoolListOfLists
@@ -286,6 +311,29 @@
            You can specify multiple user IDs with this function but it will not link them (each user record will have the number added without them sharing it).
 #>
 # New-SchoolUserPhone -User_ID 3154032,5942642 -number "(555) 555-5555" -type_id 331
+
+<#
+    New-SchoolUserOccupation
+#>
+# New-SchoolUserOccupation -User_ID 3156271, 3294459 -business_name "Don's Auto" -job_title "Director of Shiny Things" -current $true
+# $params = @{
+#     '-User_ID'          = 3156271
+#     'business_name'     = "Don's Auto"
+#     'job_title'         = "Director of Shiny Things"
+#     'business_url'      = "https://donsauto.com"
+#     'industry'          = "Automotive"
+#     'organization'      = "Don's Group"
+#     'occupation'        = "Mechanical Technician"
+#     'matching_gift'     = $true
+#     'begin_date'        = "2020-07-01"
+#     'end_date'          = "2023-06-30"
+#     'specialty'         = "Classic Cars"
+#     'parent_company'    = "Don's Group"
+#     'job_function'      = "Rebuilds classic cars into shiny new beasts."
+#     'years_employed'    = 3
+#     'current'           = $false
+# }
+# New-SchoolUserOccupation @params
 
 <#
     Get-SchoolVenueBuilding

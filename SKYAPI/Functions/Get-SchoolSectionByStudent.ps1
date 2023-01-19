@@ -17,6 +17,8 @@ function Get-SchoolSectionByStudent
 
         .PARAMETER Student_ID
         Required. Array of user IDs for each student you want sections for returned.
+        .PARAMETER ReturnRaw
+        Returns the raw JSON content of the API call.
 
         .EXAMPLE
         Get-SchoolSectionByStudent -Student_ID 6111769,2772870
@@ -30,7 +32,13 @@ function Get-SchoolSectionByStudent
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int[]]$Student_ID # Array as we loop through submitted IDs
+        [int[]]$Student_ID, # Array as we loop through submitted IDs
+
+        [Parameter(
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$ReturnRaw
     )
     
     # Get the SKY API subscription key
@@ -44,10 +52,20 @@ function Get-SchoolSectionByStudent
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/student/'
     $endUrl = '/sections'
 
+    # Set the response field
+    $ResponseField = "value"
+
     # Get data for one or more IDs
     foreach ($uid in $Student_ID)
     {
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+            $response
+            continue
+        }
+
+        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
         $response
     }
 }
