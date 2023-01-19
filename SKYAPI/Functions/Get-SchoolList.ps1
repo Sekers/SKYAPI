@@ -48,7 +48,7 @@ function Get-SchoolList
         Results will start with this page of results in the result set. Defaults to 1 if not specified.
         .PARAMETER ResponseLimit
         Limits response to this number of results.
-        .PARAMETER ConverTo
+        .PARAMETER ConvertTo
         The way list results collections are returned by the API is fairly unique and different than most other endpoints, making them difficult
         to work with at times. Use this parameter to instead return the results as an Array of PowerShell objects.
 
