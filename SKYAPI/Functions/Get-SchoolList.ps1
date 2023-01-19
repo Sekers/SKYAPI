@@ -152,7 +152,7 @@ function Get-SchoolList
                     $ArrayItem = New-Object System.Object
                     foreach ($columnHeader in $ColumnHeaders)
                     {
-                        [string]$HeaderValue = $listItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq $columnHeader} | Select-Object -ExpandProperty value
+                        [string]$HeaderValue = $listItem | Select-Object -ExpandProperty "columns" | Where-Object {$_.name -eq $columnHeader} | Select-Object -ExpandProperty value
                         $ArrayItem | Add-Member -MemberType NoteProperty -Name $columnHeader -Value $HeaderValue
                     }
                    
