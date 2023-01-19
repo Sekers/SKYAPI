@@ -103,6 +103,13 @@
 # Get-SchoolYear | Where-Object current_year -Match "True" | Select-Object -ExpandProperty school_year_label
 
 <#
+    Get-SchoolCycleBySection
+    (Use Get-SchoolTerm to get a list of term/duration IDs)
+#>
+# Get-SchoolCycleBySection -Section_ID 82426521,93054528
+# Get-SchoolCycleBySection -Section_ID 82426521 -duration_id 142312 -group_type 1
+
+<#
     Get-SchoolUser
 #>
 # Get-SchoolUser -User_ID 2230332,3243114
