@@ -156,7 +156,7 @@ function Get-SchoolList
                         $ArrayItem | Add-Member -MemberType NoteProperty -Name $columnHeader -Value $HeaderValue
                     }
                    
-                    # Output
+                    # Output list item object.
                     $ArrayItem
                 }
 
