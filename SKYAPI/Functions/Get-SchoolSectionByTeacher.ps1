@@ -8,10 +8,10 @@ function Get-SchoolSectionByTeacher
         Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
         
         .SYNOPSIS
-        Education Management School API - Returns a collection of sections for one or more teachers.
+        Education Management School API - Returns a collection of academic sections for one or more teachers.
 
         .DESCRIPTION
-        Education Management School API - Returns a collection of sections for one or more teachers.
+        Education Management School API - Returns a collection of academic sections for one or more teachers.
 
         .PARAMETER Teacher_ID
         Required. Array of user IDs for each teacher you want sections for returned.

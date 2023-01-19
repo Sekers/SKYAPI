@@ -1,5 +1,14 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.6](https://github.com/Sekers/SKYAPI/tree/0.3.6) - (2023-01-19)
+
+### Fixes
+
+- HOTFIX: Resolved issue where error was presented on some endpoints when DateTime fields are returned empty.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.5](https://github.com/Sekers/SKYAPI/tree/0.3.5) - (2023-01-19)
 
 ### Fixes

@@ -61,7 +61,7 @@ function Get-SchoolUser
         $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
 
         # Fix date-only fields since the API returns dates with improper time values.
-        $response.dob = Repair-SkyApiDate -Date $response.dob
+        if (-not [string]::IsNullOrEmpty($response.dob)){$response.dob = Repair-SkyApiDate -Date $response.dob}
 
         $response
     }

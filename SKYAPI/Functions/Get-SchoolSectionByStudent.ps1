@@ -8,10 +8,10 @@ function Get-SchoolSectionByStudent
         Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsStudentByStudent_idSectionsGet
         
         .SYNOPSIS
-        Education Management School API - Returns a collection of sections for the specified student ID(s).
+        Education Management School API - Returns a collection of academic sections for the specified student ID(s).
 
         .DESCRIPTION
-        Education Management School API - Returns a collection of sections for the specified student ID(s).
+        Education Management School API - Returns a collection of academic sections for the specified student ID(s).
         Note: Academic Group Managers cannot use this endpoint.
         The user requesting the information must be the student, parent of the student or faculty member associated with the student.
 
