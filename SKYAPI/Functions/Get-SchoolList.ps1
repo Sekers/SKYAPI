@@ -48,20 +48,20 @@ function Get-SchoolList
         Results will start with this page of results in the result set. Defaults to 1 if not specified.
         .PARAMETER ResponseLimit
         Limits response to this number of results.
-        .PARAMETER AsArrayList
-        The way list results collections are returned are fairly unique and different than most other endpoints, making them difficult
-        to work with at times. Use this switch parameter to return the results as an ArrayList instead of an Array.
+        .PARAMETER ConverTo
+        The way list results collections are returned by the API is fairly unique and different than most other endpoints, making them difficult
+        to work with at times. Use this parameter to instead return the results as an Array of PowerShell objects.
 
         .EXAMPLE
         Get-SchoolList -List_ID 30631,52631
 
         .EXAMPLE
-        Get-SchoolList -List_ID 30631 -AsArrayList
+        Get-SchoolList -List_ID 30631 -ConvertTo Array
 
         .EXAMPLE
-        You can easily export to CSV when you use the 'AsArrayList' switch parameter.
+        You can easily export to CSV when you use the 'ConvertTo' switch parameter.
 
-        $SchoolList = Get-SchoolList -List_ID 30631 -AsArrayList
+        $SchoolList = Get-SchoolList -List_ID 30631 -ConvertTo Array
         $SchoolList | Export-Csv -Path "C:\ScriptExports\school_list.csv" -NoTypeInformation
     #>
     
@@ -90,7 +90,8 @@ function Get-SchoolList
         Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [switch]$AsArrayList
+        [ValidateSet("Array")]
+        [string]$ConvertTo
     )
     
     # Set API responses per page limit.
@@ -137,34 +138,34 @@ function Get-SchoolList
 
         $response = Get-SKYAPIPagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
         
-        # Check to see if the data should be returned as an ArrayList or as is.
-        if ($AsArrayList)
+        # Check to see if the data should be returned in a different format or as is.
+        switch ($ConvertTo)
         {
-            # Create the ArrayList.
-            $ArrayList = [System.Collections.ArrayList]::new()
-            
-            foreach ($listItem in $response)
-            {
-                # Get the column headers.
-                $ColumnHeaders = $listItem | Select-Object -ExpandProperty "columns" | Select-Object -ExpandProperty name
-
-                # Build the $ArrayListItem object.
-                $ArrayListItem = New-Object System.Object
-                foreach ($columnHeader in $ColumnHeaders)
+            Array
+            {               
+                $Array = foreach ($listItem in $response)
                 {
-                    [string]$HeaderValue = $listItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq $columnHeader} | Select-Object -ExpandProperty value
-                    $ArrayListItem | Add-Member -MemberType NoteProperty -Name $columnHeader -Value $HeaderValue
+                    # Get the column headers.
+                    $ColumnHeaders = $listItem | Select-Object -ExpandProperty "columns" | Select-Object -ExpandProperty name
+
+                    # Build the list item object.
+                    $ArrayItem = New-Object System.Object
+                    foreach ($columnHeader in $ColumnHeaders)
+                    {
+                        [string]$HeaderValue = $listItem | select-object -ExpandProperty "columns" | Where-Object {$_.name -eq $columnHeader} | Select-Object -ExpandProperty value
+                        $ArrayItem | Add-Member -MemberType NoteProperty -Name $columnHeader -Value $HeaderValue
+                    }
+                   
+                    # Output
+                    $ArrayItem
                 }
 
-                # Add the ArrayListItem object to the ArrayList.
-                $null = $ArrayList.Add($ArrayListItem)
+                return $Array
             }
-
-            $ArrayList
-        }
-        else # Return the result as is.
-        {
-            $response
+            Default # Return the result as is.
+            {
+                return $response
+            }
         }
     }
 }

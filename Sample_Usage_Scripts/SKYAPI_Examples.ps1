@@ -252,8 +252,8 @@
          For more complex examples, use the comment-based help: Get-Help Get-SchoolList -Examples 
 #>
 # [array]$SchoolList = Get-SchoolList -List_ID 30631,52631
-# $SchoolList = Get-SchoolList -List_ID 30631 -AsArrayList
-# Get-SchoolList -List_ID 30631 -AsArrayList | Export-Csv -Path "C:\ScriptExports\school_list.csv" -NoTypeInformation
+# $SchoolList = Get-SchoolList -List_ID 30631 -ConvertTo Array
+# Get-SchoolList -List_ID 30631 Array | Export-Csv -Path "C:\ScriptExports\school_list.csv" -NoTypeInformation
 
 <#
     Get-SchoolListOfLists
