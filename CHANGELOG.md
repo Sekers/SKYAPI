@@ -1,5 +1,28 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.5](https://github.com/Sekers/SKYAPI/tree/0.3.5) - (2023-01-19)
+
+### Fixes
+
+- Resolved issue with the 'dob' parameter in the Update-SchoolUser function so it accepts a string.
+- Fixed a format issue with the response of Get-SchoolSectionByStudent.
+
+### Features
+
+- Most endpoints now support the optional 'ReturnRaw' switch parameter to return the original JSON response from the Blackbaud SKY API. Otherwise, they will usually return the data in a custom PSObject or Hashtable object that has a property for each field in the JSON string.
+- New optional 'ConvertTo' parameter for Get-SchoolList that tells the function to instead return the list collection results as an Array of PowerShell objects rather than the wonky, hard-to-work-with, way the API returns list results collections.
+- New Endpoint: [Get-SchoolAssignmentBySection](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idAssignmentsGet)
+- New Endpoint: [Get-SchoolAssignmentByStudent](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsByStudent_idAssignmentsGet)
+- New Endpoint: [Get-SchoolCycleBySection](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idCyclesGet)
+- New Endpoint: [New-SchoolUserOccupation](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsPost)
+
+### Other
+
+- Created an internal function to try and correct issues with the way DateTime fields are improperly handled by the API until Blackbaud resolves the problems.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.4](https://github.com/Sekers/SKYAPI/tree/0.3.4) - (2022-12-05)
 
 ### Fixes
@@ -23,6 +46,7 @@
 - New Endpoint: [Set-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsPost)
 
 ### Other
+
 - Fixed the casing of some passed/passthru parameters to the Blackbaud SKY API lowercase to match the API documentation as they had accidentally been made camelcase like non-API passed parameters.
 
 Author: [**@Sekers**](https://github.com/Sekers)
@@ -41,6 +65,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - New Connect-SKYAPI Parameter: ReturnConnectionInfo. Returns values when verifying the cached SKY API connection information.
 
 ### Other
+
 - Made all function/cmdlet names consistent as singular (and some other adjustments) & removed the 'List' keyword from function names (as Blackbaud has moved away from using that descriptor and it's also unnecessary). The old function names are kept as aliases so there are no breaking changes due to these renames.
 - Finished renaming all internal functions to prevent any naming conflicts with other modules.
 
@@ -75,6 +100,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - New Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPatch)
 
 ### Other
+
 - Renamed a backend function to prevent possible conflicts with other modules.
 - Removed the prerelease string from the module manifest.
 - Minor updates to the SKYAPI_Example.ps1 script.
