@@ -262,9 +262,23 @@ Function Show-SKYAPIOAuthWindow
 
         # Get a Listing of Installed Applications From the Registry
         $InstalledApplicationsFromRegistry = @()
-        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
-        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # HKLM Apps
         $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+        if ([System.Environment]::Is64BitProcess)
+        {
+            $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps when on 64-bit
+        }
+        
+        # Get EdgeWebView2 Installed Version (only pull the 1st entry in case more than one comes up)
+        $EdgeWebViewVersionInstalled = $InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName}
+        if ([string]::IsNullOrEmpty($EdgeWebViewVersionInstalled))
+        {
+            $EdgeWebViewVersionInstalled = "0.0.0.0" # Good idea to set something in case it's not installed due to casting later on.
+        }
+        else
+        {
+            $EdgeWebViewVersionInstalled = $([array]($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName})[0]).Version
+        }
 
         while ((-not ($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName})) -and ($null -eq $AuthenticationMethod -or "" -eq $AuthenticationMethod -or $AuthenticationMethod -eq "EdgeWebView2") )
         {
@@ -314,7 +328,6 @@ Function Show-SKYAPIOAuthWindow
                         Exit
                     }
             }
-            
         }
     }
     
@@ -435,9 +448,14 @@ Function Show-SKYAPIOAuthWindow
             $WebView2.CreationProperties = New-Object -TypeName 'Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties'
             $WebView2.CreationProperties.UserDataFolder = $sky_api_user_data_path
 
-            # Clear WebView2 cache in the previously specified UserDataFolder
-            # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control (newer version possibly required)
-            if ($ClearBrowserControlCache)
+            # Clear WebView2 cache in the previously specified UserDataFolder, if requested.
+            # Using the WebView2 SDK to clear the browsing data is best, but wasn't released until version 1.0.1245.22 of the control.
+            # This version SDK requires EdgeWebView2 version 102.0.1245.22 to be installed for full API compatibility.
+            # So, we only clear the cache using the SDK if this version or higher of the WebView2 runtime is installed.
+            # Otherwise, we just hardcode deleting the folder.
+            # Note that we have to delete the folder before the control is loaded,
+            # but we can't call the clear until it is initialized (so that code is further down).
+            if ($ClearBrowserControlCache -and [System.Version]$EdgeWebViewVersionInstalled -lt [System.Version]'102.0.1245.22')
             {
                 Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse -ErrorAction Ignore
                 $ClearBrowserControlCache = $false
@@ -455,10 +473,26 @@ Function Show-SKYAPIOAuthWindow
                 }
             }
             $WebView2.add_NavigationCompleted($WebView2_NavigationCompleted)
+
+            # Set Event Handler for Clearing the Browser Data, if requested.
+            # We can't actually clear the browser data until the CoreWebView2 property is created, so that's why it's down here as an event action.
+            # More info: https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.winforms.webview2
+            # This event is triggered when the control's CoreWebView2 has finished being initialized
+            # (regardless of how initialization was triggered) but before it is used for anything.
+            # More info: https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.wpf.webview2.corewebview2initializationcompleted
+            if ($ClearBrowserControlCache -and [System.Version]$EdgeWebViewVersionInstalled -ge [System.Version]'102.0.1245.22')
+            {
+                $WebView2_CoreWebView2InitializationCompleted = {
+                    $WebView2.CoreWebView2.Profile.ClearBrowsingDataAsync()
+                }
+                $WebView2.add_CoreWebView2InitializationCompleted($WebView2_CoreWebView2InitializationCompleted)
+                $ClearBrowserControlCache = $false
+            }
             
             # Add WebView2 Control to the Form and Show It
             $form.Controls.Add($WebView2)
             $form.Add_Shown({$form.Activate()})
+            $form.TopMost = $true # Make's the dialog coming up above the PowerShell console more consistent (though not 100% it seems).
             $form.ShowDialog() | Out-Null
 
             # Parse Return URL
