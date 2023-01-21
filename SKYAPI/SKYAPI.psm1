@@ -402,7 +402,7 @@ Function Show-SKYAPIOAuthWindow
         default # EdgeWebView2
         {            
             # Set EdgeWebView2 Control Version to Use
-            $EdgeWebView2Control_VersionNumber = '1.0.1210.39'
+            $EdgeWebView2Control_VersionNumber = '1.0.1518.46'
             switch ($PSVersionTable.PSEdition)
             {
                 Desktop {$EdgeWebView2Control_DotNETVersion = "net45"}
@@ -422,9 +422,11 @@ Function Show-SKYAPIOAuthWindow
             # Load Assemblies
             Add-Type -AssemblyName System.Windows.Forms
 
-            # Note, you also need the following two files in the same folder as "Microsoft.Web.WebView2.WinForms.dll":
-            # - Microsoft.Web.WebView2.Core.dll
-            # - WebView2Loader.dll
+            # Unpack the nupkg and grab the following two DLLs out of the /lib folder.
+            # - Microsoft.Web.WebView2.WinForms.dll (there's a different version for each .NET type, but the same file for x86 & x64)
+            # - Microsoft.Web.WebView2.Core.dll (while there's a copy for each .NET type, so far they have been the same exact file; same file for x86 & x64 too)
+            # In addition, get the following file from the /runtimes folder and put it in the same locations.
+            # - WebView2Loader.dll (different for x86 & x64, but same for .NET Core & .NET 45)
             Add-Type -Path "$PSScriptRoot\Dependencies\Microsoft.Web.WebView2\$EdgeWebView2Control_VersionNumber\$EdgeWebView2Control_DotNETVersion\$EdgeWebView2Control_OSArchitecture\Microsoft.Web.WebView2.WinForms.dll"
 
             $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=600;Height=800}
