@@ -133,7 +133,6 @@ Function Get-SKYAPIAccessToken
     $Authorization
 }
 
-
 # Helper function to get a specified nested member property of an object.
 # From: https://stackoverflow.com/questions/69368564/powershell-get-value-from-json-using-string-from-array
 # This will take an array with each item as the next property in the path, or you can use a string with a delimiter (e.g., "results.rows")
@@ -313,9 +312,12 @@ Function Show-SKYAPIOAuthWindow
 
                         # Get a Listing of Installed Applications From the Registry
                         $InstalledApplicationsFromRegistry = @()
-                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
-                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # HKLM Apps
                         $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+                        if ([System.Environment]::Is64BitProcess)
+                        {
+                            $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps when on 64-bit
+                        }
 
                         # Retry Opening Authentication Window
                         Write-Host "Retrying Authentication...`n"
@@ -588,7 +590,7 @@ Function Get-SKYAPINewTokens
     $sky_api_tokens_file_path_ParentDir = Split-Path -Path $sky_api_tokens_file_path
     If(-not (Test-Path $sky_api_tokens_file_path_ParentDir))
     {
-        New-Item -ItemType Directory -Force -Path $sky_api_tokens_file_path_ParentDir
+        $null = New-Item -ItemType Directory -Force -Path $sky_api_tokens_file_path_ParentDir
     }
 
     # Save credentials to file
