@@ -604,8 +604,15 @@ Function Get-SKYAPINewTokens
 function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
 {
     # Convert From JSON
-    $InvokeErrorMessage = $InvokeErrorMessageRaw.ErrorDetails.Message | ConvertFrom-Json
-
+    try
+    {
+        $InvokeErrorMessage = $InvokeErrorMessageRaw.ErrorDetails.Message | ConvertFrom-Json
+    }
+    catch
+    {
+        throw $InvokeErrorMessageRaw
+    }
+    
     # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 3 different ways so we need to account for that. Yay for no consistency.
     If ($InvokeErrorMessage.statusCode)
     {
