@@ -785,7 +785,17 @@ Function Get-SKYAPIUnpagedEntity
 Function Get-SKYAPIPagedEntity
 {
     [CmdletBinding()]
-    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
+    Param(
+        $uid,
+        $url,
+        $endUrl,
+        $api_key,
+        $authorisation,
+        $params,
+        $response_field,
+        $response_limit,
+        $page_limit,
+        [MarkerType]$marker_type)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -1200,7 +1210,115 @@ function Repair-SkyApiDate
 {
     param ([DateTime]$Date)
     $Date = (($(Get-Date($Date).ToUniversalTime()).ToString('o')) -split "T")[0] # Can't use -AsUTC since that's PS Core only (not Windows PS 5.1).
+    # Alternative way to do the same thing? # $Date = $Date.ToUniversalTime() -Format "yyyy-MM-dd"
     $Date
+}
+
+# Converts From JSON Without Deserializing Dates
+# Dates must be in the roundtrip format and specify the offset (DateTimeKind.Local or DateTimeKind.Utc).
+# Examples:
+#  - 2009-06-15T13:45:30.0000000Z
+#  - 2009-06-15T13:45:30.0000000-07:00
+#  - 2009-06-15T13:45:00-07:00
+# More information: Since v6, ConvertTo-Json automatically deserializes strings that contain
+# an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
+# or a prefix of it that at least includes everything up to the seconds part as [datetime] instances.
+
+function Set-PSObjectText
+{
+    param (
+        [Parameter(
+        Position=0,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [AllowNull()]
+        $InputObject,
+
+        [Parameter(
+        Position=1,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$OldValue,
+
+        [Parameter(
+        Position=2,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$NewValue
+    )
+
+    if ($null -eq $InputObject)
+    {
+        return
+    }
+
+    switch ($InputObject.GetType().Name)
+    {
+        PSCustomObject
+        {
+            foreach ($item in $InputObject.PSObject.Properties | Where-Object -Property MemberType -EQ 'NoteProperty')
+            {
+                $ItemName = $item.Name
+                $InputObject.$ItemName = Set-PSObjectText -InputObject $($InputObject.$ItemName) -OldValue $OldValue -NewValue $NewValue
+            }
+        }
+        String
+        {
+            $InputObject = $InputObject -replace $OldValue, $NewValue
+        }
+        'Object[]' # Array
+        {
+            $InputObject = foreach ($item in $InputObject)
+            {
+                Set-PSObjectText -InputObject $item -OldValue $OldValue -NewValue $NewValue
+            }
+        }
+        Int64
+        {
+            # Do nothing to the Object.
+        }
+        Boolean
+        {
+            # Do nothing to the Object.
+        }
+        Default
+        {
+            $null
+            # Do nothing to the Object.
+        }
+    }
+
+    return $InputObject
+}
+
+function ConvertFrom-JsonWithoutDeserialization
+{
+    param (
+        [Parameter(
+        Position=0,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$InputObject
+    )
+
+    # Set the regular expression patterns.
+    $DateTimeRegex = '"(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+(\+|\-)\d+:\d+)"'
+    $DateTimeRegexWithHash = '(#)(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+(\+|\-)\d+:\d+)'
+
+    # Prepend the hash sign to round-trip date/time pattern strings.
+    [string]$JsonWithPrefix = $InputObject -replace $DateTimeRegex, '"#$1"'
+
+    # Convert to a PSCustomObject object.
+    [pscustomobject]$PSObjectWithPrefix = $JsonWithPrefix | ConvertFrom-Json
+
+    # Remove the added hash signs.
+    Set-PSObjectText -InputObject $PSObjectWithPrefix -OldValue $DateTimeRegexWithHash -NewValue '$2'
+
+    # return $InputObject
 }
 
 # Import the functions
