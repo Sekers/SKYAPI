@@ -276,12 +276,12 @@
     Get-SchoolScheduleMeeting
     Note 1: offering_types defaults to 1 (Academics) if not specified.
             Use Get-SchoolOfferingType to get a list of offering types
-    Note 2: The School Time Zone as indicated at https://lfcds.myschoolapp.com/app/core#demographics must be specified.
-            This is required because Blackbaud does not provide time accurate Time Zone information in this endpoint.
+    Note 2: The School Time Zone as indicated at https://[school_domain_here].myschoolapp.com/app/core#demographics must be specified.
+            This is required because Blackbaud does not return accurate time zone information from this endpoint.
             Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
 #>
-# Get-SchoolScheduleMeeting -SchoolTimeZoneId "Central Standard Time" -start_date '2022-11-01'
-# Get-SchoolScheduleMeeting -SchoolTimeZoneId "Central Standard Time" -start_date '2022-11-01' -end_date '2022-11-30' -offering_types '1,3'
+# Get-SchoolScheduleMeeting -start_date '2022-11-01'
+# Get-SchoolScheduleMeeting -start_date '2022-11-01' -end_date '2022-11-30' -offering_types '1,3'
 # Get-SchoolScheduleMeeting -start_date '2022-11-01' | Where-Object -Property faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
 
 # $HashArguments = @{
@@ -293,7 +293,7 @@
 # }
 # Get-SchoolScheduleMeeting @HashArguments
 
-# $meetings = Get-SchoolScheduleMeeting -SchoolTimeZoneId "Central Standard Time" -start_date '2022-11-01'
+# $meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
 # foreach ($meeting in $meetings)
 # {
 #     "`n--- Meeting Group ---"

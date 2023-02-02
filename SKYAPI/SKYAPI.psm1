@@ -1214,16 +1214,8 @@ function Repair-SkyApiDate
     $Date
 }
 
-# Converts From JSON Without Deserializing Dates
-# Dates must be in the roundtrip format and specify the offset (DateTimeKind.Local or DateTimeKind.Utc).
-# Examples:
-#  - 2009-06-15T13:45:30.0000000Z
-#  - 2009-06-15T13:45:30.0000000-07:00
-#  - 2009-06-15T13:45:00-07:00
-# More information: Since v6, ConvertTo-Json automatically deserializes strings that contain
-# an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
-# or a prefix of it that at least includes everything up to the seconds part as [datetime] instances.
-
+# Iterates through an object replacing all or part of matching string values
+# with the specified value using regular expressions.
 function Set-PSObjectText
 {
     param (
@@ -1240,14 +1232,14 @@ function Set-PSObjectText
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$OldValue,
+        [string]$OldValue, # Regex
 
         [Parameter(
         Position=2,
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$NewValue
+        [string]$NewValue # Regex
     )
 
     if ($null -eq $InputObject)
@@ -1257,6 +1249,10 @@ function Set-PSObjectText
 
     switch ($InputObject.GetType().Name)
     {
+        String
+        {
+            $InputObject = $InputObject -replace $OldValue, $NewValue
+        }
         PSCustomObject
         {
             foreach ($item in $InputObject.PSObject.Properties | Where-Object -Property MemberType -EQ 'NoteProperty')
@@ -1264,10 +1260,6 @@ function Set-PSObjectText
                 $ItemName = $item.Name
                 $InputObject.$ItemName = Set-PSObjectText -InputObject $($InputObject.$ItemName) -OldValue $OldValue -NewValue $NewValue
             }
-        }
-        String
-        {
-            $InputObject = $InputObject -replace $OldValue, $NewValue
         }
         'Object[]' # Array
         {
@@ -1286,7 +1278,6 @@ function Set-PSObjectText
         }
         Default
         {
-            $null
             # Do nothing to the Object.
         }
     }
@@ -1294,7 +1285,16 @@ function Set-PSObjectText
     return $InputObject
 }
 
-function ConvertFrom-JsonWithoutDeserialization
+# Converts From JSON Without Deserializing DateTime Strings
+# Dates must be in the roundtrip format and specify the offset (DateTimeKind.Local or DateTimeKind.Utc).
+# Examples:
+#  - 2009-06-15T13:45:30.0000000Z
+#  - 2009-06-15T13:45:30.0000000-07:00
+#  - 2009-06-15T13:45:00-07:00
+# More Information: Since PowerShell v6, ConvertTo-Json automatically deserializes strings that contain
+# an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
+# or a prefix of it that includes at least everything up to the seconds part as [datetime] instances.
+function ConvertFrom-JsonWithoutDateTimeDeserialization
 {
     param (
         [Parameter(

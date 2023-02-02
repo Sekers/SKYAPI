@@ -12,15 +12,18 @@ function Get-SchoolScheduleMeeting
 
         .DESCRIPTION
         Education Management School API - Returns a list of section meetings for a given date.
-        When end_date is supplied a range of meetings between the given dates is returned.
+        When end_date is supplied, a range of meetings between the given dates is returned.
+        If end_date is not supplied, Get-SchoolScheduleMeeting defaults to 30 days from start_date.
 
         Additional Notes:
           - Returned meeting start & end times are in UTC DateTime format.
-          - Returned meeting date is the date of the meeting in the School Time Zone as specified at https://lfcds.myschoolapp.com/app/core#demographics.
+          - Returned meeting date is the date of the meeting in the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
 
         .PARAMETER SchoolTimeZoneId
-        Required. Indicates the School Time Zone as specified at https://lfcds.myschoolapp.com/app/core#demographics.
-        This is required because Blackbaud does not provide time accurate Time Zone information in this endpoint.
+        Indicates the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
+        Get-SchoolScheduleMeeting will try to automatically pull the value from your school envirionment,
+        but if you receive an error, you may have to manually override it with a valid time zone ID.
+        This is required because Blackbaud does not return accurate time zone information from this endpoint.
         Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
         .PARAMETER start_date
         Required. Start date of events you want returned. Use ISO-8601 date format (e.g., 2022-04-01).
@@ -36,9 +39,9 @@ function Get-SchoolScheduleMeeting
         Filters meetings to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
 
         .EXAMPLE
-        Get-SchoolScheduleMeeting -SchoolTimeZoneId "Central Standard Time" -start_date '2022-11-01'
+        Get-SchoolScheduleMeeting -start_date '2022-11-01'
         .EXAMPLE
-        Get-SchoolScheduleMeeting -SchoolTimeZoneId "Central Standard Time" -start_date '2022-11-01' -end_date '2022-11-30' -offering_types '1,3'
+        Get-SchoolScheduleMeeting -start_date '2022-11-01' -end_date '2022-11-30' -offering_types '1,3'
         .EXAMPLE
         Get-SchoolScheduleMeeting -start_date '2022-11-01' | Where-Object -Property faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
         .EXAMPLE
@@ -51,7 +54,7 @@ function Get-SchoolScheduleMeeting
         }
         Get-SchoolScheduleMeeting @HashArguments
         .EXAMPLE
-        $meetings = Get-SchoolScheduleMeeting -SchoolTimeZoneId "Central Standard Time" -start_date '2022-11-01'
+        $meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
         foreach ($meeting in $meetings)
         {
             "`n--- Meeting Group ---"
@@ -70,8 +73,7 @@ function Get-SchoolScheduleMeeting
     [cmdletbinding()]
     Param(
         [Parameter(
-        Position=1,
-        Mandatory=$true,
+        Position=0,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateScript({
@@ -84,7 +86,7 @@ function Get-SchoolScheduleMeeting
                 throw "$_ is invalid. Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs."
             }
         })]
-        [string]$SchoolTimeZoneId,
+        [string]$SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name),
 
         [Parameter(
         Position=1,
@@ -135,7 +137,7 @@ function Get-SchoolScheduleMeeting
     # Remove the School Time Zone parameter since we don't pass it on to the API.
     $parameters.Remove('SchoolTimeZoneId') | Out-Null
 
-    # Get BaseUtcOffset
+    # Convert SchoolTimeZone to TimeZoneInfo object.
     $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property Id -EQ $SchoolTimeZoneId
 
     # Get the SKY API subscription key
@@ -192,12 +194,11 @@ function Get-SchoolScheduleMeeting
         $parameters.Add('end_date',$DateIterationEnd.ToString('yyyy-MM-dd'))
 
         # Get the Data.
-        # Note: Since v6, ConvertTo-Json automatically deserializes strings that contain
+        # Note: Since PowerShell v6, ConvertTo-Json automatically deserializes strings that contain
         # an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
-        # or a prefix of it that at least includes everything up to the seconds part as [datetime] instances.
+        # or a prefix of it that includes at least everything up to the seconds part as [datetime] instances.
         # Because Blackbaud provides incorrect timezone data we have to adjust this when running in CORE.
-        # So, with PS Core, we need to get the raw JSON and temporarily append info to the datetimes so they don't
-        # get converted automatically.
+        # So, with PS Core, we need to get the raw JSON and create a CustomPSObject without deserialization.
 
         if ($PSVersionTable.PSEdition -EQ 'Desktop')
         {
@@ -206,7 +207,7 @@ function Get-SchoolScheduleMeeting
         else
         {
             $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -ReturnRaw
-            (ConvertFrom-JsonWithoutDeserialization -InputObject $response_raw).$ResponseField
+            (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
         }
 
         # Increase Iteration Range
