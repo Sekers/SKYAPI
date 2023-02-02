@@ -133,7 +133,6 @@ Function Get-SKYAPIAccessToken
     $Authorization
 }
 
-
 # Helper function to get a specified nested member property of an object.
 # From: https://stackoverflow.com/questions/69368564/powershell-get-value-from-json-using-string-from-array
 # This will take an array with each item as the next property in the path, or you can use a string with a delimiter (e.g., "results.rows")
@@ -262,9 +261,23 @@ Function Show-SKYAPIOAuthWindow
 
         # Get a Listing of Installed Applications From the Registry
         $InstalledApplicationsFromRegistry = @()
-        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
-        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # HKLM Apps
         $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+        if ([System.Environment]::Is64BitProcess)
+        {
+            $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps when on 64-bit
+        }
+        
+        # Get EdgeWebView2 Installed Version (only pull the 1st entry in case more than one comes up)
+        $EdgeWebViewVersionInstalled = $InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName}
+        if ([string]::IsNullOrEmpty($EdgeWebViewVersionInstalled))
+        {
+            $EdgeWebViewVersionInstalled = "0.0.0.0" # Good idea to set something in case it's not installed due to casting later on.
+        }
+        else
+        {
+            $EdgeWebViewVersionInstalled = $([array]($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName})[0]).Version
+        }
 
         while ((-not ($InstalledApplicationsFromRegistry | Where-Object {$_.DisplayName -match $SourceProductName})) -and ($null -eq $AuthenticationMethod -or "" -eq $AuthenticationMethod -or $AuthenticationMethod -eq "EdgeWebView2") )
         {
@@ -299,9 +312,12 @@ Function Show-SKYAPIOAuthWindow
 
                         # Get a Listing of Installed Applications From the Registry
                         $InstalledApplicationsFromRegistry = @()
-                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps
-                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # x64 Apps
+                        $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" # HKLM Apps
                         $InstalledApplicationsFromRegistry += Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" #HKCU Apps
+                        if ([System.Environment]::Is64BitProcess)
+                        {
+                            $InstalledApplicationsFromRegistry += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # x86 Apps when on 64-bit
+                        }
 
                         # Retry Opening Authentication Window
                         Write-Host "Retrying Authentication...`n"
@@ -314,7 +330,6 @@ Function Show-SKYAPIOAuthWindow
                         Exit
                     }
             }
-            
         }
     }
     
@@ -402,7 +417,7 @@ Function Show-SKYAPIOAuthWindow
         default # EdgeWebView2
         {            
             # Set EdgeWebView2 Control Version to Use
-            $EdgeWebView2Control_VersionNumber = '1.0.1210.39'
+            $EdgeWebView2Control_VersionNumber = '1.0.1518.46'
             switch ($PSVersionTable.PSEdition)
             {
                 Desktop {$EdgeWebView2Control_DotNETVersion = "net45"}
@@ -422,9 +437,11 @@ Function Show-SKYAPIOAuthWindow
             # Load Assemblies
             Add-Type -AssemblyName System.Windows.Forms
 
-            # Note, you also need the following two files in the same folder as "Microsoft.Web.WebView2.WinForms.dll":
-            # - Microsoft.Web.WebView2.Core.dll
-            # - WebView2Loader.dll
+            # Unpack the nupkg and grab the following two DLLs out of the /lib folder.
+            # - Microsoft.Web.WebView2.WinForms.dll (there's a different version for each .NET type, but the same file for x86 & x64)
+            # - Microsoft.Web.WebView2.Core.dll (while there's a copy for each .NET type, so far they have been the same exact file; same file for x86 & x64 too)
+            # In addition, get the following file from the /runtimes folder and put it in the same locations.
+            # - WebView2Loader.dll (different for x86 & x64, but same for .NET Core & .NET 45)
             Add-Type -Path "$PSScriptRoot\Dependencies\Microsoft.Web.WebView2\$EdgeWebView2Control_VersionNumber\$EdgeWebView2Control_DotNETVersion\$EdgeWebView2Control_OSArchitecture\Microsoft.Web.WebView2.WinForms.dll"
 
             $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=600;Height=800}
@@ -433,9 +450,14 @@ Function Show-SKYAPIOAuthWindow
             $WebView2.CreationProperties = New-Object -TypeName 'Microsoft.Web.WebView2.WinForms.CoreWebView2CreationProperties'
             $WebView2.CreationProperties.UserDataFolder = $sky_api_user_data_path
 
-            # Clear WebView2 cache in the previously specified UserDataFolder
-            # TODO For now this is just hardcoded as deleting the folder... Need to figure out how to clear the user data folder using the WebView2 Control (newer version possibly required)
-            if ($ClearBrowserControlCache)
+            # Clear WebView2 cache in the previously specified UserDataFolder, if requested.
+            # Using the WebView2 SDK to clear the browsing data is best, but wasn't released until version 1.0.1245.22 of the control.
+            # This version SDK requires EdgeWebView2 version 102.0.1245.22 to be installed for full API compatibility.
+            # So, we only clear the cache using the SDK if this version or higher of the WebView2 runtime is installed.
+            # Otherwise, we just hardcode deleting the folder.
+            # Note that we have to delete the folder before the control is loaded,
+            # but we can't call the clear until it is initialized (so that code is further down).
+            if ($ClearBrowserControlCache -and [System.Version]$EdgeWebViewVersionInstalled -lt [System.Version]'102.0.1245.22')
             {
                 Remove-Item "$($WebView2.CreationProperties.UserDataFolder)\EBWebView\Default" -Force -Recurse -ErrorAction Ignore
                 $ClearBrowserControlCache = $false
@@ -453,10 +475,26 @@ Function Show-SKYAPIOAuthWindow
                 }
             }
             $WebView2.add_NavigationCompleted($WebView2_NavigationCompleted)
+
+            # Set Event Handler for Clearing the Browser Data, if requested.
+            # We can't actually clear the browser data until the CoreWebView2 property is created, so that's why it's down here as an event action.
+            # More info: https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.winforms.webview2
+            # This event is triggered when the control's CoreWebView2 has finished being initialized
+            # (regardless of how initialization was triggered) but before it is used for anything.
+            # More info: https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.wpf.webview2.corewebview2initializationcompleted
+            if ($ClearBrowserControlCache -and [System.Version]$EdgeWebViewVersionInstalled -ge [System.Version]'102.0.1245.22')
+            {
+                $WebView2_CoreWebView2InitializationCompleted = {
+                    $WebView2.CoreWebView2.Profile.ClearBrowsingDataAsync()
+                }
+                $WebView2.add_CoreWebView2InitializationCompleted($WebView2_CoreWebView2InitializationCompleted)
+                $ClearBrowserControlCache = $false
+            }
             
             # Add WebView2 Control to the Form and Show It
             $form.Controls.Add($WebView2)
             $form.Add_Shown({$form.Activate()})
+            $form.TopMost = $true # Make's the dialog coming up above the PowerShell console more consistent (though not 100% it seems).
             $form.ShowDialog() | Out-Null
 
             # Parse Return URL
@@ -552,7 +590,7 @@ Function Get-SKYAPINewTokens
     $sky_api_tokens_file_path_ParentDir = Split-Path -Path $sky_api_tokens_file_path
     If(-not (Test-Path $sky_api_tokens_file_path_ParentDir))
     {
-        New-Item -ItemType Directory -Force -Path $sky_api_tokens_file_path_ParentDir
+        $null = New-Item -ItemType Directory -Force -Path $sky_api_tokens_file_path_ParentDir
     }
 
     # Save credentials to file
@@ -566,8 +604,15 @@ Function Get-SKYAPINewTokens
 function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
 {
     # Convert From JSON
-    $InvokeErrorMessage = $InvokeErrorMessageRaw.ErrorDetails.Message | ConvertFrom-Json
-
+    try
+    {
+        $InvokeErrorMessage = $InvokeErrorMessageRaw.ErrorDetails.Message | ConvertFrom-Json
+    }
+    catch
+    {
+        throw $InvokeErrorMessageRaw
+    }
+    
     # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 3 different ways so we need to account for that. Yay for no consistency.
     If ($InvokeErrorMessage.statusCode)
     {
@@ -740,7 +785,17 @@ Function Get-SKYAPIUnpagedEntity
 Function Get-SKYAPIPagedEntity
 {
     [CmdletBinding()]
-    Param($uid, $url, $endUrl, $api_key, $authorisation, $params, $response_field, $response_limit, $page_limit, [MarkerType]$marker_type)
+    Param(
+        $uid,
+        $url,
+        $endUrl,
+        $api_key,
+        $authorisation,
+        $params,
+        $response_field,
+        $response_limit,
+        $page_limit,
+        [MarkerType]$marker_type)
 
     # Reconnect If the Access Token is Expired 
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
@@ -1155,7 +1210,115 @@ function Repair-SkyApiDate
 {
     param ([DateTime]$Date)
     $Date = (($(Get-Date($Date).ToUniversalTime()).ToString('o')) -split "T")[0] # Can't use -AsUTC since that's PS Core only (not Windows PS 5.1).
+    # Alternative way to do the same thing? # $Date = $Date.ToUniversalTime() -Format "yyyy-MM-dd"
     $Date
+}
+
+# Iterates through an object replacing all or part of matching string values
+# with the specified value using regular expressions.
+function Set-PSObjectText
+{
+    param (
+        [Parameter(
+        Position=0,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [AllowNull()]
+        $InputObject,
+
+        [Parameter(
+        Position=1,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$OldValue, # Regex
+
+        [Parameter(
+        Position=2,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$NewValue # Regex
+    )
+
+    if ($null -eq $InputObject)
+    {
+        return
+    }
+
+    switch ($InputObject.GetType().Name)
+    {
+        String
+        {
+            $InputObject = $InputObject -replace $OldValue, $NewValue
+        }
+        PSCustomObject
+        {
+            foreach ($item in $InputObject.PSObject.Properties | Where-Object -Property MemberType -EQ 'NoteProperty')
+            {
+                $ItemName = $item.Name
+                $InputObject.$ItemName = Set-PSObjectText -InputObject $($InputObject.$ItemName) -OldValue $OldValue -NewValue $NewValue
+            }
+        }
+        'Object[]' # Array
+        {
+            $InputObject = foreach ($item in $InputObject)
+            {
+                Set-PSObjectText -InputObject $item -OldValue $OldValue -NewValue $NewValue
+            }
+        }
+        Int64
+        {
+            # Do nothing to the Object.
+        }
+        Boolean
+        {
+            # Do nothing to the Object.
+        }
+        Default
+        {
+            # Do nothing to the Object.
+        }
+    }
+
+    return $InputObject
+}
+
+# Converts From JSON Without Deserializing DateTime Strings
+# Dates must be in the roundtrip format and specify the offset (DateTimeKind.Local or DateTimeKind.Utc).
+# Examples:
+#  - 2009-06-15T13:45:30.0000000Z
+#  - 2009-06-15T13:45:30.0000000-07:00
+#  - 2009-06-15T13:45:00-07:00
+# More Information: Since PowerShell v6, ConvertTo-Json automatically deserializes strings that contain
+# an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
+# or a prefix of it that includes at least everything up to the seconds part as [datetime] instances.
+function ConvertFrom-JsonWithoutDateTimeDeserialization
+{
+    param (
+        [Parameter(
+        Position=0,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$InputObject
+    )
+
+    # Set the regular expression patterns.
+    $DateTimeRegex = '"(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+(\+|\-)\d+:\d+)"'
+    $DateTimeRegexWithHash = '(#)(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+(\+|\-)\d+:\d+)'
+
+    # Prepend the hash sign to round-trip date/time pattern strings.
+    [string]$JsonWithPrefix = $InputObject -replace $DateTimeRegex, '"#$1"'
+
+    # Convert to a PSCustomObject object.
+    [pscustomobject]$PSObjectWithPrefix = $JsonWithPrefix | ConvertFrom-Json
+
+    # Remove the added hash signs.
+    Set-PSObjectText -InputObject $PSObjectWithPrefix -OldValue $DateTimeRegexWithHash -NewValue '$2'
+
+    # return $InputObject
 }
 
 # Import the functions

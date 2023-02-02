@@ -66,7 +66,7 @@ Function Connect-SKYAPI
         Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [ValidateSet('EdgeWebView2','MiniHTTPServer',"LegacyIEControl")]
+        [ValidateSet('EdgeWebView2','MiniHTTPServer','LegacyIEControl')]
         [string]$AuthenticationMethod,
 
         [parameter(
