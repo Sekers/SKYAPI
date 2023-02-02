@@ -50,6 +50,21 @@ function Get-SchoolScheduleMeeting
             last_modified = '2023-12-09'
         }
         Get-SchoolScheduleMeeting @HashArguments
+        .EXAMPLE
+        $meetings = Get-SchoolScheduleMeeting -SchoolTimeZoneId "Central Standard Time" -start_date '2022-11-01'
+        foreach ($meeting in $meetings)
+        {
+            "`n--- Meeting Group ---"
+            $meeting.group_name
+            "--- Meeting Date (School Envirionment Time Zone) ---"
+            $meeting.meeting_date
+            "--- Start & End (Local Time) ---"
+            $meeting.start_time.tolocaltime().DateTime # DateTime Kind of 'Local'
+            $meeting.end_time.tolocaltime().DateTime # DateTime Kind of 'Local'
+            "--- Start & End (Pacific Standard Time) ---"
+            [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.start_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'
+            [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.end_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'
+        }
     #>
     
     [cmdletbinding()]
