@@ -19,12 +19,6 @@ function Get-SchoolScheduleMeeting
           - Returned meeting start & end times are in UTC DateTime format.
           - Returned meeting date is the date of the meeting in the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
 
-        .PARAMETER SchoolTimeZoneId
-        Indicates the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
-        Get-SchoolScheduleMeeting will try to automatically pull the value from your school envirionment,
-        but if you receive an error, you may have to manually override it with a valid time zone ID.
-        This is required because Blackbaud does not return accurate time zone information from this endpoint.
-        Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
         .PARAMETER start_date
         Required. Start date of events you want returned. Use ISO-8601 date format (e.g., 2022-04-01).
         .PARAMETER end_date
@@ -37,6 +31,12 @@ function Get-SchoolScheduleMeeting
         Comma delimited list of integer values for the section identifiers to return. By default the route returns all sections.
         .PARAMETER last_modified
         Filters meetings to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
+        .PARAMETER SchoolTimeZoneId
+        Indicates the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
+        Get-SchoolScheduleMeeting will try to automatically pull the value from your school envirionment,
+        but if you receive an error, you may have to manually override it with a valid time zone ID.
+        This is required because Blackbaud does not return accurate time zone information from this endpoint.
+        Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
 
         .EXAMPLE
         Get-SchoolScheduleMeeting -start_date '2022-11-01'
@@ -46,11 +46,11 @@ function Get-SchoolScheduleMeeting
         Get-SchoolScheduleMeeting -start_date '2022-11-01' | Where-Object -Property faculty_user_id -eq '3154032' | Sort-Object meeting_date, start_time
         .EXAMPLE
         $HashArguments = @{
-            SchoolTimeZoneId = "Central Standard Time"
             start_date = '2022-11-01'
             end_date = '2022-11-30'
             section_ids = '82426521, 93054528'
             last_modified = '2023-12-09'
+            SchoolTimeZoneId = "Central Standard Time"
         }
         Get-SchoolScheduleMeeting @HashArguments
         .EXAMPLE
@@ -74,6 +74,37 @@ function Get-SchoolScheduleMeeting
     Param(
         [Parameter(
         Position=0,
+        Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$start_date,
+
+        [Parameter(
+        Position=1,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$end_date,
+
+        [Parameter(
+        Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$offering_types,
+
+        [Parameter(
+        Position=3,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$section_ids,
+
+        [Parameter(
+        Position=4,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$last_modified,
+
+        [Parameter(
+        Position=5,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateScript({
@@ -86,38 +117,7 @@ function Get-SchoolScheduleMeeting
                 throw "$_ is invalid. Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs."
             }
         })]
-        [string]$SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name),
-
-        [Parameter(
-        Position=1,
-        Mandatory=$true,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$start_date,
-
-        [Parameter(
-        Position=2,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$end_date,
-
-        [Parameter(
-        Position=3,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$offering_types,
-
-        [Parameter(
-        Position=4,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$section_ids,
-
-        [Parameter(
-        Position=5,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$last_modified
+        [string]$SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name)
     )
        
     # Set the endpoints
