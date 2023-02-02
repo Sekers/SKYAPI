@@ -1,5 +1,24 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.7](https://github.com/Sekers/SKYAPI/tree/0.3.7) - (2023-02-02)
+
+### Fixes
+
+- Worked around a time zone bug in the [beta API endpoint](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet) used by Get-SchoolScheduleMeetings so that the cmdlet/function always correctly handles Daylight Saving Time adjustments.
+
+### Features
+
+- New Endpoint: [Get-SchoolTimeZone](https://developer.sky.blackbaud.com/docs/services/school/operations/V1TimezoneGet)
+- Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.1518.46](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.1518.46).
+- With this new version of the WebView2 control, we can now use the control to natively clear the browser cache. If the version of the [Edge WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) installed on the computer (this is different than the WebView2 control included with the module) is too old, the SKYAPI PowerShell module will use the old method of deleteing the entire WebView2 control's profile for the user account used by the process.
+
+### Other
+
+- Minor fixes, such as the ability to handle certain transient errors returned by the API servers.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.6](https://github.com/Sekers/SKYAPI/tree/0.3.6) - (2023-01-19)
 
 ### Fixes
