@@ -26,6 +26,7 @@ function Get-SchoolScheduleMeeting
         If not specified, defaults to 30 days from start_date.
         .PARAMETER offering_types
         Can take a single or multiple values as a comma delimited string of integers (defaults to 1 'Academics').
+        IMPORTANT NOTE: NO SPACES ALLOWED BETWEEN VALUES!!!! (e.g., "1,3" is the correct way, NOT "1, 3")
         Use Get-SchoolOfferingType to get a list of offering types.
         .PARAMETER section_ids
         Comma delimited list of integer values for the section identifiers to return. By default the route returns all sections.
