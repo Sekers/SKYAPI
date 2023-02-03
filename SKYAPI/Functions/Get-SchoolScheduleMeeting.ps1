@@ -54,8 +54,8 @@ function Get-SchoolScheduleMeeting
         }
         Get-SchoolScheduleMeeting @HashArguments
         .EXAMPLE
-        $meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
-        foreach ($meeting in $meetings)
+        $Meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
+        foreach ($meeting in $Meetings)
         {
             "`n--- Meeting Group ---"
             $meeting.group_name
