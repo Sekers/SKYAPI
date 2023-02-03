@@ -2,6 +2,10 @@
 
 ## [0.3.7](https://github.com/Sekers/SKYAPI/tree/0.3.7) - (2023-02-02)
 
+### Breaking Changes
+
+- Beta cmdlet/function Get-SchoolScheduleMeeting now returns meeting start/end times in UTC so that there are no time zone issues. See the built-in help or examples file to see ways to convert to the local time or a specific timezone.
+
 ### Fixes
 
 - Worked around a time zone bug in the [beta API endpoint](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet) used by Get-SchoolScheduleMeeting so that the cmdlet/function always correctly handles Daylight Saving Time adjustments.
