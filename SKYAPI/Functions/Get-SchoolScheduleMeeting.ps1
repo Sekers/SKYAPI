@@ -62,8 +62,8 @@ function Get-SchoolScheduleMeeting
             "--- Meeting Date (School Envirionment Time Zone) ---"
             $meeting.meeting_date
             "--- Start & End (Local Time) ---"
-            $meeting.start_time.tolocaltime().DateTime # DateTime Kind of 'Local'
-            $meeting.end_time.tolocaltime().DateTime # DateTime Kind of 'Local'
+            $meeting.start_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
+            $meeting.end_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
             "--- Start & End (Pacific Standard Time) ---"
             [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.start_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'
             [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.end_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'
