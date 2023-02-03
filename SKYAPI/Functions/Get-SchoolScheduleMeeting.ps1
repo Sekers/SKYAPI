@@ -156,9 +156,10 @@ function Get-SchoolScheduleMeeting
     # If the 'end_date' parameter doesn't exist, then set it to 30 days ahead (the max allowed per call).
     # It is supposed to default to 30 days, but it doesn't work correctly unless you specify an end date (at least in the beta).
     # Also, if you put in a larger time limit than 30 days, it sometimes does 31 days or something like that. It's really dumb.
+    [int]$IterationRangeInDays = 30
     if ($null -eq $end_date -or $end_date -eq '' -or $end_date -eq 0)
     {
-        $end_date = (([DateTime]$start_date).AddDays(30)).ToString('yyyy-MM-dd')
+        $end_date = (([DateTime]$start_date).AddDays($IterationRangeInDays)).ToString('yyyy-MM-dd')
     }
     
     # Validate End Date String
@@ -168,7 +169,6 @@ function Get-SchoolScheduleMeeting
     }
 
     # Initialize Variables
-    [int]$IterationRangeInDays = 30
     $response = $null
     $DateRangeEnd = [DateTime]$end_date
     $DateIterationStart = [DateTime]$start_date
@@ -211,8 +211,8 @@ function Get-SchoolScheduleMeeting
         }
 
         # Increase Iteration Range
-        $DateIterationStart = $DateIterationStart.AddDays($IterationRangeInDays)
-        $DateIterationEnd = $DateIterationEnd.AddDays($IterationRangeInDays)
+        $DateIterationStart = $DateIterationStart.AddDays($IterationRangeInDays + 1)
+        $DateIterationEnd = $DateIterationEnd.AddDays($IterationRangeInDays + 1)
     }
     until($FinalIteration -eq $true)
 
