@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.7'
+ModuleVersion = '0.3.8'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
