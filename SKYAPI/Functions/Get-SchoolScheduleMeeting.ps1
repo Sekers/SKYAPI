@@ -26,6 +26,7 @@ function Get-SchoolScheduleMeeting
         If not specified, defaults to 30 days from start_date.
         .PARAMETER offering_types
         Can take a single or multiple values as a comma delimited string of integers (defaults to 1 'Academics').
+        IMPORTANT NOTE: NO SPACES ALLOWED BETWEEN VALUES!!!! (e.g., "1,3" is the correct way, NOT "1, 3")
         Use Get-SchoolOfferingType to get a list of offering types.
         .PARAMETER section_ids
         Comma delimited list of integer values for the section identifiers to return. By default the route returns all sections.
@@ -54,16 +55,16 @@ function Get-SchoolScheduleMeeting
         }
         Get-SchoolScheduleMeeting @HashArguments
         .EXAMPLE
-        $meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
-        foreach ($meeting in $meetings)
+        $Meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
+        foreach ($meeting in $Meetings)
         {
             "`n--- Meeting Group ---"
             $meeting.group_name
             "--- Meeting Date (School Envirionment Time Zone) ---"
             $meeting.meeting_date
             "--- Start & End (Local Time) ---"
-            $meeting.start_time.tolocaltime().DateTime # DateTime Kind of 'Local'
-            $meeting.end_time.tolocaltime().DateTime # DateTime Kind of 'Local'
+            $meeting.start_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
+            $meeting.end_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
             "--- Start & End (Pacific Standard Time) ---"
             [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.start_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'
             [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.end_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'
@@ -156,9 +157,10 @@ function Get-SchoolScheduleMeeting
     # If the 'end_date' parameter doesn't exist, then set it to 30 days ahead (the max allowed per call).
     # It is supposed to default to 30 days, but it doesn't work correctly unless you specify an end date (at least in the beta).
     # Also, if you put in a larger time limit than 30 days, it sometimes does 31 days or something like that. It's really dumb.
+    [int]$IterationRangeInDays = 30
     if ($null -eq $end_date -or $end_date -eq '' -or $end_date -eq 0)
     {
-        $end_date = (([DateTime]$start_date).AddDays(30)).ToString('yyyy-MM-dd')
+        $end_date = (([DateTime]$start_date).AddDays($IterationRangeInDays)).ToString('yyyy-MM-dd')
     }
     
     # Validate End Date String
@@ -168,7 +170,6 @@ function Get-SchoolScheduleMeeting
     }
 
     # Initialize Variables
-    [int]$IterationRangeInDays = 30
     $response = $null
     $DateRangeEnd = [DateTime]$end_date
     $DateIterationStart = [DateTime]$start_date
@@ -211,8 +212,8 @@ function Get-SchoolScheduleMeeting
         }
 
         # Increase Iteration Range
-        $DateIterationStart = $DateIterationStart.AddDays($IterationRangeInDays)
-        $DateIterationEnd = $DateIterationEnd.AddDays($IterationRangeInDays)
+        $DateIterationStart = $DateIterationStart.AddDays($IterationRangeInDays + 1)
+        $DateIterationEnd = $DateIterationEnd.AddDays($IterationRangeInDays + 1)
     }
     until($FinalIteration -eq $true)
 

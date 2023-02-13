@@ -293,16 +293,16 @@
 # }
 # Get-SchoolScheduleMeeting @HashArguments
 
-# $meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
-# foreach ($meeting in $meetings)
+# $Meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
+# foreach ($meeting in $Meetings)
 # {
 #     "`n--- Meeting Group ---"
 #     $meeting.group_name
 #     "--- Meeting Date (School Envirionment Time Zone) ---"
 #     $meeting.meeting_date
 #     "--- Start & End (Local Time) ---"
-#     $meeting.start_time.tolocaltime().DateTime # DateTime Kind of 'Local'
-#     $meeting.end_time.tolocaltime().DateTime # DateTime Kind of 'Local'
+#     $meeting.start_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
+#     $meeting.end_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
 #     "--- Start & End (Pacific Standard Time) ---"
 #     [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.start_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'
 #     [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($meeting.end_time, 'Pacific Standard Time') # DateTime Kind of 'Unspecified'

@@ -1,6 +1,19 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.8](https://github.com/Sekers/SKYAPI/tree/0.3.8) - (2023-02-13)
+
+### Fixes
+
+- Resolved bug where Get-SchoolScheduleMeeting returned duplicate events every 30th day of the requested range.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.7](https://github.com/Sekers/SKYAPI/tree/0.3.7) - (2023-02-02)
+
+### Breaking Changes
+
+- Beta cmdlet/function Get-SchoolScheduleMeeting now returns meeting start/end times in UTC so that there are no time zone issues. See the built-in help or examples file to see ways to convert to the local time or a specific timezone.
 
 ### Fixes
 
