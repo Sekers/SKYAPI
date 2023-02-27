@@ -97,6 +97,7 @@ FunctionsToExport = @(
     'Get-SchoolNewsItem',
     'Get-SchoolOfferingType',
     'Get-SchoolRole',
+    'Get-SchoolResourceBoard',
     'Get-SchoolScheduleMeeting',
     'Get-SchoolSectionBySchoolLevel',
     'Get-SchoolSectionByStudent',

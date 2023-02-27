@@ -413,6 +413,17 @@
 # Set-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374 -relationship_type Parent_Child -give_parental_access $true -list_as_parent $false -tuition_responsible_signer $false
 # Set-SchoolUserRelationship -User_ID 1574497,1574461 -Left_User_ID 1574374,1574389 -relationship_type Grandparent_Grandchild -give_parental_access $true
 
+<#
+    Get-SchoolSession
+#>
+# Get-SchoolSession
+
+<#
+    Get-SchoolResourceBoard
+#>
+# Get-SchoolResourceBoard
+
+
 ###############################
 # Raiser's Edge API Endpoints #
 ###############################
