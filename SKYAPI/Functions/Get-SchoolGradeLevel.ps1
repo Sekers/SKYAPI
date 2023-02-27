@@ -12,6 +12,7 @@ function Get-SchoolGradeLevel
 
         .DESCRIPTION
         Education Management School API - Returns a collection of grade levels.
+        Accessible by any authorized user.
         
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.

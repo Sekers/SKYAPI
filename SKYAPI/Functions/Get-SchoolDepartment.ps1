@@ -12,9 +12,7 @@ function Get-SchoolDepartment
 
         .DESCRIPTION
         Education Management School API - Returns a collection of academic departments.
-        Requires at least one of the following roles in the Education Management system:
-          - Academic Group Manager
-          - Platform Manager
+        Accessible by any authorized user.
 
         .PARAMETER level_id
         Optional parameter to specify a school level ID to limit response to departments of a specific school level.

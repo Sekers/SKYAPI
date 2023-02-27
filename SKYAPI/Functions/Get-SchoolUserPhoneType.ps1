@@ -12,6 +12,7 @@ function Get-SchoolUserPhoneType
 
         .DESCRIPTION
         Education Management School API - Returns a collection of phone types.
+        Accessible by any authorized user.
 
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.

@@ -12,8 +12,7 @@ function Get-SchoolUserGenderType
 
         .DESCRIPTION
         Education Management School API - Returns a collection of gender types.
-        Requires at least one of the following roles in the Education Management system:
-          - SKY API Data Sync
+        Accessible by any authorized user.
 
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call. 
