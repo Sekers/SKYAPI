@@ -140,7 +140,7 @@ function Get-SchoolScheduleMeeting
     if ($parameters -contains 'offering_types')
     {
         $parameters.Remove('offering_types') | Out-Null
-        $parameters.Add('offering_types',$($offering_types -replace ' ',''))
+        $parameters.Add('offering_types',$($offering_types.Replace(' ','')))
     }
     
     # Remove the School Time Zone parameter since we don't pass it on to the API.
