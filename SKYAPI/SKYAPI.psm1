@@ -452,7 +452,7 @@ Function Show-SKYAPIOAuthWindow
 
             # Clear WebView2 cache in the previously specified UserDataFolder, if requested.
             # Using the WebView2 SDK to clear the browsing data is best, but wasn't released until version 1.0.1245.22 of the control.
-            # This version SDK requires EdgeWebView2 version 102.0.1245.22 to be installed for full API compatibility.
+            # This version of the SDK requires EdgeWebView2 version 102.0.1245.22 to be installed for full API compatibility.
             # So, we only clear the cache using the SDK if this version or higher of the WebView2 runtime is installed.
             # Otherwise, we just hardcode deleting the folder.
             # Note that we have to delete the folder before the control is loaded,
