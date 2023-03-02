@@ -107,8 +107,11 @@ function Get-SchoolAssignmentBySection
     }
 
     # Remove spaces from 'types' string if included in a comma-separated list, as the endpoint doesn't allow spaces.
-    $parameters.Remove('types') | Out-Null
-    $parameters.Add('types',$($types -replace ' ',''))
+    if ($parameters -contains 'types')
+    {
+        $parameters.Remove('types') | Out-Null
+        $parameters.Add('types',$($types.Replace(' ','')))
+    }
 
     # Remove parameters since we don't pass them on to the API.
     $parameters.Remove('Section_ID') | Out-Null
