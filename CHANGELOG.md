@@ -136,7 +136,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
 - New Endpoint: [Get-SchoolUserPhoneList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesGet)
 - New Endpoint: [Get-SchoolUserPhoneTypeList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet)
-- New Endpoint (Beta): [Get-SchoolSchedulesMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
+- New Endpoint (Beta): [Get-SchoolScheduleMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
 - New Endpoint: [New-SchoolEventsCategory](https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost)
 - New Endpoint: [New-SchoolUserPhone](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost)
 - New Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPatch)
