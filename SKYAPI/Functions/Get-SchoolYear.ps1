@@ -12,7 +12,7 @@ function Get-SchoolYear
 
         .DESCRIPTION
         Education Management School API - Returns a list of school years.
-        Requires the 'Academic Group Manager', 'Schedule Manager' or 'Platform Manager' role in the Education Management system. 
+        Accessible by any authorized user.
 
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.

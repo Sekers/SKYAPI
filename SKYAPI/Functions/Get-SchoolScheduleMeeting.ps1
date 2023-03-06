@@ -26,7 +26,6 @@ function Get-SchoolScheduleMeeting
         If not specified, defaults to 30 days from start_date.
         .PARAMETER offering_types
         Can take a single or multiple values as a comma delimited string of integers (defaults to 1 'Academics').
-        IMPORTANT NOTE: NO SPACES ALLOWED BETWEEN VALUES!!!! (e.g., "1,3" is the correct way, NOT "1, 3")
         Use Get-SchoolOfferingType to get a list of offering types.
         .PARAMETER section_ids
         Comma delimited list of integer values for the section identifiers to return. By default the route returns all sections.
@@ -135,6 +134,15 @@ function Get-SchoolScheduleMeeting
         $parameters.Add($parameter.Key,$parameter.Value) 
     }
 
+    # IMPORTANT NOTE: NO SPACES ALLOWED BETWEEN VALUES FOR 'offering_types' STRING!!!! (e.g., "1,3" is the correct way, NOT "1, 3")
+    # It will still process the query if there is a string, but only return results for the first value.
+    # Remove spaces from 'offering_types' string if included in a comma-separated list.
+    if ($parameters -contains 'offering_types')
+    {
+        $parameters.Remove('offering_types') | Out-Null
+        $parameters.Add('offering_types',$($offering_types.Replace(' ','')))
+    }
+    
     # Remove the School Time Zone parameter since we don't pass it on to the API.
     $parameters.Remove('SchoolTimeZoneId') | Out-Null
 

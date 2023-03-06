@@ -12,16 +12,7 @@ function Get-SchoolRole
 
         .DESCRIPTION
         Education Management School API - Returns a collection of core school user roles.
-        Requires at least one of the following roles in the Education Management system:
-        - Academic Group Manager
-        - Activity Group Manager
-        - Advisory Group Manager
-        - Athletic Group Manager
-        - Dorm Group Manager
-        - Dorm Supervisor
-        - Platform Manager
-        - Schedule Manager
-        - SKY API Data Sync
+        Accessible by any authorized user.
 
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.

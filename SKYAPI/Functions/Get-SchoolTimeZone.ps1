@@ -12,7 +12,7 @@ function Get-SchoolTimeZone
 
         .DESCRIPTION
         Education Management School API - Returns the current time zone set for the school.
-        Requires the 'Academic Group Manager' or 'Platform Manager' role in the Education Management system. 
+        Accessible by any authorized user.
 
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.

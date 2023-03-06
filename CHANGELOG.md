@@ -1,5 +1,20 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.9](https://github.com/Sekers/SKYAPI/tree/0.3.9) - (2023-03-06)
+
+### Features
+
+- New Endpoint: [Get-SchoolSession](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SessionsGet)
+- New Endpoint: [Get-SchoolResourceBoard](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentResourcesGet)
+- 'Get-SchoolAssignmentBySection' & 'Get-SchoolScheduleMeeting' now allow spaces in the types/offering_types parameters.
+- New Example Script: [Blackbaud SIS Teacher Schedules to Google Calendar CSVs](https://github.com/Sekers/SKYAPI/tree/master/Sample_Usage_Scripts/Blackbaud%20SIS%20Teacher%20Schedules%20to%20Google%20Calendar%20CSVs). Creates importable Google Calendar schedules for faculty from the Blackbaud School Envirionment.
+
+### Other
+- Built-in help updates regarding necessary permissions to access some endpoints (Blackbaud [loosened the requirements](https://developer.blackbaud.com/skyapi/support/changelog/bbem?_ga=2.83020246.1587108373.1678131781-1653312318.1663684217) on a bunch of general information ones).
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.8](https://github.com/Sekers/SKYAPI/tree/0.3.8) - (2023-02-13)
 
 ### Fixes
@@ -136,7 +151,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
 - New Endpoint: [Get-SchoolUserPhoneList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesGet)
 - New Endpoint: [Get-SchoolUserPhoneTypeList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet)
-- New Endpoint (Beta): [Get-SchoolSchedulesMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
+- New Endpoint (Beta): [Get-SchoolScheduleMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
 - New Endpoint: [New-SchoolEventsCategory](https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost)
 - New Endpoint: [New-SchoolUserPhone](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost)
 - New Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPatch)

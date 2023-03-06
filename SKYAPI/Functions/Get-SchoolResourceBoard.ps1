@@ -1,24 +1,24 @@
-function Get-SchoolUserPhoneType
+function Get-SchoolResourceBoard
 {
     <#
         .LINK
         https://github.com/Sekers/SKYAPI/wiki
-        
+
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet
+        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentResourcesGet
         
         .SYNOPSIS
-        Education Management School API - Returns a collection of phone types.
+        Education Management School API - Returns a collection of Resources.
 
         .DESCRIPTION
-        Education Management School API - Returns a collection of phone types.
-        Accessible by any authorized user.
+        Education Management School API - Returns a collection of Resources.
+        Requires the 'Parent', 'Faculty' or 'Student' role in the Education Management system.
 
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolUserPhoneType
+        Get-SchoolResourceBoard
     #>
     
     [cmdletbinding()]
@@ -31,7 +31,7 @@ function Get-SchoolUserPhoneType
     )
 
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/phonetypes'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/content/resources'
 
     # Set the response field
     $ResponseField = "value"
