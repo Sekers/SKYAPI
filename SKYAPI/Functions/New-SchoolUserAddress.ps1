@@ -15,15 +15,13 @@ function New-SchoolUserAddress
 
         .PARAMETER User_ID,
         Required. Array of the user IDs.
-        .PARAMETER number
-        Required. The address.
         .PARAMETER type_id
         Required. The type ID of the specified address. The type ID corresponds with the type of address (ex. Business/College, Home, Summer).
         Use Get-SchoolUserAddressType to get a list of address types.
         .PARAMETER country
-        Country full name (e.g., United States). Must be a full country name from the school's list of countries.
+        Required. Country full name (e.g., United States). Must be a full country name from the school's list of countries.
         .PARAMETER line_one
-        Address Line 1 (e.g., 123 Main Street).
+        Required. Address Line 1 (e.g., 123 Main Street).
         .PARAMETER line_two
         Address Line 2 (e.g., Suite 100).
         .PARAMETER line_three
