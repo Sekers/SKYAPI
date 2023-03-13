@@ -29,11 +29,11 @@ function New-SchoolUserAddress
         .PARAMETER city
         City (e.g., Charelston).
         .PARAMETER state
-        State 2-letter abbreviation (e.g., SC) or full name.
+        State 2-letter abbreviation (e.g., SC) or full name. Available only with country choices that use states.
         .PARAMETER postal_code
         Postal code.
         .PARAMETER province
-        Province.
+        Province. Available only with country choices that use provinces.
         .PARAMETER region
         Region.
         .PARAMETER mailing_address
