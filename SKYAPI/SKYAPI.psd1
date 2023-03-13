@@ -108,6 +108,7 @@ FunctionsToExport = @(
     'Get-SchoolTerm',
     'Get-SchoolTimeZone',
     'Get-SchoolUser',
+    'Get-SchoolUserAddressType',
     'Get-SchoolUserBBIDStatus',
     'Get-SchoolUserByRole',
     'Get-SchoolUserEducation',

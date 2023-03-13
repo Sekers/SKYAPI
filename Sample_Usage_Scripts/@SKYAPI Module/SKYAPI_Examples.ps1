@@ -322,6 +322,11 @@
 # Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
 
 <#
+    Get-SchoolUserAddressType
+#>
+# Get-SchoolUserAddressType
+
+<#
     Get-SchoolUserPhoneType
 #>
 # Get-SchoolUserPhoneType
