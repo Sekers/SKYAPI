@@ -54,7 +54,7 @@ function New-SchoolUserAddress
             'city'                = "Chicago"
             'state'               = "IL"
             'postal_code'         = "60601"
-            'province'            = "Land of Provinces"
+            'province'            = "Angus"
             'region'              = "North Central"
             'mailing_address'     = $true
             'primary'             = $true
