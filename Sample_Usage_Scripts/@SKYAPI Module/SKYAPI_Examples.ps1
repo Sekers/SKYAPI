@@ -334,8 +334,6 @@
 <#
     New-SchoolUserPhone
     (Use Get-SchoolUserPhoneType to get a list of phone types)
-    Notes: Linking using the -links parameter doesn't currently work and Blackbaud is looking into the issue with the endpoint.
-           You can specify multiple user IDs with this function but it will not link them (each user record will have the number added without them sharing it).
 #>
 # New-SchoolUserPhone -User_ID 3154032,5942642 -number "(555) 555-5555" -type_id 331
 
