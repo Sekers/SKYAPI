@@ -146,8 +146,17 @@ function Get-SchoolScheduleMeeting
     # Remove the School Time Zone parameter since we don't pass it on to the API.
     $parameters.Remove('SchoolTimeZoneId') | Out-Null
 
-    # Convert SchoolTimeZone to TimeZoneInfo object.
+    # Convert SchoolTimeZone to TimeZoneInfo object. Check match for ID, then StandardName, then DaylightName.
     $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property Id -EQ $SchoolTimeZoneId
+    if ([string]::IsNullOrEmpty($SchoolTimeZone))
+    {
+        $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property StandardName -EQ $SchoolTimeZoneId
+    }
+    $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property Id -EQ $SchoolTimeZoneId
+    if ([string]::IsNullOrEmpty($SchoolTimeZone))
+    {
+        $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property DaylightName -EQ $SchoolTimeZoneId
+    }
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -241,7 +250,16 @@ function Get-SchoolScheduleMeeting
         $start_time = ($meeting.start_time -split "T")[1]
         $start_time = ($start_time -split "-")[0]
         $start_time = [System.String]::Concat($meeting_date,"T",$start_time)
-        $start_time = ([System.TimeZoneInfo]::ConvertTimeToUtc($start_time, $SchoolTimeZone)) # Convert to UTC, specifying the time zone.
+
+        try
+        {
+            $start_time = ([System.TimeZoneInfo]::ConvertTimeToUtc($start_time, $SchoolTimeZone)) # Convert to UTC, specifying the time zone.
+        }
+        catch
+        {
+            write-host "Start Time: $start_time"
+        }
+        
 
         $end_time = (($meeting.end_time) -split "T")[1]
         $end_time = ($end_time -split "-")[0]
