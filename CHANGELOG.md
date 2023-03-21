@@ -1,5 +1,25 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.10](https://github.com/Sekers/SKYAPI/tree/0.3.10) - (2023-03-21)
+
+### Fixes
+
+- Resolved bug where Get-SchoolScheduleMeeting returned an error after DST begins in timezones that practice advancing clocks during warmer months.
+
+### Features
+
+- New Endpoint: [Get-SchoolUserAddressType](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersAddresstypesGet)
+- New Endpoint: [Get-SchoolUserAddress](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesGet)
+- New Endpoint: [New-SchoolUserAddress](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesPost)
+
+### Other
+- Updated links in README to Blackbaud API documentation as the documentation website had slightly changed structure.
+- A few minor example and built-in help updates, clarifications, and typo fixes.
+- Removed the 'links' parameter from New-SchoolUserPhone as Blackbaud never actually implemented this feature in the endpoint and updated their documentation. See the [February 28, 2023 Education Management API changelog](https://developer.blackbaud.com/skyapi/support/changelog/bbem) for further information.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.9](https://github.com/Sekers/SKYAPI/tree/0.3.9) - (2023-03-06)
 
 ### Features

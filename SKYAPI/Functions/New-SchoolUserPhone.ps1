@@ -20,20 +20,6 @@ function New-SchoolUserPhone
         .PARAMETER type_id
         Required. The type ID of the specified phone number. The type ID corresponds with the type of phone number (ex. Cell, Work, Home).
         Use Get-SchoolUserPhoneType to get a list of phone types.
-        .PARAMETER links
-        Optional array of PhoneTypeLink objects for linking. Each PSObject should match the PhoneTypeLink Model.
-        More Info: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost#PhoneTypeLink
-        Schema:
-           "links": [
-               {
-               "id": 0,
-               "shared": true,
-               "shared_relationship": "string",
-               "shared_user": "string",
-               "type_id": "string",
-               "user_id": 0
-               }
-           ]
 
         .EXAMPLE
         New-SchoolUserPhone -User_ID 3154032,5942642 -number "(555) 555-5555" -type_id 331
@@ -60,13 +46,7 @@ function New-SchoolUserPhone
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$type_id,
-
-        [Parameter(
-        Position=3,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [array]$links # Optional array of PhoneTypeLink objects for linking.
+        [int]$type_id
     )
 
     # Set the endpoints
@@ -82,23 +62,6 @@ function New-SchoolUserPhone
 
     # Remove the $User_ID parameter since we don't pass that on
     $parameters.Remove('User_ID') | Out-Null
-
-    # Build PhoneTypeLink Model
-    if ($links.Count -ge 1)
-    {
-        #TODO Verify PhoneTypeLinks Format (this functionality isn't working yet so I don't know what needs to be done to verify)
-        foreach ($PhoneTypeLink in $links)
-        {
-            # $($PhoneTypeLink | Get-Member -MemberType NoteProperty).count
-            throw "Sorry. Using SKY API to link phone numbers between users doesn't currently work. Blackbaud is aware of the issue with this endpoint and is looking into it."
-        }
-    }
-    else # No related users to link so create array with one empty object (otherwise the API returns an error).
-    {
-        $PhoneTypeLink = [PSCustomObject]@{}
-        [array]$PhoneTypeLinks = @($PhoneTypeLink)
-        $parameters.Add('links',$PhoneTypeLinks) 
-    }
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path

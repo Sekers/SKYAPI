@@ -146,8 +146,16 @@ function Get-SchoolScheduleMeeting
     # Remove the School Time Zone parameter since we don't pass it on to the API.
     $parameters.Remove('SchoolTimeZoneId') | Out-Null
 
-    # Convert SchoolTimeZone to TimeZoneInfo object.
+    # Convert SchoolTimeZone to TimeZoneInfo object. Check match for ID, then StandardName, then DaylightName.
     $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property Id -EQ $SchoolTimeZoneId
+    if ([string]::IsNullOrEmpty($SchoolTimeZone))
+    {
+        $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property StandardName -EQ $SchoolTimeZoneId
+    }
+    if ([string]::IsNullOrEmpty($SchoolTimeZone))
+    {
+        $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property DaylightName -EQ $SchoolTimeZoneId
+    }
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path

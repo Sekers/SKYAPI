@@ -51,7 +51,7 @@ function New-SchoolUserOccupation
         New-SchoolUserOccupation -User_ID 3156271, 3294459 -business_name "Don's Auto" -job_title "Director of Shiny Things" -current $true
         .EXAMPLE
         $params = @{
-            '-User_ID'          = 3156271
+            'User_ID'           = 3156271
             'business_name'     = "Don's Auto"
             'job_title'         = "Director of Shiny Things"
             'business_url'      = "https://donsauto.com"

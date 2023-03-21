@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.9'
+ModuleVersion = '0.3.10'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -108,6 +108,8 @@ FunctionsToExport = @(
     'Get-SchoolTerm',
     'Get-SchoolTimeZone',
     'Get-SchoolUser',
+    'Get-SchoolUserAddress',
+    'Get-SchoolUserAddressType',
     'Get-SchoolUserBBIDStatus',
     'Get-SchoolUserByRole',
     'Get-SchoolUserEducation',
@@ -123,11 +125,13 @@ FunctionsToExport = @(
     'Get-SchoolVenueBuilding',
     'Get-SchoolYear',
     'New-SchoolEventCategory',
+    'New-SchoolUserAddress',
     'New-SchoolUserOccupation',
     'New-SchoolUserPhone',
     'Remove-SchoolUserRelationship',
     'Set-SchoolUserRelationship',
-    'Update-SchoolUser'
+    'Update-SchoolUser',
+    'Update-SchoolUserAddress'
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

@@ -24,7 +24,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for information on the latest updates, as wel
 
 ## Current API Support
 
-This module started out with a focus on working with the Blackbaud SKY API [Education Management School API](https://developer.blackbaud.com/skyapi/bbem/school) but [SKY API endpoints](https://developer.blackbaud.com/skyapi/products) for [Raiser's Edge NXT](https://developer.blackbaud.com/skyapi/products/renxt), [Financial Edge NXT](https://developer.blackbaud.com/skyapi/products/fenxt), [Church Management](https://developer.blackbaud.com/skyapi/products/bbcm), etc. are being added in. It is designed so that additional endpoints can be added in quickly & easily.
+This module started out with a focus on working with the Blackbaud SKY API [Education Management School API](https://developer.blackbaud.com/skyapi/bbem/school) but [SKY API endpoints](https://developer.blackbaud.com/skyapi/products) for [Raiser's Edge NXT](https://developer.blackbaud.com/skyapi/renxt), [Financial Edge NXT](https://developer.blackbaud.com/skyapi/fenxt), [Church Management]https://developer.blackbaud.com/skyapi/bbcm), etc. are being added in. It is designed so that additional endpoints can be added in quickly & easily.
 
 See the [SKYAPI Wiki](https://github.com/Sekers/SKYAPI/wiki) for a list of the [endpoints currently supported](https://github.com/Sekers/SKYAPI/wiki#api-endpoints).
 
