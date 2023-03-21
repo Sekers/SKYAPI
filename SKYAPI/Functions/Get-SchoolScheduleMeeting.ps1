@@ -152,7 +152,6 @@ function Get-SchoolScheduleMeeting
     {
         $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property StandardName -EQ $SchoolTimeZoneId
     }
-    $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property Id -EQ $SchoolTimeZoneId
     if ([string]::IsNullOrEmpty($SchoolTimeZone))
     {
         $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property DaylightName -EQ $SchoolTimeZoneId
