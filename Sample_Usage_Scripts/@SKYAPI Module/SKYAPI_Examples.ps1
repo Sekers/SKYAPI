@@ -112,6 +112,18 @@
 # Get-SchoolCycleBySection -Section_ID 82426521 -duration_id 142312 -group_type 1
 
 <#
+    Get-SchoolAdmissionCandidate
+    (Use Get-SchoolAdmissionStatus to get a list of admissions status IDs)
+#>
+# Get-SchoolAdmissionCandidate
+# Get-SchoolAdmissionCandidate -school_year '2023-2024' -status_ids '158,275,278' -modified_date '2023-07-01'
+
+<#
+    Get-SchoolAdmissionStatus
+#>
+# Get-SchoolAdmissionStatus
+
+<#
     Get-SchoolUser
 #>
 # Get-SchoolUser -User_ID 2230332,3243114

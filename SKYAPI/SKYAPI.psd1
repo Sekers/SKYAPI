@@ -82,6 +82,8 @@ FunctionsToExport = @(
     'Get-ReConstituentSuffix',
     'Get-ReConstituentTitle',
     'Get-SchoolActivityBySchoolLevel',
+    'Get-SchoolAdmissionCandidate',
+    'Get-SchoolAdmissionStatus',
     'Get-SchoolAdvisoryBySchoolLevel',
     'Get-SchoolAssignmentBySection',
     'Get-SchoolAssignmentByStudent',
