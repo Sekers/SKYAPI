@@ -5,7 +5,7 @@ function Update-SchoolUser
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPatch
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch
         
         .SYNOPSIS
         Education Management School API - Updates the record of a single user. Returns the ID of the user just updated upon success.
@@ -47,7 +47,7 @@ function Update-SchoolUser
         .PARAMETER deceased
         Set to true if user is deceased.
         .PARAMETER email
-        The email address of a user.
+        The email address of a user. If the email address is marked as 'Bad' and this parameter value is different than the existing value, it will no longer be marked as a 'Bad' email address.
         .PARAMETER email_active
         Set to true if the user's e-mail is OK to send to or false if it should be marked BAD.
         .PARAMETER first_name
@@ -257,11 +257,6 @@ function Update-SchoolUser
 
     # Remove the $User_ID parameter since we don't pass that on
     $parameters.Remove('User_ID') | Out-Null
-
-    # TODO TEMPORARY FIX - Set email_active to true, no matter what.
-    # This is because if you don't specify an email address or if you specify the same email address that is already set, it marks it as BAD.
-    # This has the downside of marking active an email address that is supposed to be marked bad.
-    $parameters.Add('email_active',$true)
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
