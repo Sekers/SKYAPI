@@ -5,7 +5,7 @@ function Get-SchoolUserExtendedByBaseRole
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersExtendedGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersExtendedGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of users of the specified base role(s) with extended user details (telephones, occupations, relationships, etc.).

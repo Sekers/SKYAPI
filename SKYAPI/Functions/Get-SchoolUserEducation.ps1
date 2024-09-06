@@ -5,7 +5,7 @@ function Get-SchoolUserEducation
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEducationGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idEducationGet
         
         .SYNOPSIS
         Education Management School API - Returns the education details for one or more user IDs.

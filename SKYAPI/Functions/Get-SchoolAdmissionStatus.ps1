@@ -5,7 +5,7 @@ function Get-SchoolAdmissionStatus
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsStatusGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AdmissionsStatusGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of admissions statuses.

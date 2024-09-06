@@ -5,7 +5,7 @@ function New-SchoolEventCategory
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1EventsCategoriesPost
         
         .SYNOPSIS
         Education Management School API - Creates a new Events Category & returns its ID.

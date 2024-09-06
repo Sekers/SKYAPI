@@ -5,7 +5,7 @@ function Get-SchoolUserRelationship
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of a relationships for one or more user IDs.

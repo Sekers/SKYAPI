@@ -5,7 +5,7 @@ function Get-SchoolSectionBySchoolLevel
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsSectionsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of academic sections based on school level.

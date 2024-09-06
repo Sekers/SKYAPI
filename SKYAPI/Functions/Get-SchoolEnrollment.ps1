@@ -5,7 +5,7 @@ function Get-SchoolEnrollment
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersEnrollmentsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersEnrollmentsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of users and their school enrollment information for the specified school years.

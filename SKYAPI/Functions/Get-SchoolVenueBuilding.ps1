@@ -5,7 +5,7 @@ function Get-SchoolVenueBuilding
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1VenuesBuildingsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1VenuesBuildingsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of buildings.

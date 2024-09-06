@@ -5,7 +5,7 @@ function Get-SchoolUserEmployment
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEmploymentGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idEmploymentGet
         
         .SYNOPSIS
         Education Management School API - Returns the employment details for one or more user IDs.

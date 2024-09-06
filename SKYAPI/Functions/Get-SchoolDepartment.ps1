@@ -5,7 +5,7 @@ function Get-SchoolDepartment
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsDepartmentsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsDepartmentsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of academic departments.

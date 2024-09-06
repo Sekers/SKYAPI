@@ -5,7 +5,7 @@ function Update-SchoolUserAddress
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesByAddress_idPatch
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesByAddress_idPatch
         
         .SYNOPSIS
         Education Management School API - Updates the address record of a user. Returns the ID of the address just updated upon success.

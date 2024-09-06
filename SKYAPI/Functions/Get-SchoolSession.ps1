@@ -5,7 +5,7 @@ function Get-SchoolSession
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1SessionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1SessionsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of sessions for a higher education institution.

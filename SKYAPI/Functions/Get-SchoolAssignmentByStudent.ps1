@@ -5,7 +5,7 @@ function Get-SchoolAssignmentByStudent
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsByStudent_idAssignmentsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsByStudent_idAssignmentsGet
         
         .SYNOPSIS
         Education Management School API - Returns assignments for the specified student ID(s) that are assigned or due within the date range specified.

@@ -5,7 +5,7 @@ function Get-SchoolAdvisoryBySchoolLevel
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdvisoriesSectionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AdvisoriesSectionsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of advisory sections based on school level.

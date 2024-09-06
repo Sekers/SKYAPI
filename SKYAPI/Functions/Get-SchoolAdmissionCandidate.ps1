@@ -5,7 +5,7 @@ function Get-SchoolAdmissionCandidate
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsCandidatesGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AdmissionsCandidatesGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of admissions candidates.

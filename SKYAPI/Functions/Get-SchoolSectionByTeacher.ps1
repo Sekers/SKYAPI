@@ -5,7 +5,7 @@ function Get-SchoolSectionByTeacher
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsTeachersByTeacher_idSectionsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of academic sections for one or more teachers.

@@ -5,7 +5,7 @@ function Get-SchoolUserBBIDStatus
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersBbidstatusGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersBbidstatusGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of users of the specified base role(s) with their Education Management Blackbaud ID (BBID) status.

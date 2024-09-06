@@ -5,7 +5,7 @@ function Get-SchoolUserByRole
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1usersget
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=v1usersget
         
         .SYNOPSIS
         Education Management School API - Returns a collection of users of the specified role(s) with basic user details.

@@ -5,7 +5,7 @@ function Get-SchoolTerm
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1termsget
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=v1termsget
         
         .SYNOPSIS
         Education Management School API - Returns a list of terms.

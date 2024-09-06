@@ -5,7 +5,7 @@ function Get-SchoolScheduleMeeting
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet
         
         .SYNOPSIS
         Education Management School API - Returns a list of section meetings for a given date.

@@ -5,7 +5,7 @@ function Get-SchoolCycleBySection
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idCyclesGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsSectionsBySection_idCyclesGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of cycles for the specified section(s).
