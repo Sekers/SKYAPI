@@ -33,6 +33,14 @@ function Set-SchoolUserRelationship
         Sets 'List as a Parent' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
         .PARAMETER tuition_responsible_signer
         Sets 'Responsible for Signing Contract' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.).
+        .PARAMETER resides_with
+        Sets 'Resides With' option.
+        .PARAMETER do_not_contact
+        Sets 'No Contact' option.
+        .PARAMETER primary
+        Sets 'Primary' option. CAUTION: This setting can be set using the API on a relationship that the web-interface doesn't allow the addition/removal of it for (e.g., Associate, Spouse, etc.)
+        .PARAMETER comments
+        Sets 'Notes/Comments' for the relationship.
         .PARAMETER ReturnRelationshipInfo
         Returns the relationship data for any created/updated relationships. Disabled by default to allow for better performance since it requires an additional API call for each relationship.
 
@@ -50,6 +58,10 @@ function Set-SchoolUserRelationship
             give_parental_access = $true 
             list_as_parent = $true 
             tuition_responsible_signer = $true
+            resides_with = $true 
+            do_not_contact = $true 
+            primary = $true 
+            comments = 'Dad is dad.'
         }
         Set-SchoolUserRelationship @RelationshipParams
     #>
@@ -120,6 +132,30 @@ function Set-SchoolUserRelationship
         Position=6,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
+        [bool]$resides_with,
+
+        [Parameter(
+        Position=7,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$do_not_contact,
+
+        [Parameter(
+        Position=8,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$primary,
+
+        [Parameter(
+        Position=9,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$comments,
+
+        [Parameter(
+        Position=10,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRelationshipInfo
     )
   
@@ -165,6 +201,10 @@ function Set-SchoolUserRelationship
     $give_parental_access_orig = $parameters.give_parental_access
     $list_as_parent_orig = $parameters.list_as_parent
     $tuition_responsible_signer_orig = $parameters.tuition_responsible_signer
+    $resides_with_orig = $parameters.resides_with
+    $do_not_contact_orig = $parameters.do_not_contact
+    $primary_orig = $parameters.primary
+    $comments_orig = $parameters.comments
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -191,6 +231,10 @@ function Set-SchoolUserRelationship
             $parameters.Remove('give_parental_access') | Out-Null
             $parameters.Remove('list_as_parent') | Out-Null
             $parameters.Remove('tuition_responsible_signer') | Out-Null
+            $parameters.Remove('resides_with') | Out-Null
+            $parameters.Remove('do_not_contact') | Out-Null
+            $parameters.Remove('primary') | Out-Null
+            $parameters.Remove('comments') | Out-Null
 
             $CurrentRelationshipOfSameType = Get-SchoolUserRelationship -User_ID $uid | Where-Object {($_.user_one_id -eq $left_user) -and ($_.user_two_id -eq $uid) -and ($_.user_one_role -eq $($RelationshipTypeCodeMapping_Left.$relationship_type))} # Note: 'user one' is the "left" relationship and 'user two' is the "right" relationship.
             
@@ -231,6 +275,58 @@ function Set-SchoolUserRelationship
             else
             {
                 $parameters.Add('tuition_responsible_signer',$tuition_responsible_signer_orig)
+            }
+
+            # resides_with
+            if ($null -eq $resides_with_orig)
+            {
+                if ($null -eq $CurrentRelationshipOfSameType)
+                {
+                    $parameters.Add('resides_with',$false)
+                }
+            }
+            else
+            {
+                $parameters.Add('resides_with',$resides_with_orig)
+            }
+
+            # do_not_contact
+            if ($null -eq $do_not_contact_orig)
+            {
+                if ($null -eq $CurrentRelationshipOfSameType)
+                {
+                    $parameters.Add('do_not_contact',$false)
+                }
+            }
+            else
+            {
+                $parameters.Add('do_not_contact',$do_not_contact_orig)
+            }
+
+            # primary
+            if ($null -eq $primary_orig)
+            {
+                if ($null -eq $CurrentRelationshipOfSameType)
+                {
+                    $parameters.Add('primary',$false)
+                }
+            }
+            else
+            {
+                $parameters.Add('primary',$primary_orig)
+            }
+
+            # comments
+            if ($null -eq $comments_orig)
+            {
+                if ($null -eq $CurrentRelationshipOfSameType)
+                {
+                    $parameters.Add('comments',$false)
+                }
+            }
+            else
+            {
+                $parameters.Add('comments',$comments_orig)
             }
                    
             $null = Submit-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
