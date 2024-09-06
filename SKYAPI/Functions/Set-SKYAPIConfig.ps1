@@ -26,7 +26,7 @@ function Set-SKYAPIConfig
         Default is http://localhost:5000/auth/callback
         .PARAMETER authorize_uri
         OAuth 2.0 endpoint for Authorization.
-        Default is https://oauth2.sky.blackbaud.com/authorization
+        Default is https://app.blackbaud.com/oauth/authorize
         .PARAMETER token_uri
         OAuth 2.0 endpoint for Token refreshes.
         Default is https://oauth2.sky.blackbaud.com/token
@@ -120,7 +120,7 @@ function Set-SKYAPIConfig
             client_id               = ''
             client_secret           = ''
             redirect_uri            = 'http://localhost:5000/auth/callback'
-            authorize_uri           = 'https://oauth2.sky.blackbaud.com/authorization'
+            authorize_uri           = 'https://app.blackbaud.com/oauth/authorize'
             token_uri               = 'https://oauth2.sky.blackbaud.com/token'
         }
               
