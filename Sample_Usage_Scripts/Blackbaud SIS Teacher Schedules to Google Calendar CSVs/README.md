@@ -1,7 +1,7 @@
 # Blackbaud SIS Teacher Schedules to Google Calendar CSVs
 
 ## Overview
-A sample PowerShell script that uses the PowerShell SKYAPI Module to create importable Google Calendar schedules for faculty from the Blackbaud School Envirionment. It outputs CSV files, one for each teacher. Teachers can manually import as needed. Throw them in a shared Google Drive folder or somewhere else for easy access.
+A sample PowerShell script that uses the PowerShell SKYAPI Module to create importable Google Calendar schedules for faculty from the Blackbaud School Environment. It outputs CSV files, one for each teacher. Teachers can manually import as needed. Throw them in a shared Google Drive folder or somewhere else for easy access.
 
 ## Prerequisites
 - SKYAPI PowerShell Module (https://github.com/Sekers/SKYAPI)
