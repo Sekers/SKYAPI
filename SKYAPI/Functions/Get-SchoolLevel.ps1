@@ -5,7 +5,7 @@ function Get-SchoolLevel
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1levelsget
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=v1levelsget
         
         .SYNOPSIS
         Education Management School API - Returns a collection of core school levels.

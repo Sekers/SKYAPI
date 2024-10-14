@@ -5,7 +5,7 @@ function Get-SchoolUserByRole
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/v1usersget
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=v1usersget
         
         .SYNOPSIS
         Education Management School API - Returns a collection of users of the specified role(s) with basic user details.
@@ -17,7 +17,7 @@ function Get-SchoolUserByRole
         Requires the 'Platform Manager', 'Billing Clerk', 'Password Manager' or'Contact Card Manager' role in the Education Management system.
 
         .PARAMETER roles
-        Required. Comma delimited list of role IDs to get users for.
+        Required. comma-delimited list of role IDs to get users for.
         Note: This parameter is passed on directly to the API endpoint and should be a string, not an array.
         .PARAMETER first_name
         Filter results by first name.

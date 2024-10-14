@@ -5,7 +5,7 @@ function Remove-SchoolUserRelationship
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsDelete
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsDelete
         
         .SYNOPSIS
         Education Management School API - Removes relationship records from one or more user IDs.

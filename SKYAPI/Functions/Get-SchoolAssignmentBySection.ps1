@@ -5,7 +5,7 @@ function Get-SchoolAssignmentBySection
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idAssignmentsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsSectionsBySection_idAssignmentsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of assignments for the provided section(s).

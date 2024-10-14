@@ -5,7 +5,7 @@ function New-SchoolUserPhone
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idPhonesPost
         
         .SYNOPSIS
         Education Management School API - Creates a new phone record for the specified user IDs and returns the ID of the phone number created.

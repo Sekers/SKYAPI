@@ -5,7 +5,7 @@ function Get-SchoolScheduleMeeting
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet
         
         .SYNOPSIS
         Education Management School API - Returns a list of section meetings for a given date.
@@ -25,10 +25,10 @@ function Get-SchoolScheduleMeeting
         End date of events you want returned. Use ISO-8601 date format (2022-04-08).
         If not specified, defaults to 30 days from start_date.
         .PARAMETER offering_types
-        Can take a single or multiple values as a comma delimited string of integers (defaults to 1 'Academics').
+        Can take a single or multiple values as a comma-delimited string of integers (defaults to 1 'Academics').
         Use Get-SchoolOfferingType to get a list of offering types.
         .PARAMETER section_ids
-        Comma delimited list of integer values for the section identifiers to return. By default the route returns all sections.
+        comma-delimited list of integer values for the section identifiers to return. By default the route returns all sections.
         .PARAMETER last_modified
         Filters meetings to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
         .PARAMETER SchoolTimeZoneId
@@ -214,7 +214,6 @@ function Get-SchoolScheduleMeeting
         # Note: Since PowerShell v6, ConvertTo-Json automatically deserializes strings that contain
         # an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
         # or a prefix of it that includes at least everything up to the seconds part as [datetime] instances.
-        # Because Blackbaud provides incorrect timezone data we have to adjust this when running in CORE.
         # So, with PS Core, we need to get the raw JSON and create a CustomPSObject without deserialization.
 
         if ($PSVersionTable.PSEdition -EQ 'Desktop')
@@ -234,12 +233,6 @@ function Get-SchoolScheduleMeeting
     until($FinalIteration -eq $true)
 
     # Massage dates in $response because PowerShell automatically converts API calls to date time...
-    # But Blackbaud includes a generic date of '1900-01-01' when returning time which throws off Daylight Saving Time.
-    # Blackbaud also includes a generic time of 'T00:00:00+00:00' when returning dates which throws off stuff too.
-    # Example Output from the API that PowerShell automatically parses:
-    #     "start_time": "1900-01-01T09:36:00-05:00"
-    #     "end_time": "1900-01-01T10:26:00-05:00"
-    #     "meeting_date": "2022-09-06T00:00:00+00:00"
     $response = foreach ($meeting in $response)
     {
         # Strip the time information from the date.

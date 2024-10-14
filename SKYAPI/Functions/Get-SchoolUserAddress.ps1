@@ -5,7 +5,7 @@ function Get-SchoolUserAddress
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection addresses for one or more user IDs.

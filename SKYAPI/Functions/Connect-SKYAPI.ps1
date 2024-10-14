@@ -1,11 +1,11 @@
 Function Connect-SKYAPI
 {
-        <#
+    <#
         .LINK
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
+        Documentation: https://developer.blackbaud.com/skyapi/docs/authorization
 
         .SYNOPSIS
         Education Management School API - Verify cached tokens exist and are not expired using Connect-SKYAPI.

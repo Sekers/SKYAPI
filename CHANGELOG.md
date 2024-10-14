@@ -1,5 +1,29 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.3.11](https://github.com/Sekers/SKYAPI/tree/0.3.11) - (2024-10-14)
+
+### Features
+
+- BREAKING CHANGE: Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.2792.45](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.2792.45). Note that the minimum .NET Framework version requirement for .NET WebView2 has been updated from .NET Framework 4.5 to .NET Framework 4.6.2 (this affects Windows PowerShell Desktop only, not PowerShell Core).
+- New Endpoint: [Get-SchoolAdmissionCandidate](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsCandidatesGet)
+- New Endpoint: [Get-SchoolAdmissionStatus](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsStatusGet)
+- New Endpoint: [Get-SchoolActivityRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesRostersGet)
+- New Endpoint: [Get-SchoolAdvisoryRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdvisoriesRostersGet)
+- New Endpoint: [Get-SchoolRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsRostersGet)
+- Added new parameters to Set-SchoolUserRelationship: resides_with, do_not_contact, primary, & comments
+- Updates to error handling as the Blackbaud SKY API now returns at least 4 different types of error message formats.
+- New sample script: Blackbaud SIS Teacher Schedules to ICS
+
+### Other
+- Updated links for built-in help to new endpoint documentation URLs. 
+- Updated authorize URI in various places due to updates on the API end (the old URI still works since it is forwarded to the new one).
+- Minor example and built-in help updates, clarifications, and typo fixes.
+- Removed references to resolved Blackbaud API DATETIME bug.
+- Removed temporary fix for now resolved bad email bug in the endpoint for Update-SchoolUser.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.10](https://github.com/Sekers/SKYAPI/tree/0.3.10) - (2023-03-21)
 
 ### Fixes

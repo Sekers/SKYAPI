@@ -5,7 +5,7 @@ function Get-SchoolSectionByStudent
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsStudentByStudent_idSectionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsStudentByStudent_idSectionsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of academic sections for the specified student ID(s).

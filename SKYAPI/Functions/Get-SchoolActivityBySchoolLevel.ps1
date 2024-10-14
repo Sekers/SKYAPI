@@ -5,7 +5,7 @@ function Get-SchoolActivityBySchoolLevel
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesSectionsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of activity sections based on school level.

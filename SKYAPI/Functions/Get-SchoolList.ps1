@@ -1,4 +1,4 @@
-# This function has an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/docs/services/school/operations/V1LegacyListsByList_idGet).
+# This function has an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/api#api=school&operation=V1LegacyListsByList_idGet).
 
 function Get-SchoolList
 {
@@ -7,7 +7,7 @@ function Get-SchoolList
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsAdvancedByList_idGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1ListsAdvancedByList_idGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of results from a basic or advanced list.

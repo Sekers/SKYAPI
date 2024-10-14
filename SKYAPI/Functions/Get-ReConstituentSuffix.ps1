@@ -5,7 +5,7 @@ function Get-ReConstituentSuffix
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListSuffixes
+        Endpoint: https://developer.sky.blackbaud.com/api#api=56b76470069a0509c8f1c5b3&operation=ListSuffixes
         
         .SYNOPSIS
         Raiser's Edge Constituent API - Returns a list of available constituent suffix types.

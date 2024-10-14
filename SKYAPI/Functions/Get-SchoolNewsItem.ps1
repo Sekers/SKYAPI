@@ -5,7 +5,7 @@ function Get-SchoolNewsItem
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsItemsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1ContentNewsItemsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of Content News Items.

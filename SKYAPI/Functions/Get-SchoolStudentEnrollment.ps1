@@ -5,7 +5,7 @@ function Get-SchoolStudentEnrollment
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsEnrollmentsByUser_idGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsEnrollmentsByUser_idGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of course sections in which the provided student(s) is/are enrolled.
@@ -17,7 +17,7 @@ function Get-SchoolStudentEnrollment
         .PARAMETER User_ID
         Required. Array of user IDs of each student's course section enrollments you want returned.
         .PARAMETER school_year
-        The school year to get sections for. Defaults to the current school year if not specified.
+        The school year to get sections for. Corresponds to school_year_label in the Year list (Get-SchoolYear). Defaults to the current school year if not specified.
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 

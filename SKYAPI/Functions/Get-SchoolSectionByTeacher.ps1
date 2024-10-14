@@ -5,7 +5,7 @@ function Get-SchoolSectionByTeacher
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsTeachersByTeacher_idSectionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsTeachersByTeacher_idSectionsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of academic sections for one or more teachers.
@@ -16,7 +16,7 @@ function Get-SchoolSectionByTeacher
         .PARAMETER Teacher_ID
         Required. Array of user IDs for each teacher you want sections for returned.
         .PARAMETER school_year
-        The school year to get sections for. Defaults to the current school year.
+        The school year to get sections for. Corresponds to school_year_label in the Year list (Get-SchoolYear). Defaults to the current school year.
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 

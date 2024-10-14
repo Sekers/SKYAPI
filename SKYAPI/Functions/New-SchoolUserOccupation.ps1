@@ -8,7 +8,7 @@ function New-SchoolUserOccupation
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsPost
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idOccupationsPost
         
         .SYNOPSIS
         Education Management School API - Creates an occupation record for the specified user IDs and returns the ID of the occupation created.

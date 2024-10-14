@@ -112,6 +112,18 @@
 # Get-SchoolCycleBySection -Section_ID 82426521 -duration_id 142312 -group_type 1
 
 <#
+    Get-SchoolAdmissionCandidate
+    (Use Get-SchoolAdmissionStatus to get a list of admissions status IDs)
+#>
+# Get-SchoolAdmissionCandidate
+# Get-SchoolAdmissionCandidate -school_year '2023-2024' -status_ids '158,275,278' -modified_date '2023-07-01'
+
+<#
+    Get-SchoolAdmissionStatus
+#>
+# Get-SchoolAdmissionStatus
+
+<#
     Get-SchoolUser
 #>
 # Get-SchoolUser -User_ID 2230332,3243114
@@ -179,6 +191,13 @@
 #  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
+    Get-SchoolActivityRoster
+#>
+# Get-SchoolActivityRoster
+# Get-SchoolActivityRoster -school_year '2022-2023'
+# Get-SchoolActivityRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
+
+<#
     Get-SchoolAdvisoryBySchoolLevel
     (Use Get-SchoolLevel to get a list of school level IDs to specify)
 #>
@@ -187,6 +206,13 @@
 #  $SchoolAdvisoryListBySchoolLevel[0]
 #  $SchoolAdvisoryListBySchoolLevel[1]
 #  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+
+<#
+    Get-SchoolAdvisoryRoster
+#>
+# Get-SchoolAdvisoryRoster
+# Get-SchoolAdvisoryRoster -school_year '2022-2023'
+# Get-SchoolAdvisoryRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
 
 <#
     Get-SchoolSectionBySchoolLevel
@@ -218,6 +244,13 @@
 # Get-SchoolCourse
 # Get-SchoolCourse -department_id 8706 -level_id 453
 # Get-SchoolCourse -level_id 229 | Where-Object -Property "inactive" -Match "false"
+
+<#
+    Get-SchoolRoster
+#>
+# Get-SchoolRoster
+# Get-SchoolRoster -school_year '2022-2023'
+# Get-SchoolRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
 
 <#
     Get-SchoolUserEducation

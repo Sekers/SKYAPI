@@ -5,7 +5,7 @@ function Get-SchoolUserPhone
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idPhonesGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection phone numbers for one or more user IDs.

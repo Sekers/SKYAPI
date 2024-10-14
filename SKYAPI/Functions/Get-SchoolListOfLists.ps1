@@ -5,7 +5,7 @@ function Get-SchoolListOfLists
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1ListsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of basic and advanced lists the authorized user has access to.

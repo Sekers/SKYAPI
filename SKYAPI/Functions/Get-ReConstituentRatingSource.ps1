@@ -5,7 +5,7 @@ function Get-ReConstituentRatingSource
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListRatingSources
+        Endpoint: https://developer.sky.blackbaud.com/api#api=56b76470069a0509c8f1c5b3&operation=ListRatingSources
         
         .SYNOPSIS
         Raiser's Edge Constituent API - Returns a list of all available rating sources.
@@ -15,7 +15,6 @@ function Get-ReConstituentRatingSource
 
         .PARAMETER include_inactive
         Set this parameter to True to include inactive sources in the response. Defaults to False if not specified.
-        TODO: VERIFY THIS DEFAULTS to FALSE
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
@@ -31,7 +30,7 @@ function Get-ReConstituentRatingSource
         Position=0,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [bool]$include_inactive, # TODO: NEED TO TEST THIS ACTUALLY WORKS IF SET TO TRUE!
+        [bool]$include_inactive,
 
         [Parameter(
         Position=1,

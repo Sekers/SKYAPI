@@ -5,7 +5,7 @@ function Get-SchoolUserExtended
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersExtendedByUser_idGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersExtendedByUser_idGet
         
         .SYNOPSIS
         Education Management School API - Get extended user details (telephones, occupations, relationships, etc.) for one or more user IDs.
@@ -72,12 +72,13 @@ function Get-SchoolUserExtended
 
         # TODO - There is a bug with the dates not appearing correctly on the website when submitting occupations on this endpoint. I have a support request open with Blackbaud
         #        They were able to replicate the issue and have passed it on to the product development team for further review.
+        #        The below code fixes the dates issue.
         foreach ($occupation in $response.occupations)
         {
             $index = $response.occupations.IndexOf($occupation)
             
             if (-not [string]::IsNullOrEmpty($occupation.begin_date)){$response.occupations[$index].begin_date = Repair-SkyApiDate -Date $occupation.begin_date}
-                if (-not [string]::IsNullOrEmpty($occupation.end_date)){$response.occupations[$index].end_date = Repair-SkyApiDate -Date $occupation.end_date}
+            if (-not [string]::IsNullOrEmpty($occupation.end_date)){$response.occupations[$index].end_date = Repair-SkyApiDate -Date $occupation.end_date}
         }
 
         if (-not [string]::IsNullOrEmpty($response.retire_date)){$response.retire_date = Repair-SkyApiDate -Date $response.retire_date}

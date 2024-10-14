@@ -5,7 +5,7 @@ function New-SchoolUserAddress
         https://github.com/Sekers/SKYAPI/wiki
         
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesPost
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesPost
         
         .SYNOPSIS
         Education Management School API - Creates a new address record for the specified user IDs and returns the ID of the address created.

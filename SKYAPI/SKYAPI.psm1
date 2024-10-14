@@ -417,10 +417,10 @@ Function Show-SKYAPIOAuthWindow
         default # EdgeWebView2
         {            
             # Set EdgeWebView2 Control Version to Use
-            $EdgeWebView2Control_VersionNumber = '1.0.1518.46'
+            $EdgeWebView2Control_VersionNumber = '1.0.2792.45'
             switch ($PSVersionTable.PSEdition)
             {
-                Desktop {$EdgeWebView2Control_DotNETVersion = "net45"}
+                Desktop {$EdgeWebView2Control_DotNETVersion = "net462"}
                 Core {$EdgeWebView2Control_DotNETVersion = "netcoreapp3.0"}
                 Default {$EdgeWebView2Control_DotNETVersion = "netcoreapp3.0"}
             }
@@ -437,7 +437,7 @@ Function Show-SKYAPIOAuthWindow
             # Load Assemblies
             Add-Type -AssemblyName System.Windows.Forms
 
-            # Unpack the nupkg and grab the following two DLLs out of the /lib folder.
+            # Unpack the nupkg and grab the following two DLLs out of the /lib /lib_manual folders.
             # - Microsoft.Web.WebView2.WinForms.dll (there's a different version for each .NET type, but the same file for x86 & x64)
             # - Microsoft.Web.WebView2.Core.dll (while there's a copy for each .NET type, so far they have been the same exact file; same file for x86 & x64 too)
             # In addition, get the following file from the /runtimes folder and put it in the same locations.
@@ -613,7 +613,7 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
         throw $InvokeErrorMessageRaw
     }
     
-    # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 3 different ways so we need to account for that. Yay for no consistency.
+    # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 4 different ways so we need to account for that. Yay for no consistency.
     If ($InvokeErrorMessage.statusCode)
     {
         $StatusCodeorError = $InvokeErrorMessage.statusCode
@@ -624,6 +624,9 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
     }
     elseif ($InvokeErrorMessage.errors) {
         $StatusCodeorError = If($InvokeErrorMessage.errors.error_code) {$InvokeErrorMessage.errors.error_code} else {$InvokeErrorMessage.errors}
+    }
+    elseif ($InvokeErrorMessage.message) {
+        $StatusCodeorError = $InvokeErrorMessage.message
     }
     else
     {
@@ -671,6 +674,22 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
             'retry'
         }
         503 # The service is currently unavailable.
+        {
+            # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
+            # The other option would be to use the exponential backoff method where You can periodically retry a failed request over an increasing amount of time to handle errors
+            # related to rate limits, network volume, or response time. For example, you might retry a failed request after one second, then after two seconds, and then after four seconds.
+            Start-Sleep -Seconds 5
+            'retry'
+        }
+        504 # Gateway Time-out.
+        {
+            # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
+            # The other option would be to use the exponential backoff method where You can periodically retry a failed request over an increasing amount of time to handle errors
+            # related to rate limits, network volume, or response time. For example, you might retry a failed request after one second, then after two seconds, and then after four seconds.
+            Start-Sleep -Seconds 5
+            'retry'
+        }
+        'An exception occured. Please contact Support.' # Random exception. Often transient.
         {
             # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
             # The other option would be to use the exponential backoff method where You can periodically retry a failed request over an increasing amount of time to handle errors

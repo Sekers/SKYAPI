@@ -5,7 +5,7 @@ function Get-SchoolEnrollment
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersEnrollmentsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersEnrollmentsGet
         
         .SYNOPSIS
         Education Management School API - Returns a collection of users and their school enrollment information for the specified school years.
@@ -18,7 +18,7 @@ function Get-SchoolEnrollment
         - SKY API Data Sync
 
         .PARAMETER School_Year
-        Required. Array of school year labels to get enrollments for returned.
+        Required. Array of school year labels to get enrollments for returned. Corresponds to school_year_label in the Year list (Get-SchoolYear).
         .PARAMETER school_level_id
         Optional parameter to show enrollemts only for a specific school level.
         Use Get-SchoolLevel to get a list of school levels.
