@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.10'
+ModuleVersion = '0.3.11'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -82,9 +82,11 @@ FunctionsToExport = @(
     'Get-ReConstituentSuffix',
     'Get-ReConstituentTitle',
     'Get-SchoolActivityBySchoolLevel',
+    'Get-SchoolActivityRoster',
     'Get-SchoolAdmissionCandidate',
     'Get-SchoolAdmissionStatus',
     'Get-SchoolAdvisoryBySchoolLevel',
+    'Get-SchoolAdvisoryRoster',
     'Get-SchoolAssignmentBySection',
     'Get-SchoolAssignmentByStudent',
     'Get-SchoolCourse',
@@ -99,6 +101,7 @@ FunctionsToExport = @(
     'Get-SchoolNewsItem',
     'Get-SchoolOfferingType',
     'Get-SchoolRole',
+    'Get-SchoolRoster',
     'Get-SchoolResourceBoard',
     'Get-SchoolScheduleMeeting',
     'Get-SchoolSectionBySchoolLevel',
