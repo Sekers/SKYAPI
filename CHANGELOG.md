@@ -7,9 +7,9 @@
 - BREAKING CHANGE: Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.2792.45](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.2792.45). Note that the minimum .NET Framework version requirement for .NET WebView2 has been updated from .NET Framework 4.5 to .NET Framework 4.6.2 (this affects Windows PowerShell Desktop only, not PowerShell Core).
 - New Endpoint: [Get-SchoolAdmissionCandidate](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsCandidatesGet)
 - New Endpoint: [Get-SchoolAdmissionStatus](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsStatusGet)
-- New Endpoint: [Get-SchoolActivityRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesRostersGet)
-- New Endpoint: [Get-SchoolAdvisoryRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdvisoriesRostersGet)
-- New Endpoint: [Get-SchoolRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsRostersGet)
+- New Endpoint (Currently Beta): [Get-SchoolActivityRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesRostersGet)
+- New Endpoint (Currently Beta): [Get-SchoolAdvisoryRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdvisoriesRostersGet)
+- New Endpoint (Currently Beta): [Get-SchoolRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsRostersGet)
 - Added new parameters to Set-SchoolUserRelationship: resides_with, do_not_contact, primary, & comments
 - Updates to error handling as the Blackbaud SKY API now returns at least 4 different types of error message formats.
 - New sample script: Blackbaud SIS Teacher Schedules to ICS
