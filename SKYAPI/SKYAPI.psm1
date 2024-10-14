@@ -417,10 +417,10 @@ Function Show-SKYAPIOAuthWindow
         default # EdgeWebView2
         {            
             # Set EdgeWebView2 Control Version to Use
-            $EdgeWebView2Control_VersionNumber = '1.0.1518.46'
+            $EdgeWebView2Control_VersionNumber = '1.0.2792.45'
             switch ($PSVersionTable.PSEdition)
             {
-                Desktop {$EdgeWebView2Control_DotNETVersion = "net45"}
+                Desktop {$EdgeWebView2Control_DotNETVersion = "net462"}
                 Core {$EdgeWebView2Control_DotNETVersion = "netcoreapp3.0"}
                 Default {$EdgeWebView2Control_DotNETVersion = "netcoreapp3.0"}
             }
@@ -437,7 +437,7 @@ Function Show-SKYAPIOAuthWindow
             # Load Assemblies
             Add-Type -AssemblyName System.Windows.Forms
 
-            # Unpack the nupkg and grab the following two DLLs out of the /lib folder.
+            # Unpack the nupkg and grab the following two DLLs out of the /lib /lib_manual folders.
             # - Microsoft.Web.WebView2.WinForms.dll (there's a different version for each .NET type, but the same file for x86 & x64)
             # - Microsoft.Web.WebView2.Core.dll (while there's a copy for each .NET type, so far they have been the same exact file; same file for x86 & x64 too)
             # In addition, get the following file from the /runtimes folder and put it in the same locations.
