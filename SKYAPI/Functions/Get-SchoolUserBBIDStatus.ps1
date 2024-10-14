@@ -17,7 +17,7 @@ function Get-SchoolUserBBIDStatus
         Use Get-SchoolRole to get a list of base roles.
 
         .PARAMETER base_role_ids
-        Required. Comma delimited list of base role IDs to get user BBID status for.
+        Required. comma-delimited list of base role IDs to get user BBID status for.
         Note: This parameter is passed on directly to the API endpoint and should be a string, not an array.
         .PARAMETER marker
         Results will start with the user AFTER the specified user's ID in the result set.

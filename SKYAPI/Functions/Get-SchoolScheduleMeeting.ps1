@@ -25,10 +25,10 @@ function Get-SchoolScheduleMeeting
         End date of events you want returned. Use ISO-8601 date format (2022-04-08).
         If not specified, defaults to 30 days from start_date.
         .PARAMETER offering_types
-        Can take a single or multiple values as a comma delimited string of integers (defaults to 1 'Academics').
+        Can take a single or multiple values as a comma-delimited string of integers (defaults to 1 'Academics').
         Use Get-SchoolOfferingType to get a list of offering types.
         .PARAMETER section_ids
-        Comma delimited list of integer values for the section identifiers to return. By default the route returns all sections.
+        comma-delimited list of integer values for the section identifiers to return. By default the route returns all sections.
         .PARAMETER last_modified
         Filters meetings to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
         .PARAMETER SchoolTimeZoneId

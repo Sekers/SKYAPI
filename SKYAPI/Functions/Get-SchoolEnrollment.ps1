@@ -18,7 +18,7 @@ function Get-SchoolEnrollment
         - SKY API Data Sync
 
         .PARAMETER School_Year
-        Required. Array of school year labels to get enrollments for returned.
+        Required. Array of school year labels to get enrollments for returned. Corresponds to school_year_label in the Year list (Get-SchoolYear).
         .PARAMETER school_level_id
         Optional parameter to show enrollemts only for a specific school level.
         Use Get-SchoolLevel to get a list of school levels.

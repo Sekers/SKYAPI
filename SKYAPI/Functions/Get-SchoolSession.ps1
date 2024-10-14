@@ -18,7 +18,7 @@ function Get-SchoolSession
         Filter for a specific level number.
         Use Get-SchoolLevel to get a list of school levels.
         .PARAMETER school_year
-        Filter for a specific school year.
+        Filter for a specific school year. Corresponds to school_year_label in the Year list (Get-SchoolYear).
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 

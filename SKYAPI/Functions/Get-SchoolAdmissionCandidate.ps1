@@ -18,9 +18,9 @@ function Get-SchoolAdmissionCandidate
           - SKY API Data Sync
 
         .PARAMETER school_year
-        Filter for a specific school year. Default is current year.
+        Filter for a specific school year. Corresponds to school_year_label in the Year list (Get-SchoolYear). Default is current year.
         .PARAMETER status_ids
-        One or more comma delimited Status ID(s) to filter results on. Default is no status Id filter.
+        One or more comma-delimited Status ID(s) to filter results on. Default is no status Id filter.
         Use Get-SchoolAdmissionStatus to get a collection of admissions statuses.
         .PARAMETER modified_date
         The date last modified to filter results to on or after. Use ISO-8601 date format: 2003-04-21. Default is no modified date filter.
