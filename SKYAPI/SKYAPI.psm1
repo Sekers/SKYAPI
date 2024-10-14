@@ -613,7 +613,7 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
         throw $InvokeErrorMessageRaw
     }
     
-    # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 3 different ways so we need to account for that. Yay for no consistency.
+    # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 4 different ways so we need to account for that. Yay for no consistency.
     If ($InvokeErrorMessage.statusCode)
     {
         $StatusCodeorError = $InvokeErrorMessage.statusCode
@@ -624,6 +624,9 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
     }
     elseif ($InvokeErrorMessage.errors) {
         $StatusCodeorError = If($InvokeErrorMessage.errors.error_code) {$InvokeErrorMessage.errors.error_code} else {$InvokeErrorMessage.errors}
+    }
+    elseif ($InvokeErrorMessage.message) {
+        $StatusCodeorError = $InvokeErrorMessage.message
     }
     else
     {
@@ -679,6 +682,14 @@ function SKYAPICatchInvokeErrors($InvokeErrorMessageRaw)
             'retry'
         }
         504 # Gateway Time-out.
+        {
+            # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
+            # The other option would be to use the exponential backoff method where You can periodically retry a failed request over an increasing amount of time to handle errors
+            # related to rate limits, network volume, or response time. For example, you might retry a failed request after one second, then after two seconds, and then after four seconds.
+            Start-Sleep -Seconds 5
+            'retry'
+        }
+        'An exception occured. Please contact Support.' # Random exception. Often transient.
         {
             # Sleep for 5 seconds and return the try command. I don't know if this is a good length, but it seems reasonable since we try 5 times before failing.
             # The other option would be to use the exponential backoff method where You can periodically retry a failed request over an increasing amount of time to handle errors
