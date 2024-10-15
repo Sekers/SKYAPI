@@ -23,7 +23,7 @@ function Get-SchoolActivityRoster
         Limits rosters returned to the school level specified.
 
         .PARAMETER section_ids
-        Limits roters returned to the sections specified. Provide comma-delimited list of section_id values.
+        Limits rosters returned to the sections specified. Provide comma-delimited list of section_id values.
 
         .PARAMETER last_modified
         Limits rosters returned to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
