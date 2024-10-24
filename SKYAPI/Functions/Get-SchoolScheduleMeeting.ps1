@@ -33,7 +33,7 @@ function Get-SchoolScheduleMeeting
         Filters meetings to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
         .PARAMETER SchoolTimeZoneId
         Indicates the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
-        Get-SchoolScheduleMeeting will try to automatically pull the value from your school envirionment,
+        Get-SchoolScheduleMeeting will try to automatically pull the value from your school environment,
         but if you receive an error, you may have to manually override it with a valid time zone ID.
         This is required because Blackbaud does not return accurate time zone information from this endpoint.
         Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
@@ -59,7 +59,7 @@ function Get-SchoolScheduleMeeting
         {
             "`n--- Meeting Group ---"
             $meeting.group_name
-            "--- Meeting Date (School Envirionment Time Zone) ---"
+            "--- Meeting Date (School Environment Time Zone) ---"
             $meeting.meeting_date
             "--- Start & End (Local Time) ---"
             $meeting.start_time.ToLocalTime().DateTime # DateTime Kind of 'Local'

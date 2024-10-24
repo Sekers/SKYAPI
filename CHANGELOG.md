@@ -51,7 +51,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - New Endpoint: [Get-SchoolSession](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SessionsGet)
 - New Endpoint: [Get-SchoolResourceBoard](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentResourcesGet)
 - 'Get-SchoolAssignmentBySection' & 'Get-SchoolScheduleMeeting' now allow spaces in the types/offering_types parameters.
-- New Example Script: [Blackbaud SIS Teacher Schedules to Google Calendar CSVs](https://github.com/Sekers/SKYAPI/tree/master/Sample_Usage_Scripts/Blackbaud%20SIS%20Teacher%20Schedules%20to%20Google%20Calendar%20CSVs). Creates importable Google Calendar schedules for faculty from the Blackbaud School Envirionment.
+- New Example Script: [Blackbaud SIS Teacher Schedules to Google Calendar CSVs](https://github.com/Sekers/SKYAPI/tree/master/Sample_Usage_Scripts/Blackbaud%20SIS%20Teacher%20Schedules%20to%20Google%20Calendar%20CSVs). Creates importable Google Calendar schedules for faculty from the Blackbaud School Environment.
 
 ### Other
 - Built-in help updates regarding necessary permissions to access some endpoints (Blackbaud [loosened the requirements](https://developer.blackbaud.com/skyapi/support/changelog/bbem?_ga=2.83020246.1587108373.1678131781-1653312318.1663684217) on a bunch of general information ones).

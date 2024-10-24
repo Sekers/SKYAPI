@@ -331,7 +331,7 @@
 # {
 #     "`n--- Meeting Group ---"
 #     $meeting.group_name
-#     "--- Meeting Date (School Envirionment Time Zone) ---"
+#     "--- Meeting Date (School Environment Time Zone) ---"
 #     $meeting.meeting_date
 #     "--- Start & End (Local Time) ---"
 #     $meeting.start_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
