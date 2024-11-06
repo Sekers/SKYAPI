@@ -86,6 +86,11 @@ Function Get-SKYAPIAuthToken
     [CmdletBinding()]
     Param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
 
+    # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
+    # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
+    # More Information: https://github.com/PowerShell/PowerShell/pull/2640
+    $ProgressPreference = 'SilentlyContinue'
+
     #Build token request
     $AuthorizationPostRequest = 'grant_type=' + $grant_type + '&' +
     'redirect_uri=' + [System.Web.HttpUtility]::UrlEncode($redirect_uri) + '&' +
@@ -112,6 +117,11 @@ Function Get-SKYAPIAccessToken
     [CmdletBinding()]
     Param($grant_type,$client_id,$redirect_uri,$client_secret,$authCode,$token_uri)
 
+    # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
+    # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
+    # More Information: https://github.com/PowerShell/PowerShell/pull/2640
+    $ProgressPreference = 'SilentlyContinue'
+    
     #Build token request
     $AuthorizationPostRequest = 'grant_type=' + $grant_type + '&' +
     'redirect_uri=' + [System.Web.HttpUtility]::UrlEncode($redirect_uri) + '&' +
@@ -737,6 +747,11 @@ Function Get-SKYAPIUnpagedEntity
         $Request.Query = $params.ToString()
     }
     
+    # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
+    # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
+    # More Information: https://github.com/PowerShell/PowerShell/pull/2640
+    $ProgressPreference = 'SilentlyContinue'
+
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
     [int]$MaxInvokeCount = 5
@@ -835,6 +850,11 @@ Function Get-SKYAPIPagedEntity
 
     # Create records array
     $allRecords = @()
+
+    # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
+    # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
+    # More Information: https://github.com/PowerShell/PowerShell/pull/2640
+    $ProgressPreference = 'SilentlyContinue'
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
@@ -958,7 +978,12 @@ Function Remove-SKYAPIEntity
     if ($null -ne $params -and $params -ne '') {
         $Request.Query = $params.ToString()
     }
-    
+
+    # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
+    # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
+    # More Information: https://github.com/PowerShell/PowerShell/pull/2640
+    $ProgressPreference = 'SilentlyContinue'
+
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
     [int]$MaxInvokeCount = 5
@@ -1031,6 +1056,11 @@ function Submit-SKYAPIEntity
 
     # Build Body
     $PostRequest = $params | ConvertTo-Json
+
+    # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
+    # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
+    # More Information: https://github.com/PowerShell/PowerShell/pull/2640
+    $ProgressPreference = 'SilentlyContinue'
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
@@ -1105,6 +1135,11 @@ function Update-SKYAPIEntity
 
     # Build Body
     $PatchRequest = $params | ConvertTo-Json
+
+    # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
+    # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
+    # More Information: https://github.com/PowerShell/PowerShell/pull/2640
+    $ProgressPreference = 'SilentlyContinue'
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
