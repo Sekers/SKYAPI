@@ -186,14 +186,14 @@ function Get-SchoolScheduleMeeting
     }
 
     # Initialize Variables
-    $response = $null
+    $response = [System.Collections.Generic.List[Object]]::new()
     $DateRangeEnd = [DateTime]$end_date
     $DateIterationStart = [DateTime]$start_date
     $DateIterationEnd = $DateIterationStart.AddDays($IterationRangeInDays)
     $FinalIteration = $false
 
     # Iterate
-    $response += do
+    do
     {
         # Don't go beyond the final end date
         if ($DateIterationEnd -ge $DateRangeEnd)
@@ -218,12 +218,21 @@ function Get-SchoolScheduleMeeting
 
         if ($PSVersionTable.PSEdition -EQ 'Desktop')
         {
-            Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+            $response_objects = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         }
         else
         {
             $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -ReturnRaw
-            (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
+            $response_objects = (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
+        }
+
+        # Only return a response to the list if there's data.
+        if ($null -ne $response_objects)
+        {
+            foreach ($response_object in $response_objects)
+            {
+                $response.Add($response_object)
+            }
         }
 
         # Increase Iteration Range
