@@ -8,7 +8,7 @@
 
 ### Features
 - Sample script for Google Faculty Calendar Imports now supports meeting exclusions.
-- Improved error handling. Some errors that can often be transient now retry using an exponential backoff rather than just retrying up to 5 times with a 5-second delay in-between. This should reduce how often scripts fail by increasing the retry count from 5 to 7 and increasing the max wait time from the first try to the last retry from 20 seconds to just over 5 minutes. The exponential backup delay is as follows (in seconds):
+- Improved error handling. Some errors that can often be transient now retry using an exponential backoff rather than just retrying up to 5 times with a 5-second delay in-between. This should reduce how often scripts fail by increasing the retry count from 5 to 7 and increasing the max wait time from the first try to the last retry from 20 seconds to just over 5 minutes. The exponential backoff delay is as follows (in seconds):
 
     | Failure Count | Wait Time Before Next Retry | Total Wait Time |
     | --- | --- | --- |
