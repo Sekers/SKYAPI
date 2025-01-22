@@ -111,7 +111,7 @@ Function Connect-SKYAPI
 
     process
     {
-        # Set the Necesasary Configuration Variables
+        # Set the Necessary Configuration Variables
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $client_id = $sky_api_config.client_id
         $client_secret = $sky_api_config.client_secret
