@@ -37,14 +37,11 @@
     "AuthenticationMethod" parameter let's you specify how you want to authenticate if authentication is necessary:
     - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
                               Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
-    - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
-    - MiniHTTPServer: Alternate method of capturing the authentication using your user account's default web browser
-                      and listening for the authentication response using a temporary HTTP server hosted by the module.
 #>
 # Connect-SKYAPI
 # Connect-SKYAPI -ForceReauthentication
 # Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
-# Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer
+# Connect-SKYAPI -ForceReauthentication -AuthenticationMethod EdgeWebView2
 # Connect-SKYAPI -ForceRefresh
 # Connect-SKYAPI -ReturnConnectionInfo
 

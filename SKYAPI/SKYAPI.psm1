@@ -183,55 +183,6 @@ function Resolve-SKYAPIMemberChain
     }
 }
 
-# Helper to make sure Browser Emulation/Compatibility Mode is Off When Using the WebBrowser Control.
-# This function will set the Internet Explorer emulation mode for the running executable. This allows the WebBrowser control to support newer html features and improves compatibility with modern websites.
-# Modified from https://www.sapien.com/blog/2020/11/05/a-simple-fix-for-problems-with-windows-forms-webbrowser/ (see also https://bchallis.wordpress.com/2020/10/17/problems-with-the-windows-forms-webbrowser-control-and-a-simple-way-to-fix-it/)
-function Set-SKYAPIWebBrowserEmulation
-{
-	param
-	(
-		[ValidateNotNullOrEmpty()]
-		[string]
-		$ExecutableName = [System.IO.Path]::GetFileName([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
-	)
- 
-	#region Get IE Version
-	$valueNames = 'svcVersion', 'svcUpdateVersion', 'Version', 'W2kVersion'
- 
-	$version = 0;
-	for ($i = 0; $i -lt $valueNames.Length; $i++)
-	{
-		$objVal = [Microsoft.Win32.Registry]::GetValue('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer', $valueNames[$i], '0')
-		$strVal = [System.Convert]::ToString($objVal)
-		if ($strVal)
-		{
-			$iPos = $strVal.IndexOf('.')
-			if ($iPos -gt 0)
-			{
-				$strVal = $strVal.Substring(0, $iPos)
-			}
- 
-			$res = 0;
-			if ([int]::TryParse($strVal, [ref]$res))
-			{
-				$version = [Math]::Max($version, $res)
-			}
-		}
-	}
- 
-	if ($version -lt 7)
-	{
-		$version = 7000
-	}
-	else
-	{
-		$version = $version * 1000
-	}
-	#endregion
- 
-	[Microsoft.Win32.Registry]::SetValue('HKEY_CURRENT_USER\SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION', $ExecutableName, $version)
-}
-
 Function Show-SKYAPIOAuthWindow
 {
     Param(
@@ -247,7 +198,7 @@ Function Show-SKYAPIOAuthWindow
         Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [ValidateSet('','EdgeWebView2','MiniHTTPServer','LegacyIEControl')] # Allows null to be passed
+        [ValidateSet('','EdgeWebView2')] # Allows null to be passed
         [string]$AuthenticationMethod,
 
         [parameter(
@@ -294,7 +245,7 @@ Function Show-SKYAPIOAuthWindow
             Write-Warning "Microsoft Edge WebView2 Runtime is not installed and is required for browser-based authentication. Please install the runtime and try again."
             $PromptNoWebView2Runtime_Title = "Options"
             $PromptNoWebView2Runtime_Message = "Enter your choice:"
-            $PromptNoWebView2Runtime_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Download & install the Edge WebView2 runtime", "&Try alternative method (beta)", "&Cancel & exit")
+            $PromptNoWebView2Runtime_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Download & install the Edge WebView2 runtime", "&Cancel & exit")
             $PromptNoWebView2Runtime_Default = 0
             $PromptNoWebView2Runtime_Selection = $host.UI.PromptForChoice($PromptNoWebView2Runtime_Title,$PromptNoWebView2Runtime_Message,$PromptNoWebView2Runtime_Choices,$PromptNoWebView2Runtime_Default)
 
@@ -333,9 +284,6 @@ Function Show-SKYAPIOAuthWindow
                         Write-Host "Retrying Authentication...`n"
                     }
                 1   {
-                        $AuthenticationMethod = "MiniHTTPServer"
-                    }
-                2   {
                         Write-Host "Exiting..."
                         Exit
                     }
@@ -345,85 +293,6 @@ Function Show-SKYAPIOAuthWindow
     
     switch ($AuthenticationMethod)
     {
-        MiniHTTPServer # TODO
-        {
-            Write-Host "`nUsing this option will attempt to authenticate using an alternate method by building a mini webserver in PowerShell. Continue?"
-            $PromptMiniWebserver_Title = "Options"
-            $PromptMiniWebserver_Message = "Enter your choice:"
-            $PromptMiniWebserver_Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Load temporary HTTP server", "&Cancel & exit")
-            $PromptMiniWebserver_Default = 0
-            $PromptMiniWebserver_Selection = $host.UI.PromptForChoice($PromptMiniWebserver_Title,$PromptMiniWebserver_Message,$PromptMiniWebserver_Choices,$PromptMiniWebserver_Default)
-
-            switch($PromptMiniWebserver_Selection)
-            {
-                0   {
-                        Write-Warning "Sorry. The mini webserver authentication feature is not yet implemented."
-                        Write-Host "Exiting..."
-                        Exit
-                    }
-                1   {
-                        Write-Host "Exiting..."
-                        Exit
-                    }
-            }
-        }
-        LegacyIEControl
-        {
-            Set-SKYAPIWebBrowserEmulation
-
-            if ($ClearBrowserControlCache)
-            {
-                # Try to clear IE cache
-                # More info: https://superuser.com/questions/450014/clearmytracksbyprocess-all-options
-                # Using 4351 (0x10FF) to clear all + files and settings stored by add-ons. Convert Hex to Decimal.
-                # // This magic value is the combination of the following bitflags:
-                # // #define CLEAR_HISTORY         0x0001 // Clears history
-                # // #define CLEAR_COOKIES         0x0002 // Clears cookies
-                # // #define CLEAR_CACHE           0x0004 // Clears Temporary Internet Files folder
-                # // #define CLEAR_CACHE_ALL       0x0008 // Clears offline favorites and download history
-                # // #define CLEAR_FORM_DATA       0x0010 // Clears saved form data for form auto-fill-in
-                # // #define CLEAR_PASSWORDS       0x0020 // Clears passwords saved for websites
-                # // #define CLEAR_PHISHING_FILTER 0x0040 // Clears phishing filter data
-                # // #define CLEAR_RECOVERY_DATA   0x0080 // Clears webpage recovery data
-                # // #define CLEAR_PRIVACY_ADVISOR 0x0800 // Clears tracking data
-                # // #define CLEAR_SHOW_NO_GUI     0x0100 // Do not show a GUI when running the cache clearing
-                # //
-                # // Bitflags available but not used in this magic value are as follows:
-                # // #define CLEAR_USE_NO_THREAD      0x0200 // Do not use multithreading for deletion
-                # // #define CLEAR_PRIVATE_CACHE      0x0400 // Valid only when browser is in private browsing mode
-                # // #define CLEAR_DELETE_ALL         0x1000 // Deletes data stored by add-ons
-                # // #define CLEAR_PRESERVE_FAVORITES 0x2000 // Preserves cached data for "favorite" websites
-                Write-Warning "Note: You may have to close PowerShell and start a new session for clearing the IE cache to take effect."
-                Start-Process -FilePath 'RunDll32.exe' -ArgumentList 'InetCpl.cpl, ClearMyTracksByProcess 4351' -Wait
-                $ClearBrowserControlCache = $false
-            }
-
-            Add-Type -AssemblyName System.Windows.Forms
-        
-            $form = New-Object -TypeName System.Windows.Forms.Form -Property @{Width=600;Height=800}
-            $web = New-Object -TypeName System.Windows.Forms.WebBrowser -Property @{Width=584;Height=760;Url=($url)}
-            $DocComp = {
-                $Global:uri = $web.Url.AbsoluteUri
-                if ($Global:Uri -match "error=[^&]*|code=[^&]*") {$form.Close() }
-            }
-            $web.ScriptErrorsSuppressed = $true
-            $web.Add_DocumentCompleted($DocComp)
-
-            $form.Controls.Add($web)
-            $form.Add_Shown({$form.Activate()})
-            $form.ShowDialog() | Out-Null
-
-            # Parse Return URL
-            $queryOutput = [System.Web.HttpUtility]::ParseQueryString($web.Url.Query)
-            $output = @{}
-            foreach($key in $queryOutput.Keys){
-                $output["$key"] = $queryOutput[$key]
-            }
-
-            # Dispose Form & IE WebBrowser Control
-            $web.Dispose()
-            $form.Dispose()
-        }
         default # EdgeWebView2
         {            
             # Set EdgeWebView2 Control Version to Use
@@ -560,7 +429,7 @@ Function Get-SKYAPINewTokens
         Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [ValidateSet('','EdgeWebView2','MiniHTTPServer','LegacyIEControl')] # Allows null to be passed
+        [ValidateSet('','EdgeWebView2')] # Allows null to be passed
         [string]$AuthenticationMethod,
 
         [parameter(
