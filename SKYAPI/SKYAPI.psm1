@@ -479,6 +479,8 @@ Function Get-SKYAPINewTokens
         | Out-File -FilePath $sky_api_tokens_file_path -Force
 }
 
+# Function to calculate the exponential backoff delay when dealing with errors that we retry because they may be transient issues.
+# Exponential backoff is a standard error handling strategy for network applications in which a client periodically retries a failed request with increasing delays between requests.
 function Get-ExponentialBackoffDelay
 {
     [CmdletBinding()]
