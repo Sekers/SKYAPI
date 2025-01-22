@@ -159,7 +159,7 @@ Function Connect-SKYAPI
         {
             # Run Invoke Command and Catch Responses
             [int]$InvokeCount = 0
-            [int]$MaxInvokeCount = 5
+            [int]$MaxInvokeCount = 7
             do
             {      
                 $InvokeCount += 1
@@ -173,7 +173,7 @@ Function Connect-SKYAPI
                 {
                     # Process Invoke Error
                     $LastCaughtError = ($_)
-                    $NextAction = SKYAPICatchInvokeErrors($_)
+                    $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
 
                     # Just in case the token was refreshed by the error catcher, update the $AuthTokensFromFile variable
                     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
