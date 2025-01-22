@@ -53,7 +53,7 @@ function Get-SchoolStudentBySection
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    # Get data for one or more school levels
+    # Get data for one or more section IDs
     foreach ($uid in $Section_ID)
     {
         if ($ReturnRaw)

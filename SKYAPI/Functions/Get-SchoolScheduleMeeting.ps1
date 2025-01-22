@@ -33,7 +33,7 @@ function Get-SchoolScheduleMeeting
         Filters meetings to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
         .PARAMETER SchoolTimeZoneId
         Indicates the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
-        Get-SchoolScheduleMeeting will try to automatically pull the value from your school envirionment,
+        Get-SchoolScheduleMeeting will try to automatically pull the value from your school environment,
         but if you receive an error, you may have to manually override it with a valid time zone ID.
         This is required because Blackbaud does not return accurate time zone information from this endpoint.
         Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
@@ -59,7 +59,7 @@ function Get-SchoolScheduleMeeting
         {
             "`n--- Meeting Group ---"
             $meeting.group_name
-            "--- Meeting Date (School Envirionment Time Zone) ---"
+            "--- Meeting Date (School Environment Time Zone) ---"
             $meeting.meeting_date
             "--- Start & End (Local Time) ---"
             $meeting.start_time.ToLocalTime().DateTime # DateTime Kind of 'Local'
@@ -186,14 +186,14 @@ function Get-SchoolScheduleMeeting
     }
 
     # Initialize Variables
-    $response = $null
+    $response = [System.Collections.Generic.List[Object]]::new()
     $DateRangeEnd = [DateTime]$end_date
     $DateIterationStart = [DateTime]$start_date
     $DateIterationEnd = $DateIterationStart.AddDays($IterationRangeInDays)
     $FinalIteration = $false
 
     # Iterate
-    $response += do
+    do
     {
         # Don't go beyond the final end date
         if ($DateIterationEnd -ge $DateRangeEnd)
@@ -218,12 +218,21 @@ function Get-SchoolScheduleMeeting
 
         if ($PSVersionTable.PSEdition -EQ 'Desktop')
         {
-            Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+            $response_objects = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         }
         else
         {
             $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -ReturnRaw
-            (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
+            $response_objects = (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
+        }
+
+        # Only return a response to the list if there's data.
+        if ($null -ne $response_objects)
+        {
+            foreach ($response_object in $response_objects)
+            {
+                $response.Add($response_object)
+            }
         }
 
         # Increase Iteration Range

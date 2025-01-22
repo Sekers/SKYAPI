@@ -25,9 +25,6 @@ Function Connect-SKYAPI
         Let's you specify how you want to authenticate if authentication is necessary:
         - EdgeWebView2 (default):   Opens a web browser window using Microsoft Edge WebView2 for authentication.
                                     Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
-        - LegacyIEControl:          Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
-        - MiniHTTPServer:           Alternate method of capturing the authentication using your user account's default web browser
-                                    and listening for the authentication response using a temporary HTTP server hosted by the module.
         .PARAMETER ReturnConnectionInfo
         Returns connection information after performing function.
 
@@ -38,7 +35,7 @@ Function Connect-SKYAPI
         .EXAMPLE
         Connect-SKYAPI -ForceReauthentication -ClearBrowserControlCache
         .EXAMPLE
-        Connect-SKYAPI -ForceReauthentication -AuthenticationMethod MiniHTTPServer
+        Connect-SKYAPI -ForceReauthentication -AuthenticationMethod EdgeWebView2
         .EXAMPLE
         Connect-SKYAPI -ForceRefresh
         .EXAMPLE
@@ -66,7 +63,7 @@ Function Connect-SKYAPI
         Mandatory=$false,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [ValidateSet('EdgeWebView2','MiniHTTPServer','LegacyIEControl')]
+        [ValidateSet('EdgeWebView2')]
         [string]$AuthenticationMethod,
 
         [parameter(
@@ -111,7 +108,7 @@ Function Connect-SKYAPI
 
     process
     {
-        # Set the Necesasary Configuration Variables
+        # Set the Necessary Configuration Variables
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $client_id = $sky_api_config.client_id
         $client_secret = $sky_api_config.client_secret
@@ -159,7 +156,7 @@ Function Connect-SKYAPI
         {
             # Run Invoke Command and Catch Responses
             [int]$InvokeCount = 0
-            [int]$MaxInvokeCount = 5
+            [int]$MaxInvokeCount = 7
             do
             {      
                 $InvokeCount += 1
@@ -173,7 +170,7 @@ Function Connect-SKYAPI
                 {
                     # Process Invoke Error
                     $LastCaughtError = ($_)
-                    $NextAction = SKYAPICatchInvokeErrors($_)
+                    $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
 
                     # Just in case the token was refreshed by the error catcher, update the $AuthTokensFromFile variable
                     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile

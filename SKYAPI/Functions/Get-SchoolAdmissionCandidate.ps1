@@ -83,7 +83,7 @@ function Get-SchoolAdmissionCandidate
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    # Get data for one or more school levels       
+    # Get data   
     if ($ReturnRaw)
     {
         $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw

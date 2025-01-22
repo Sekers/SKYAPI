@@ -1,5 +1,34 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.4.0](https://github.com/Sekers/SKYAPI/tree/0.4.0) - (2025-01-22)
+
+### Fixes
+
+- Resolved bug in PS Core (PS Desktop was fine) when calling Get-SchoolScheduleMeeting if one of the 30-day iterations comes back empty.
+
+### Features
+- Sample script for Google Faculty Calendar Imports now supports meeting exclusions.
+- Improved error handling. Some errors that can often be transient now retry using an exponential backoff rather than just retrying up to 5 times with a 5-second delay in-between. This should reduce how often scripts fail by increasing the retry count from 5 to 7 and increasing the max wait time from the first try to the last retry from 20 seconds to just over 5 minutes. The exponential backup delay is as follows (in seconds):
+
+    | Failure Count | Wait Time Before Next Retry | Total Wait Time |
+    | --- | --- | --- |
+    | 1  | 5 | 5 |
+    | 2 | 10 | 15 |
+    | 3 | 20 | 35 |
+    | 4 | 40 | 75 |
+    | 5 | 80 | 155 |
+    | 6 | 160 | 315 |
+    | 7 | n/a (throws error) | 315 |
+
+### Other
+
+- Disabled progress bar in function scope when calling Invoke-WebRequest or Invoke-RestMethod. This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop. More Information: https://github.com/PowerShell/PowerShell/pull/2640
+- Removed the unimplemented 'MiniHTTPServer' alternate method of capturing authentication as this would be overkill and is unnecessary.
+- Removed the 'LegacyIEControl' alternate method of capturing authentication as it is no longer supported by Blackbaud.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.3.11](https://github.com/Sekers/SKYAPI/tree/0.3.11) - (2024-10-14)
 
 ### Features
@@ -15,6 +44,7 @@
 - New sample script: Blackbaud SIS Teacher Schedules to ICS
 
 ### Other
+
 - Updated links for built-in help to new endpoint documentation URLs. 
 - Updated authorize URI in various places due to updates on the API end (the old URI still works since it is forwarded to the new one).
 - Minor example and built-in help updates, clarifications, and typo fixes.
@@ -37,6 +67,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - New Endpoint: [New-SchoolUserAddress](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesPost)
 
 ### Other
+
 - Updated links in README to Blackbaud API documentation as the documentation website had slightly changed structure.
 - A few minor example and built-in help updates, clarifications, and typo fixes.
 - Removed the 'links' parameter from New-SchoolUserPhone as Blackbaud never actually implemented this feature in the endpoint and updated their documentation. See the [February 28, 2023 Education Management API changelog](https://developer.blackbaud.com/skyapi/support/changelog/bbem) for further information.
@@ -51,9 +82,10 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - New Endpoint: [Get-SchoolSession](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SessionsGet)
 - New Endpoint: [Get-SchoolResourceBoard](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentResourcesGet)
 - 'Get-SchoolAssignmentBySection' & 'Get-SchoolScheduleMeeting' now allow spaces in the types/offering_types parameters.
-- New Example Script: [Blackbaud SIS Teacher Schedules to Google Calendar CSVs](https://github.com/Sekers/SKYAPI/tree/master/Sample_Usage_Scripts/Blackbaud%20SIS%20Teacher%20Schedules%20to%20Google%20Calendar%20CSVs). Creates importable Google Calendar schedules for faculty from the Blackbaud School Envirionment.
+- New Example Script: [Blackbaud SIS Teacher Schedules to Google Calendar CSVs](https://github.com/Sekers/SKYAPI/tree/master/Sample_Usage_Scripts/Blackbaud%20SIS%20Teacher%20Schedules%20to%20Google%20Calendar%20CSVs). Creates importable Google Calendar schedules for faculty from the Blackbaud School Environment.
 
 ### Other
+
 - Built-in help updates regarding necessary permissions to access some endpoints (Blackbaud [loosened the requirements](https://developer.blackbaud.com/skyapi/support/changelog/bbem?_ga=2.83020246.1587108373.1678131781-1653312318.1663684217) on a bunch of general information ones).
 
 Author: [**@Sekers**](https://github.com/Sekers)
