@@ -2,7 +2,7 @@
 # OVERVIEW #
 ############
 
-# Creates importable Google Calendar schedules for faculty from the Blackbaud School Envirionment.
+# Creates importable Google Calendar schedules for faculty from the Blackbaud School Environment.
 # Outputs CSV files, one for each teacher.
 # Teachers can manually import as needed. Throw them in a shared Google Drive folder or somewhere else for easy access.
 
@@ -29,6 +29,9 @@ $DesiredTimeZoneId = "Central Standard Time" # Specify the timezone your Google 
 $StartDate = '2023-01-01' # Format as YYYY-MM-DD.
 $EndDate = '2023-06-30' # Format as YYYY-MM-DD.
 $OfferingTypes = '1,3' # Defaults to 1 (Academics) if not specified. Use 'Get-SchoolOfferingType' to get a list of offering types.
+
+# Import Meetings To Ignore Settings
+$MeetingsToIgnore = Get-Content -Path "$PSScriptRoot\meetings_to_ignore.json" | ConvertFrom-Json
 
 #################################
 # DO NOT MODIFY BELOW THIS LINE #
@@ -74,11 +77,22 @@ $HashArguments = @{
 }
 $Meetings = Get-SchoolScheduleMeeting @HashArguments
 
+# Remove Meetings That Should Be Ignored
+[array]$MeetingsFilterProperties = ($MeetingsToIgnore | Get-Member -MemberType NoteProperty).Name
+foreach ($meetingsFilterProperty in $MeetingsFilterProperties)
+{
+    $MeetingsFilterPropertyValues = $MeetingsToIgnore.($meetingsFilterProperty)
+    foreach ($meetingsFilterPropertyValue in $MeetingsFilterPropertyValues)
+    {
+        $Meetings = $Meetings | Where-Object -Property $($meetingsFilterProperty) -NotMatch $meetingsFilterPropertyValue
+    } 
+}
+
+# Get Teachers With Meetings
 [array]$Teachers = foreach ($meeting in $Meetings)
 {
     [PSCustomObject]@{faculty_user_id = $meeting.faculty_user_id; faculty_name = $meeting.faculty_name}
 }
-
 $Teachers = $Teachers | Sort-Object -Property faculty_name -Unique
 
 # Create Events CSV for Each Returned Teacher 

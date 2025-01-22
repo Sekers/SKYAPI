@@ -2,7 +2,7 @@
 # OVERVIEW #
 ############
 
-# Creates importable ICS Calendar schedules for faculty from the Blackbaud School Envirionment.
+# Creates importable ICS Calendar schedules for faculty from the Blackbaud School Environment.
 # Outputs ICS files, one for each teacher.
 # Teachers can manually import as needed. Throw them in a shared folder or somewhere else for easy access.
 
