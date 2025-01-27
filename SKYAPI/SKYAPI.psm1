@@ -698,6 +698,19 @@ function SKYAPICatchInvokeErrors
             Start-Sleep -Seconds $SleepTime
             'retry'
         }
+        'no healthy upstream' # Random exception. Often transient.
+        {
+            # Check if we've hit the max invoke count and if so, throw the error.
+            if ($InvokeCount -ge $MaxInvokeCount)
+            {
+                throw $InvokeErrorMessageRaw
+            }
+
+            # Exponential backoff
+            $SleepTime = Get-ExponentialBackoffDelay -InitialDelay 5 -InvokeCount $InvokeCount
+            Start-Sleep -Seconds $SleepTime
+            'retry'
+        }
         default
         {
             throw $InvokeErrorMessageRaw
