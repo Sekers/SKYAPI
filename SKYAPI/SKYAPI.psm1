@@ -558,8 +558,8 @@ function SKYAPICatchInvokeErrors
     }
     else
     {
-        # If it's not in a format the module recognizes, then just throw the raw message.
-        throw $InvokeErrorMessageRaw
+        # If it's not in a format the module recognizes, then just collect the error directly.
+        $StatusCodeorError = $InvokeErrorMessage
     }
 
     # Try and handle the error message.
@@ -673,6 +673,19 @@ function SKYAPICatchInvokeErrors
             'retry'
         }
         'An exception occurred. Please contact Support.' # Random exception. Often transient.
+        {
+            # Check if we've hit the max invoke count and if so, throw the error.
+            if ($InvokeCount -ge $MaxInvokeCount)
+            {
+                throw $InvokeErrorMessageRaw
+            }
+
+            # Exponential backoff
+            $SleepTime = Get-ExponentialBackoffDelay -InitialDelay 5 -InvokeCount $InvokeCount
+            Start-Sleep -Seconds $SleepTime
+            'retry'
+        }
+        {$_ -match 'The HTTP status code of the response was not expected \(500\)'} # Random exception. Often transient.
         {
             # Check if we've hit the max invoke count and if so, throw the error.
             if ($InvokeCount -ge $MaxInvokeCount)
