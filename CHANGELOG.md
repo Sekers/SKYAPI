@@ -4,7 +4,7 @@
 
 ### Fixes
 
-- BREAKING CHANGE: The endpoint that Get-SchoolYear uses has a bug that sets each school year's 'begin_date' & 'end_date' to the incorrect time zone, which could cause the date returned to be incorrect (even if you adjust to the school's Blackbaud time zone). To work around this, these fields now return a STRING of the date (e.g., '2025-05-24') instead of a DATETIME value.
+- BREAKING CHANGE: The endpoint that Get-SchoolYear uses has a bug that sets each school year's 'begin_date' & 'end_date' to the incorrect time zone, which could cause the date returned to be incorrect (even if you adjust to the school's Blackbaud time zone). To work around this, these fields now return a STRING of the date (e.g., '2025-05-24') instead of a DATETIME value (PS Core) or an unserialized round-trip STRING that includes the time (PS Desktop; e.g., '2025-07-04T00:00:00-04:00').
 
 ### Features
 - Continue to improve invoke API error handling by catching two additional types of errors.
