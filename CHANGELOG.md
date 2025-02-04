@@ -1,5 +1,17 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.4.1](https://github.com/Sekers/SKYAPI/tree/0.4.1) - (2025-02-04)
+
+### Fixes
+
+- BREAKING CHANGE: The endpoint that Get-SchoolYear uses has a bug that sets each school year's 'begin_date' & 'end_date' to the incorrect time zone, which could cause the date returned to be incorrect (even if you adjust to the school's Blackbaud time zone). To work around this, these fields now return a STRING of the date (e.g., '2025-05-24') instead of a DATETIME value (PS Core) or an unserialized round-trip STRING that includes the time (PS Desktop; e.g., '2025-07-04T00:00:00-04:00').
+
+### Features
+- Continue to improve invoke API error handling by catching two additional types of errors.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.4.0](https://github.com/Sekers/SKYAPI/tree/0.4.0) - (2025-01-22)
 
 ### Fixes
@@ -58,7 +70,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Fixes
 
-- Resolved bug where Get-SchoolScheduleMeeting returned an error after DST begins in timezones that practice advancing clocks during warmer months.
+- Resolved bug where Get-SchoolScheduleMeeting returned an error after DST begins in time zones that practice advancing clocks during warmer months.
 
 ### Features
 
@@ -104,7 +116,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Breaking Changes
 
-- Beta cmdlet/function Get-SchoolScheduleMeeting now returns meeting start/end times in UTC so that there are no time zone issues. See the built-in help or examples file to see ways to convert to the local time or a specific timezone.
+- Beta cmdlet/function Get-SchoolScheduleMeeting now returns meeting start/end times in UTC so that there are no time zone issues. See the built-in help or examples file to see ways to convert to the local time or a specific time zone.
 
 ### Fixes
 

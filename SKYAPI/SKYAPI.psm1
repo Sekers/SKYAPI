@@ -479,6 +479,8 @@ Function Get-SKYAPINewTokens
         | Out-File -FilePath $sky_api_tokens_file_path -Force
 }
 
+# Function to calculate the exponential backoff delay when dealing with errors that we retry because they may be transient issues.
+# Exponential backoff is a standard error handling strategy for network applications in which a client periodically retries a failed request with increasing delays between requests.
 function Get-ExponentialBackoffDelay
 {
     [CmdletBinding()]
@@ -556,8 +558,8 @@ function SKYAPICatchInvokeErrors
     }
     else
     {
-        # If it's not in a format the module recognizes, then just throw the raw message.
-        throw $InvokeErrorMessageRaw
+        # If it's not in a format the module recognizes, then just collect the error directly.
+        $StatusCodeorError = $InvokeErrorMessage
     }
 
     # Try and handle the error message.
@@ -671,6 +673,32 @@ function SKYAPICatchInvokeErrors
             'retry'
         }
         'An exception occurred. Please contact Support.' # Random exception. Often transient.
+        {
+            # Check if we've hit the max invoke count and if so, throw the error.
+            if ($InvokeCount -ge $MaxInvokeCount)
+            {
+                throw $InvokeErrorMessageRaw
+            }
+
+            # Exponential backoff
+            $SleepTime = Get-ExponentialBackoffDelay -InitialDelay 5 -InvokeCount $InvokeCount
+            Start-Sleep -Seconds $SleepTime
+            'retry'
+        }
+        {$_ -match 'The HTTP status code of the response was not expected \(500\)'} # Random exception. Often transient.
+        {
+            # Check if we've hit the max invoke count and if so, throw the error.
+            if ($InvokeCount -ge $MaxInvokeCount)
+            {
+                throw $InvokeErrorMessageRaw
+            }
+
+            # Exponential backoff
+            $SleepTime = Get-ExponentialBackoffDelay -InitialDelay 5 -InvokeCount $InvokeCount
+            Start-Sleep -Seconds $SleepTime
+            'retry'
+        }
+        'no healthy upstream' # Random exception. Often transient.
         {
             # Check if we've hit the max invoke count and if so, throw the error.
             if ($InvokeCount -ge $MaxInvokeCount)
