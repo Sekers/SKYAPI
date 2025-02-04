@@ -52,6 +52,34 @@ function Get-SchoolYear
         return $response
     }
 
-    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
-    $response
+    # The API endpoint returns begin_date & end_date in datetime format.
+    # This wouldn't be a big issue except that there is a bug and the timezone provided is wrong (it doesn't match the Blackbaud School timezone).
+    # So we just end up returning the date as a string instead so whether it's fixed or not it's consistent and we only really care about the date not the time.
+    # Note that PS Core will automatically deserialize the [incorrect] datetime string so we need to use the 'ConvertFrom-JsonWithoutDateTimeDeserialization' function to prevent this.
+    if ($PSVersionTable.PSEdition -EQ 'Desktop')
+    {
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+    }
+    else
+    {
+        $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        $response = (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
+    }
+
+    # Massage dates in $response because PowerShell automatically converts API calls to date time...
+    $response = foreach ($schoolyear in $response)
+    {
+        # Strip the incorrect time information from the dates.
+        $begin_date = ($schoolyear.begin_date -split "T")[0]
+        $end_date = ($schoolyear.end_date -split "T")[0]
+   
+        # Replace values in array
+        $schoolyear.begin_date = $begin_date
+        $schoolyear.end_date = $end_date
+
+        # Return the array
+        $schoolyear
+    }
+
+    return $response
 }
