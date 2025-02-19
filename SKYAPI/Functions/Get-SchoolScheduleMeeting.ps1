@@ -18,6 +18,7 @@ function Get-SchoolScheduleMeeting
         Additional Notes:
           - Returned meeting start & end times are in UTC DateTime format.
           - Returned meeting date is the date of the meeting in the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
+          - Does not support the "show_time_for_current_date" request parameter because it just completely gives incorrect timezone information. If you need to convert timezones or DST, use PowerShell.
 
         .PARAMETER start_date
         Required. Start date of events you want returned. Use ISO-8601 date format (e.g., 2022-04-01).
