@@ -1,5 +1,14 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.4.2](https://github.com/Sekers/SKYAPI/tree/0.4.2) - (2025-02-19)
+
+### Fixes
+
+- This update only adjusts Get-SchoolScheduleMeeting so that it doesn't get affected by a DST bug with its Blackbaud SKY API endpoint. Prior to this workaround, if any 31-day or larger query (the max of [30 days ahead](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) the endpoint allows, including the start date) has the March DST "Spring forward" date in one of the API calls (remember, each call can only accept a max of 30 days ahead), it won't return the last day of that specific API call (the 31st day in the range). Blackbaud certainly has an issue working with timezones and calculating around DST properly (given, it's [tough at times](https://www.youtube.com/watch?v=-5wpm-gesOY)).
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.4.1](https://github.com/Sekers/SKYAPI/tree/0.4.1) - (2025-02-04)
 
 ### Fixes

@@ -18,6 +18,7 @@ function Get-SchoolScheduleMeeting
         Additional Notes:
           - Returned meeting start & end times are in UTC DateTime format.
           - Returned meeting date is the date of the meeting in the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
+          - Does not support the "show_time_for_current_date" request parameter because it just completely gives incorrect timezone information. If you need to convert timezones or DST, use PowerShell.
 
         .PARAMETER start_date
         Required. Start date of events you want returned. Use ISO-8601 date format (e.g., 2022-04-01).
@@ -170,10 +171,12 @@ function Get-SchoolScheduleMeeting
         throw $_
     }
 
-    # If the 'end_date' parameter doesn't exist, then set it to 30 days ahead (the max allowed per call).
+    # If the 'end_date' parameter doesn't exist, then set it to 30 days ahead (31 days TOTAL including start date), which is the max days ahead allowed per call.
     # It is supposed to default to 30 days, but it doesn't work correctly unless you specify an end date (at least in the beta).
     # Also, if you put in a larger time limit than 30 days, it sometimes does 31 days or something like that. It's really dumb.
-    [int]$IterationRangeInDays = 30
+    # Update 2025-02-19: For now change iteration range to 29 days ahead because Blackbaud always messes stuff up with DST. Meaning, if you go 30 days ahead,
+    #         if DST forward in March is in the range, the last day (the 31st day in the range) won't appear in the results.
+    [int]$IterationRangeInDays = 29
     if ($null -eq $end_date -or $end_date -eq '' -or $end_date -eq 0)
     {
         $end_date = (([DateTime]$start_date).AddDays($IterationRangeInDays)).ToString('yyyy-MM-dd')
