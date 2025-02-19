@@ -1,5 +1,14 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.4.3](https://github.com/Sekers/SKYAPI/tree/0.4.3) - (2025-02-19)
+
+### Fixes
+
+- This update continues to try work around the Get-SchoolScheduleMeeting bug. We dropped each API call from 30 days ahead max to 29 days ahead, but the endpoint will still not return meetings for the last day requested (the 30th total day in the range, 29 days after start_date).
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.4.2](https://github.com/Sekers/SKYAPI/tree/0.4.2) - (2025-02-19)
 
 ### Fixes
