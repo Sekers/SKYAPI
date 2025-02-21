@@ -1,4 +1,4 @@
-# Blackbaud SIS Teacher Schedules to Google Calendar CSVs
+# Blackbaud SIS Teacher Schedules to Calendar ICS Files
 
 ## Overview
 A sample PowerShell script that uses the PowerShell SKYAPI Module to create importable Calendar schedules for faculty from the Blackbaud School Environment. It outputs ICS files, one for each teacher. Teachers can manually import as needed into their calendar application. Throw them in a shared folder or somewhere else for easy access.
