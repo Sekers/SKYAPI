@@ -9,7 +9,3 @@ A sample PowerShell script that uses the PowerShell SKYAPI Module to create impo
 
 ## File: 'Create Importable Faculty Calendar ICSs.ps1'
 The script. Edit the config variables as needed.
-
-## File: 'Import Teacher Schedule into Google Calendar - Teacher Instructions.docx'
-Sample instruction page to give to your faculty as end-users.
-
