@@ -2,6 +2,10 @@
 
 ## [0.4.3](https://github.com/Sekers/SKYAPI/tree/0.4.3) - (2025-02-19)
 
+### Fixes (UPDATE 2025-02-24)
+ - Blackbaud has confirmed the issue with the API endpoint. It's not related to daylight saving time, but instead the call seems to be including an extra day in February (presumably February 29, the leap year date).  Leap year was last year 2024, so that may be why the bug wasn't noticed earlier.
+ - The workaround implemented in the SKYAPI PowerShell module 0.4.3 looks to be working with no problems, however. Using the workaround will not cause problems once the endpoint issue is resolved, however we plan to revert the change once the endpoint is confirmed fixed.
+
 ### Fixes
 
 - This update continues to try work around the Get-SchoolScheduleMeeting bug. We dropped each API call from 30 days ahead max to 29 days ahead, but the endpoint will still not return meetings for the last day requested (the 30th total day in the range, 29 days after start_date).
