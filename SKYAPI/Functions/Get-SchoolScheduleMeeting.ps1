@@ -174,9 +174,7 @@ function Get-SchoolScheduleMeeting
     # If the 'end_date' parameter doesn't exist, then set it to 30 days ahead (31 days TOTAL including start date), which is the max days ahead allowed per call.
     # It is supposed to default to 30 days, but it doesn't work correctly unless you specify an end date (at least in the beta).
     # Also, if you put in a larger time limit than 30 days, it sometimes does 31 days or something like that. It's really dumb.
-    # Update 2025-02-19: For now change iteration range to 28 days ahead because Blackbaud always messes stuff up with DST. Meaning, if you go 29 or 30 days ahead,
-    #         if DST forward in March is in the range, the last day (the 31st day in the range) won't appear in the results.
-    [int]$IterationRangeInDays = 28
+    [int]$IterationRangeInDays = 30
     if ($null -eq $end_date -or $end_date -eq '' -or $end_date -eq 0)
     {
         $end_date = (([DateTime]$start_date).AddDays($IterationRangeInDays)).ToString('yyyy-MM-dd')
