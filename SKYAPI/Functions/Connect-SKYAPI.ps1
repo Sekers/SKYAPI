@@ -8,11 +8,11 @@ Function Connect-SKYAPI
         Documentation: https://developer.blackbaud.com/skyapi/docs/authorization
 
         .SYNOPSIS
-        Education Management School API - Verify cached tokens exist and are not expired using Connect-SKYAPI.
+        Blackbaud SKY API - Verify cached tokens exist and are not expired using Connect-SKYAPI.
         Connect-SKYAPI will automatically refresh tokens or reauthenticate to the SKY API service, if necessary.
 
         .DESCRIPTION
-        Education Management School API - Verify cached tokens exist and are not expired using Connect-SKYAPI.
+        Blackbaud SKY API - Verify cached tokens exist and are not expired using Connect-SKYAPI.
         Connect-SKYAPI will automatically refresh tokens or reauthenticate to the SKY API service, if necessary.
 
         .PARAMETER ForceReauthentication
