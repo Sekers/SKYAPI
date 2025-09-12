@@ -143,6 +143,7 @@ function Update-SchoolUserAddress
         [string]$region
     )
     
+    # TODO: Implement this function.
     throw "Sorry, the function for this endpoint is not currently available. It will be made available in a future release."
 
     # Set the endpoints
