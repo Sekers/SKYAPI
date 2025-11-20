@@ -39,50 +39,58 @@ function Get-OrSchool
 
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
+        Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )
     
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/afe-rostr/ims/oneroster/v1p1/schools/'
-
-    # Set the response fields
-    $ResponseField_All = "orgs"
-    $ResponseField_Single = "org"
-
-    # Get Data
-    if ($null -eq $School_ID)
+    begin
     {
-        if ($ReturnRaw)
-        {
-            $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
-            return $response
-        }
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField_All
-        $response
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/afe-rostr/ims/oneroster/v1p1/schools/'
+
+        # Set the response fields
+        $ResponseField_All = "orgs"
+        $ResponseField_Single = "org"
     }
-    else # Get data for one or more IDs
+
+    process
     {
-        foreach ($uid in $School_ID)
+        # Get Data
+        if ($null -eq $School_ID)
         {
             if ($ReturnRaw)
             {
-                $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
-                $response
-                continue
+                $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+                return $response
             }
 
-            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile  -response_field $ResponseField_Single
+            $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField_All
             $response
         }
+        else # Get data for one or more IDs
+        {
+            foreach ($uid in $School_ID)
+            {
+                if ($ReturnRaw)
+                {
+                    $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+                    $response
+                    continue
+                }
+
+                $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile  -response_field $ResponseField_Single
+                $response
+            }
+        }
     }
+
+    end {}
 }
