@@ -82,6 +82,7 @@ FunctionsToExport = @(
     'Get-EnrollmentStatusType',
     'Get-SKYAPIContext',
     'Get-SKYAPIAuthTokensFromFile',
+    'Get-OrSchool',
     'Get-ReConstituentRatingSource',
     'Get-ReConstituentRelationshipType',
     'Get-ReConstituentSuffix',
