@@ -127,6 +127,7 @@ FunctionsToExport = @(
     'Get-SchoolUserAddressType',
     'Get-SchoolUserBBIDStatus',
     'Get-SchoolUserByRole',
+    'Get-SchoolUserCustomFieldsByBaseRole',
     'Get-SchoolUserEducation',
     'Get-SchoolUserEmployment',
     'Get-SchoolUserExtended',
