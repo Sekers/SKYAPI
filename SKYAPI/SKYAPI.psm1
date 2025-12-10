@@ -1,7 +1,4 @@
-﻿# Configure script to use TLS 1.2
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 # TODO: Check and adjust only if necessary (https://developer.blackbaud.com/skyapi/docs/security#tls-requirements).
-
-# Set Global User Data Path Variable
+﻿# Set Global User Data Path Variable
 New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell" -Scope Global -Force
 
 # Aliases
