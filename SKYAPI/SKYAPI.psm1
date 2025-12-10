@@ -1,5 +1,5 @@
 ﻿# Configure script to use TLS 1.2
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 # TODO: Check and adjust only if necessary (https://developer.blackbaud.com/skyapi/docs/security#tls-requirements).
 
 # Set Global User Data Path Variable
 New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell" -Scope Global -Force
@@ -259,7 +259,7 @@ Function Show-SKYAPIOAuthWindow
 
                         # Download WebView2 Evergreen Bootstrapper
                         $DownloadURL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
-                        $DownloadContent = Invoke-WebRequest -Uri $DownloadURL
+                        $DownloadContent = Invoke-WebRequest -UseBasicParsing -Uri $DownloadURL
                         $DownloadFileName = "Microsoft Edge WebView2 Runtime Installer.exe"
 
                         # Create the file (this will overwrite any existing file with the same name)
@@ -541,14 +541,18 @@ function SKYAPICatchInvokeErrors
         throw $InvokeErrorMessageRaw
     }
     
-    # Get Status Code, or Error if Code is blank. Blackbaud sends error messages at least 4 different ways so we need to account for that. Yay for no consistency.
+    # Get Status Code (preferred), or Error if Code is blank. Blackbaud sends error messages at least 5 different ways so we need to account for that. Yay for no consistency.
     If ($InvokeErrorMessage.statusCode)
     {
         $StatusCodeorError = $InvokeErrorMessage.statusCode
     }
-    elseif ($InvokeErrorMessage.error)
+    elseif ($InvokeErrorMessage.ErrorCode)
     {
-        $StatusCodeorError = If($InvokeErrorMessage.statusCode) {$InvokeErrorMessage.statusCode} else {$InvokeErrorMessage.error}
+        $StatusCodeorError = $InvokeErrorMessage.ErrorCode
+    }
+    elseif ($InvokeErrorMessage.error) # TODO: I'm not sure if this is correct (guessed when correcting bug). Look for examples of this format.
+    {
+        $StatusCodeorError = If($InvokeErrorMessage.error.statuscode) {$InvokeErrorMessage.error.statuscode} else {$InvokeErrorMessage.error}
     }
     elseif ($InvokeErrorMessage.errors) {
         $StatusCodeorError = If($InvokeErrorMessage.errors.error_code) {$InvokeErrorMessage.errors.error_code} else {$InvokeErrorMessage.errors}
@@ -768,7 +772,8 @@ Function Get-SKYAPIUnpagedEntity
             if ($ReturnRaw)
             {
                 $apiCallResult =
-                Invoke-WebRequest   -Method Get `
+                Invoke-WebRequest   -UseBasicParsing `
+                                    -Method Get `
                                     -ContentType application/json `
                                     -Headers @{
                                             'Authorization' = ("Bearer "+ $($authorisation.access_token))
@@ -1059,7 +1064,7 @@ function Submit-SKYAPIEntity
     $Request = [System.UriBuilder]$fullUri
 
     # Build Body
-    $PostRequest = $params | ConvertTo-Json
+    $PostRequest = ConvertTo-Json $params
 
     # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
     # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
@@ -1138,7 +1143,7 @@ function Update-SKYAPIEntity
     $Request = [System.UriBuilder]$fullUri
 
     # Build Body
-    $PatchRequest = $params | ConvertTo-Json
+    $PatchRequest = ConvertTo-Json $params
 
     # Disable Progress Bar in Function Scope When Calling Invoke-WebRequest or Invoke-RestMethod.
     # This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop.
