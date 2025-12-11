@@ -18,17 +18,67 @@ function Connect-SchoolUserBBID
           - Admissions Manager
 
         .PARAMETER id
-        Used for a SINGLE connection request. The user ID to connect to a BBID account.
+        Used for a SINGLE connection request or MULTIPLE connection requests from the pipeline. The user ID to connect to a BBID account.
         .PARAMETER email
-        Used for a SINGLE connection request. The email to use for the BBID. If blank, the contact email will be used, if present. If not, an error is returned.
+        Used for a SINGLE connection request or from the pipeline. The email to use for the BBID. If blank, the contact email will be used, if present. If not, an error is returned.
         .PARAMETER ConnectionRequest
-        Used to submit MULTIPLE connection requests at the same time. Must be an array of hashtables and/or PSCustomObjects, each containing an 'id' property (int) and optionally an 'email' property (string).
+        Used to submit MULTIPLE connection requests at the same time with or without using the pipeline using an array. Must be an array of hashtables and/or PSCustomObjects, each containing an 'id' property (int) and optionally an 'email' property (string).
         If 'email' is not provided for a given object, the contact email will be used, if present. If not, an error is returned.
 
         .EXAMPLE
-        Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
+        # Single example: use user's already existing email address.
+        Connect-SchoolUserBBID -id 5809872
         .EXAMPLE
-        Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
+        # Single example: specify an email address.
+        Connect-SchoolUserBBID -id 5809872 -email 'example@school.edu'
+        .EXAMPLE
+        # Multi example: array of hashtables using 'ConnectionRequest' parameter.
+        $UsersHashtable = @(
+            @{
+                id    = 101101
+            },
+            @{
+                id    = 103103
+                email = 'carol@school.edu'
+            }
+        )
+        Connect-SchoolUserBBID -ConnectionRequest $UsersHashtable
+        .EXAMPLE
+        # Multi example: array of hashtables using pipeline.
+        $UsersHashtable = @(
+            @{
+                id    = 101101
+            },
+            @{
+                id    = 103103
+                email = 'carol@school.edu'
+            }
+        )
+        $UsersHashtable | Connect-SchoolUserBBID
+        .EXAMPLE
+        # Multi example: array of PSCustomObjects using 'ConnectionRequest' parameter.
+        $UsersPSObject = @(
+            [PSCustomObject]@{
+                id    = 101101
+            },
+            [PSCustomObject]@{
+                id    = 103103
+                email = 'carol@school.edu'
+            }
+        )
+        Connect-SchoolUserBBID -ConnectionRequest $UsersPSObject
+        .EXAMPLE
+        # Multi example: array of PSCustomObjects using pipeline.
+        $UsersPSObject = @(
+            [PSCustomObject]@{
+                id    = 101101
+            },
+            [PSCustomObject]@{
+                id    = 103103
+                email = 'carol@school.edu'
+            }
+        )
+        $UsersPSObject | Connect-SchoolUserBBID
     #>
     
     [cmdletbinding()]
@@ -72,40 +122,47 @@ function Connect-SchoolUserBBID
         [object[]]$ConnectionRequest # Array of ConnectionRequest objects (will accept either hashtables or PSCustomObjects).
     )
     
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/afe-edcor/v1/users/bbid/connect'
-
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Create the ConnectionRequest Object
-    # https://developer.sky.blackbaud.com/api#api=afe-edcor&operation=V1UsersBbidConnectPatch&definition=ConnectionRequest
-    if ($PSCmdlet.ParameterSetName -eq 'SingleConnectionRequest')
+    begin
     {
-        # Set the parameters
-        [array]$Parameters = @{id = $id; email = $email }
+        # Set the endpoint
+        $endpoint = 'https://api.sky.blackbaud.com/afe-edcor/v1/users/bbid/connect'
+
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
     }
-    else
+
+    process
     {
-        [array]$Parameters = foreach ($conRequest in $ConnectionRequest)
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Create the ConnectionRequest Object
+        # https://developer.sky.blackbaud.com/api#api=afe-edcor&operation=V1UsersBbidConnectPatch&definition=ConnectionRequest
+        if ($PSCmdlet.ParameterSetName -eq 'SingleConnectionRequest')
         {
-            switch ($conRequest.GetType().Name)
+            # Set the parameters
+            [array]$Parameters = @{id = $id; email = $email }
+        }
+        else
+        {
+            foreach ($conRequest in $ConnectionRequest)
             {
-                Hashtable { $conRequest }
-                PSCustomObject { # Convert the PSCustomObject to a hashtable.
-                    $HashtableOutput = @{}
-                    $HashtableOutput = @{id = $conRequest.id; email = $conRequest.email }
-                    $HashtableOutput
+                switch ($conRequest.GetType().Name)
+                {
+                    Hashtable { $Parameters = $conRequest }
+                    PSCustomObject { # Convert the PSCustomObject to a hashtable.
+                        $Parameters = @{}
+                        $Parameters = @{id = $conRequest.id; email = $conRequest.email } # TODO: Test if allowing a $null email works once the endpoint is opened up for everyone.
+                    }
+                    Default { throw "Unexpected error processing ConnectionRequest object of type $($conRequest.GetType().Name). All elements in the array must be either a hashtable or a PSCustomObject."}
                 }
-                Default { throw "Unexpected error processing ConnectionRequest object of type $($conRequest.GetType().Name). All elements in the array must be either a hashtable or a PSCustomObject."}
+
+                # $response = Update-SKYAPIEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $Parameters
+                $response
             }
         }
     }
 
-    $response = Update-SKYAPIEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $Parameters
-    $response
+    end {}
 }
