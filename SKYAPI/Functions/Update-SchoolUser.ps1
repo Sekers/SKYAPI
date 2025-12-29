@@ -1,4 +1,4 @@
-function Update-SchoolUser
+function Update-SchoolUser # TODO: WOrking on this one still. Citizenship parameter in help last done.
 {
     <#
         .LINK
@@ -22,6 +22,16 @@ function Update-SchoolUser
         Required. Array of user IDs for each user you want to update.
         .PARAMETER affiliation
         The affiliation of a user.
+        .PARAMETER birth_place
+        The birthplace of the user.
+        .PARAMETER boarding_or_day
+        The boarding or day status. Accepted values: boarding, day, "B" and "D".
+        .PARAMETER cc_email
+        The cc email address of a user.
+        .PARAMETER cc_email_active
+        Set to true if CCEmail is usable. Allowed value: true, false.
+        .PARAMETER citizenship
+        The descriptor or ID of the citizenship. Descriptors are not case sensitive, but otherwise must match the table value exactly. These values are returned by the command Get-SchoolTypeTable.
         .PARAMETER custom_field_one
         A custom field on the user profile (one of ten).
         .PARAMETER custom_field_two
@@ -89,157 +99,157 @@ function Update-SchoolUser
         [int[]]$User_ID, # Array as we loop through submitted IDs
 
         [Parameter(
-        Position=1,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$affiliation,
 
         [Parameter(
-        Position=2,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
+        [string]$birth_place,
+
+        [Parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$boarding_or_day,
+
+        [Parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$cc_email,
+
+        [Parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$cc_email_active,
+
+        [Parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [string]$citizenship,
+
+        [Parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [AllowEmptyString()]
         [string]$custom_field_one,
 
         [Parameter(
-        Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_two,
 
         [Parameter(
-        Position=4,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_three,
 
         [Parameter(
-        Position=5,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_four,
         
         [Parameter(
-        Position=6,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_five,
 
         [Parameter(
-        Position=7,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_six,
 
         [Parameter(
-        Position=8,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_seven,
 
         [Parameter(
-        Position=9,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_eight,
 
         [Parameter(
-        Position=10,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_nine,
 
         [Parameter(
-        Position=11,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$custom_field_ten,
 
         [Parameter(
-        Position=12,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$dob,
 
         [Parameter(
-        Position=13,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$deceased,
 
         [Parameter(
-        Position=14,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$email,
 
         [Parameter(
-        Position=15,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$email_active,
 
         [Parameter(
-        Position=16,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$first_name,
 
         [Parameter(
-        Position=17,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$gender,
 
         [Parameter(
-        Position=18,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$greeting,
 
         [Parameter(
-        Position=19,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$host_id,
 
         [Parameter(
-        Position=20,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$last_name,
 
         [Parameter(
-        Position=21,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$lost,
 
         [Parameter(
-        Position=22,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$maiden_name,
 
         [Parameter(
-        Position=23,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$middle_name,
 
         [Parameter(
-        Position=24,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$preferred_name,
 
         [Parameter(
-        Position=25,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$prefix,
 
         [Parameter(
-        Position=26,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$suffix
