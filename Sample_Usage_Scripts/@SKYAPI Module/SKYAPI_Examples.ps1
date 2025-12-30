@@ -14,7 +14,7 @@
     Import the Module.
 #>
 # Import-Module SKYAPI
-# Import-Module "$PSScriptRoot\..\SKYAPI\SKYAPI.psm1"
+# Import-Module "$PSScriptRoot\..\SKYAPI\SKYAPI.psd1"
 
 <#
     Retrieve and Create/Update the SKY API Module Configuration File.
