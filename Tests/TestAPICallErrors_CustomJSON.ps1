@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 # Import the module
 # Normally this module would be installed and your command would simply be:
 # Import-Module SKYAPI
-Import-Module "$PSScriptRoot\..\SKYAPI\SKYAPI.psm1"
+Import-Module "$PSScriptRoot\..\SKYAPI\SKYAPI.psd1"
 
 # Set custom properties
 Set-SKYAPIConfigFilePath -Path "$PSScriptRoot\sky_api_config.json" # The location where you placed your Blackbaud SKY API configuration file.

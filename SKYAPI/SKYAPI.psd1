@@ -12,7 +12,7 @@
 RootModule = 'SKYAPI.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.4.3'
+ModuleVersion = '0.4.4'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Desktop','Core')
@@ -70,13 +70,20 @@ PowerShellVersion = '5.1'
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
-    'Set-SKYAPIConfigFilePath',
-    'Set-SKYAPITokensFilePath',
-    'Get-SKYAPIConfig',
-    'Set-SKYAPIConfig',
-    'Connect-SKYAPI',
+    'Set-SKYAPIConfigFilePath', # Module Function
+    'Set-SKYAPITokensFilePath', # Module Function
+    'Get-SKYAPIConfig', # Module Function
+    'Set-SKYAPIConfig', # Module Function
+    'Remove-SKYAPIConfig', # Module Function
+    'Connect-SKYAPI', # Module Function
+    'Disconnect-SKYAPI', # Module Function
+    'Connect-SchoolUserBBID',
+    'Get-EnrollmentCandidate',
+    'Get-EnrollmentStatusType',
     'Get-SKYAPIContext',
     'Get-SKYAPIAuthTokensFromFile',
+    'Get-OrOrg',
+    'Get-OrSchool',
     'Get-ReConstituentRatingSource',
     'Get-ReConstituentRelationshipType',
     'Get-ReConstituentSuffix',
@@ -90,6 +97,7 @@ FunctionsToExport = @(
     'Get-SchoolAssignmentBySection',
     'Get-SchoolAssignmentByStudent',
     'Get-SchoolCourse',
+    'Get-SchoolCustomField',
     'Get-SchoolCycleBySection',
     'Get-SchoolDepartment',
     'Get-SchoolEnrollment',
@@ -112,11 +120,14 @@ FunctionsToExport = @(
     'Get-SchoolStudentBySection',
     'Get-SchoolTerm',
     'Get-SchoolTimeZone',
+    'Get-SchoolTypeTable',
+    'Get-SchoolTypeTableValue',
     'Get-SchoolUser',
     'Get-SchoolUserAddress',
     'Get-SchoolUserAddressType',
     'Get-SchoolUserBBIDStatus',
     'Get-SchoolUserByRole',
+    'Get-SchoolUserCustomFieldsByBaseRole',
     'Get-SchoolUserEducation',
     'Get-SchoolUserEmployment',
     'Get-SchoolUserExtended',

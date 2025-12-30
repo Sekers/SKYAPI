@@ -11,6 +11,10 @@ function Set-SKYAPIConfig
         .DESCRIPTION
         Set the configurations and secrets to connect to your Blackbaud SKY API application.
 
+        .PARAMETER ConfigPath
+        The path to the configuration file to create or update. Default is the value set by the Set-SKYAPIConfigFilePath cmdlet.
+        .PARAMETER Silent
+        Use this switch parameter to only update configuration values passed to the function and not prompt for manual entry.
         .PARAMETER api_subscription_key
         Blackbaud requires you to have an approved subscription key to a specific API before you can use the
         SKY API console. This subscription key is associated with your Blackbaud developer account.

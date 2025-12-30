@@ -1,8 +1,44 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.4.4](https://github.com/Sekers/SKYAPI/tree/0.4.4) - (2025-12-30)
+
+### Fixes
+
+- IMPORTANT: Not exactly a fix, but the December 2025 updates to Windows made a change to Invoke-WebRequest on PowerShell Desktop 5.1 (this change has no effect on PS Core 6+) that causes the command to prompt for permission. If you are noticing the prompt or noticing automated scripts using this module hanging/pausing after installing the December update, this is why. The SKYAPI module has been updated to use basic parsing, which does not prompt. More information:
+  - [PowerShell 5.1: Invoke-WebRequest: Preventing script execution from web content](https://support.microsoft.com/en-us/topic/powershell-5-1-invoke-webrequest-preventing-script-execution-from-web-content-7cb95559-655e-43fd-a8bd-ceef2406b705)
+  - [CVE-2025-54100 PowerShell Remote Code Execution Vulnerability](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-54100)
+- BREAKING CHANGE: Removed forcing of TLS 1.2 since all supported versions of Windows now support it or newer by default. While this should not affect most organizations, you can set TLS 1.2 or 1.3 in your scripts or Operating System if you need to adjust to a security protocol different from PowerShell's configured default.
+- Updated Set-SKYAPIConfig built-in help (was missing information on ConfigPath & Silent).
+- Updated examples to import module on SKYAPI.psd1 instead of SKYAPI.psm1.
+
+### Features
+
+- Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.3650.58](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3650.58).
+- New Endpoint: Remove-SKYAPIConfig - Removes the configurations and secrets file used to connect to your Blackbaud SKY API application.
+- New Endpoint: Disconnect-SKYAPI - Remove cached authorization tokens and optionally remove the SKY API configuration/secrets file.
+- New Endpoint: [Connect-SchoolUserBBID](https://developer.sky.blackbaud.com/api#api=afe-edcor&operation=V1UsersBbidConnectPatch)
+  - Note: This endpoint is in closed preview. I did not ask for access so the function so, while it is built upon the spec, it has not yet been tested.
+- New Endpoint: [Get-EnrollmentCandidate](https://developer.sky.blackbaud.com/api#api=afe-edems&operation=V1CandidatesByCandidate_idGet)
+- New Endpoint: [Get-EnrollmentStatusType](https://developer.sky.blackbaud.com/api#api=afe-edems&operation=V1TypesCandidatestatusesGet)
+- New Endpoint: [Get-SchoolCustomField](https://developer.sky.blackbaud.com/api#api=school&operation=V1CustomfieldsGet)
+- New Endpoint: [Get-SchoolTypeTable](https://developer.sky.blackbaud.com/api#api=school&operation=V1TypesTablesGet)
+- New Endpoint: [Get-SchoolTypeTableValue](https://developer.sky.blackbaud.com/api#api=school&operation=V1TypesTablevaluesGet)
+- New Endpoint: [Get-SchoolUserCustomFieldsByBaseRole](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersCustomfieldsGet)
+- New Endpoint: [Get-OrOrg](https://developer.sky.blackbaud.com/api#api=afe-rostr&operation=getAllOrgs)
+- New Endpoint: [Get-OrSchool](https://developer.sky.blackbaud.com/api#api=afe-rostr&operation=getAllSchools)
+
+
+### Other
+
+- Reverted temporary workaround for Get-SchoolScheduleMeeting now that Blackbaud has fixed the API endpoint bug.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
 ## [0.4.3](https://github.com/Sekers/SKYAPI/tree/0.4.3) - (2025-02-19)
 
 ### Fixes (UPDATE 2025-02-24)
+
  - Blackbaud has confirmed the issue with the API endpoint. It's not related to daylight saving time, but instead the call seems to be including an extra day in February (presumably February 29, the leap year date).  Leap year was last year 2024, so that may be why the bug wasn't noticed earlier.
  - The workaround implemented in the SKYAPI PowerShell module 0.4.3 looks to be working with no problems, however. Using the workaround will not cause problems once the endpoint issue is resolved, however we plan to revert the change once the endpoint is confirmed fixed.
 
@@ -29,6 +65,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - BREAKING CHANGE: The endpoint that Get-SchoolYear uses has a bug that sets each school year's 'begin_date' & 'end_date' to the incorrect time zone, which could cause the date returned to be incorrect (even if you adjust to the school's Blackbaud time zone). To work around this, these fields now return a STRING of the date (e.g., '2025-05-24') instead of a DATETIME value (PS Core) or an unserialized round-trip STRING that includes the time (PS Desktop; e.g., '2025-07-04T00:00:00-04:00').
 
 ### Features
+
 - Continue to improve invoke API error handling by catching two additional types of errors.
 
 Author: [**@Sekers**](https://github.com/Sekers)
@@ -41,6 +78,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - Resolved bug in PS Core (PS Desktop was fine) when calling Get-SchoolScheduleMeeting if one of the 30-day iterations comes back empty.
 
 ### Features
+
 - Sample script for Google Faculty Calendar Imports now supports meeting exclusions.
 - Improved error handling. Some errors that can often be transient now retry using an exponential backoff rather than just retrying up to 5 times with a 5-second delay in-between. This should reduce how often scripts fail by increasing the retry count from 5 to 7 and increasing the max wait time from the first try to the last retry from 20 seconds to just over 5 minutes. The exponential backoff delay is as follows (in seconds):
 

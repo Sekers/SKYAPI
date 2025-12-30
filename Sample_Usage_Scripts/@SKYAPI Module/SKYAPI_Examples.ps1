@@ -14,7 +14,7 @@
     Import the Module.
 #>
 # Import-Module SKYAPI
-# Import-Module "$PSScriptRoot\..\SKYAPI\SKYAPI.psm1"
+# Import-Module "$PSScriptRoot\..\SKYAPI\SKYAPI.psd1"
 
 <#
     Retrieve and Create/Update the SKY API Module Configuration File.
@@ -49,6 +49,22 @@
     Retrieve the Session Context Information.
 #>
 # Get-SKYAPIContext
+
+<#
+    Remove cached authorization tokens and optionally remove the SKY API configuration file.
+#>
+# Disconnect-SKYAPI
+# Disconnect-SKYAPI -ReturnConnectionInfo
+# Disconnect-SKYAPI -RemoveConfig
+# Disconnect-SKYAPI -RemoveConfig -Confirm:$false
+
+<#
+    Remove the configurations and secrets file used to connect to your Blackbaud SKY API application.
+#>
+# Remove-SKYAPIConfig
+# Remove-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+# Remove-SKYAPIConfig -Confirm:$false
+# Remove-SKYAPIConfig -WhatIf
 
 ########################
 # School API Endpoints #
@@ -483,6 +499,61 @@
 #>
 # Get-SchoolResourceBoard
 
+<#
+    Get-EnrollmentCandidate
+#>
+# Get-EnrollmentCandidate -Candidate_ID 4924925, 7934925
+# Get-EnrollmentCandidate -Candidate_ID 4924925, 7934925 -school_year '2025-2026'
+
+<#
+    Get-EnrollmentStatusType
+#>
+# Get-EnrollmentStatusType
+
+<#
+    Connect-SchoolUserBBID
+    Tip: For more complex examples, such as processing an array of users, use the comment-based help: Get-Help Connect-SchoolUserBBID -Examples 
+#>
+# Connect-SchoolUserBBID -id 5809872
+# Connect-SchoolUserBBID -id 5809872 -email 'example@school.edu'
+
+<#
+    Get-SchoolCustomField
+#>
+# Get-SchoolCustomField
+
+<#
+    Get-SchoolUserCustomFieldsByBaseRole
+#>
+# Get-SchoolUserCustomFieldsByBaseRole -base_role_ids "332,15,14"
+
+<#
+    Get-SchoolTypeTable
+#>
+# Get-SchoolTypeTable
+
+<#
+    Get-SchoolTypeTableValue
+#>
+# Get-SchoolTypeTableValue -tableID 4
+# Get-SchoolTypeTableValue -tableName 'Citizenship'
+# Get-SchoolTypeTableValue -tableName 'Citizenship' -includeInactive $true
+
+############################
+# OneRoster API Endpoints #
+###########################
+
+<#
+    Get-OrOrg
+#>
+# Get-OrOrg
+# Get-OrOrg -Org_ID 'org-sch-55-851', 'org-dpt-55-18704'
+
+<#
+    Get-OrSchool
+#>
+# Get-OrSchool
+# Get-OrSchool -School_ID 'org-sch-55-851', 'org-sch-55-962'
 
 ###############################
 # Raiser's Edge API Endpoints #
