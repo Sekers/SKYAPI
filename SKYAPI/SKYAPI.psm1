@@ -293,7 +293,7 @@ Function Show-SKYAPIOAuthWindow
         default # EdgeWebView2
         {            
             # Set EdgeWebView2 Control Version to Use
-            $EdgeWebView2Control_VersionNumber = '1.0.2792.45'
+            $EdgeWebView2Control_VersionNumber = '1.0.3650.58'
             switch ($PSVersionTable.PSEdition)
             {
                 Desktop {$EdgeWebView2Control_DotNETVersion = "net462"}
