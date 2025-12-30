@@ -27,7 +27,6 @@
 - New Endpoint: [Get-OrOrg](https://developer.sky.blackbaud.com/api#api=afe-rostr&operation=getAllOrgs)
 - New Endpoint: [Get-OrSchool](https://developer.sky.blackbaud.com/api#api=afe-rostr&operation=getAllSchools)
 
-
 ### Other
 
 - Reverted temporary workaround for Get-SchoolScheduleMeeting now that Blackbaud has fixed the API endpoint bug.
