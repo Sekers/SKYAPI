@@ -84,7 +84,7 @@ function Get-NextOutlookCategoryColor
     #>
 
     param (
-        [array]$ExistingCategories
+        [string]$UserId
     )
     
     # Set Preset Outlook Category Colors
@@ -216,6 +216,8 @@ function Get-NextOutlookCategoryColor
             "DisplayName" = "DarkCranberry"
         }
     )
+
+    $ExistingCategories = Get-MgUserOutlookMasterCategory -UserId $UserId
 
     [array]$ExistingCategoriesColorCount = foreach ($outlookCategoryColor in $OutlookCategoryColors)
     {
@@ -765,7 +767,7 @@ try
         {
             if ($teacherCourse -notin $ExistingTeacherCategories.DisplayName)
             {
-                $NextTeacherCategoryColor = Get-NextOutlookCategoryColor -ExistingCategories $ExistingTeacherCategories
+                $NextTeacherCategoryColor = Get-NextOutlookCategoryColor -UserId $teacher.email
 
                 Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($teacher.display) [$($teacher.id)] [$($teacher.email)]: $($teacherCourse) ($($NextTeacherCategoryColor.Color)::$($NextTeacherCategoryColor.DisplayName))"
                 $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $teacher.email -DisplayName $teacherCourse -Color $NextTeacherCategoryColor.Color
