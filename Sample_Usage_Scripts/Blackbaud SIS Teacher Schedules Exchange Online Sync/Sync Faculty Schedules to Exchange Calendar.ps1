@@ -84,7 +84,7 @@ function Get-NextOutlookCategoryColor
     #>
 
     param (
-        [string]$UserId
+        [array]$ExistingCategories
     )
     
     # Set Preset Outlook Category Colors
@@ -217,21 +217,19 @@ function Get-NextOutlookCategoryColor
         }
     )
 
-    $ExistingTeacherCategories = Get-MgUserOutlookMasterCategory -UserId $UserId
-
-    [array]$ExistingTeacherCategoriesColorCount = foreach ($outlookCategoryColor in $OutlookCategoryColors)
+    [array]$ExistingCategoriesColorCount = foreach ($outlookCategoryColor in $OutlookCategoryColors)
     {
         $CategoryColor = [PSCustomObject]@{
             Index = $($outlookCategoryColor.Index)
             Color = $($outlookCategoryColor.Color)
             DisplayName   = $($outlookCategoryColor.DisplayName)
-            Count   = ($ExistingTeacherCategories | Where-Object -Property Color -EQ $outlookCategoryColor.Color).Count
+            Count   = ($ExistingCategories | Where-Object -Property Color -EQ $outlookCategoryColor.Color).Count
         }
         $CategoryColor
     }
-    $NextTeacherCategoryColor = ($ExistingTeacherCategoriesColorCount | Sort-Object -Property Count, Index)[0]
+    $NextCategoryColor = ($ExistingCategoriesColorCount | Sort-Object -Property Count, Index)[0]
 
-    return $NextTeacherCategoryColor
+    return $NextCategoryColor
 }
 
 #################
@@ -452,7 +450,8 @@ try
     #    E.g., Find-MgGraphPermission -SearchString "Teams" -PermissionType Delegated
     #    E.g., Find-MgGraphPermission -SearchString "Teams" -PermissionType Application
     $MicrosoftGraphScopes = @(
-        'Calendars.ReadWrite'
+        'Calendars.ReadWrite', # To create and manage events in user calendars.
+        'MailboxSettings.Read' # To read user mailbox settings (to make sure it exists and is not deleted/soft-deleted). # TODO: Verify it's needed for delegated permissions on mailboxes to access calendar categories.
     )
     Write-PSFMessage -Level Important -Message "Connecting to Microsoft Graph With Permission Type: $MgPermissionType"
     switch ($MgPermissionType)
@@ -523,6 +522,9 @@ try
         }
         Default {throw "Invalid `'MgPermissionType`' value in the configuration file."}
     }
+
+    # TODO: Verify Scopes Granted to the App Match Needed Scopes.
+    $MgContext = Get-MgContext
 
     # Convert SchoolTimeZone to TimeZoneInfo object. Check match for ID, then StandardName, then DaylightName.
     $SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name)
@@ -707,6 +709,11 @@ try
         $TeacherIndex++
         Write-PSFMessage -Level Significant -Message "Working On Teacher $TeacherIndex of $($TeachersCount): $($teacher.display) [$($teacher.id)] [$($teacher.email)]"
 
+        # Check Teacher is active in Exchange
+        # TODO: Add logic to skip inactive users.
+        # $ExchangeTeacherInfo = Get-mg
+
+
         # Gather Meetings for Teacher
         $TeacherMeetings = $Meetings | Where-Object {$_.teachers.id -match "(^)$($teacher.id)($)"} | Sort-Object -Property start_time, group_name
         $TeacherMeetingsCount = $TeacherMeetings.Count
@@ -740,12 +747,12 @@ try
 
         # Create Categories in Outlook, if necessary.
         $TeacherCourses = $TeacherMeetings.course_title | Sort-Object -Unique
-        $ExistingTeacherCategories = Get-MgUserOutlookMasterCategory -UserId $teacher.email
+        $ExistingTeacherCategories = @(Get-MgUserOutlookMasterCategory -UserId $teacher.email)
         foreach ($teacherCourse in $TeacherCourses)
         {
             if ($teacherCourse -notin $ExistingTeacherCategories.DisplayName)
             {
-                $NextTeacherCategoryColor = Get-NextOutlookCategoryColor -UserId $teacher.email
+                $NextTeacherCategoryColor = Get-NextOutlookCategoryColor -ExistingCategories $ExistingTeacherCategories
 
                 Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($teacher.display) [$($teacher.id)] [$($teacher.email)]: $($teacherCourse) ($($NextTeacherCategoryColor.Color)::$($NextTeacherCategoryColor.DisplayName))"
                 $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $teacher.email -DisplayName $teacherCourse -Color $NextTeacherCategoryColor.Color
