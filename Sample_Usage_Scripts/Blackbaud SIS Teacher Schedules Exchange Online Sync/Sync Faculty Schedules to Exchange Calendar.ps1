@@ -397,6 +397,9 @@ foreach ($moduleInfo in Get-Module)
     Write-PSFMessage -Level Verbose -Message "$($moduleInfo.Name) Module Version: $($moduleInfo.Version)"
 }
 
+# Create & Reset Variables to Default
+$CustomWarningMessage = $null # Reset Message
+
 # Begin Program Work (Try/Catch for Error/Warning Processing & Notification)
 try
 {
@@ -696,6 +699,11 @@ try
     $Teachers = $Teachers | Sort-Object -Property display -Unique
     $TeachersCount = $Teachers.Count
 
+    # Collect All Directory Member Users
+    # Used to make sure users exist before trying to access their calendar.
+    # It does not check to see if they have an Exchange Online mailbox; it only verifies that an email address is set due to the extra Graph API calls that would be needed to verify an actual mailbox exists (one per user).
+    $EntraDirectoryUsers = Get-MgUser -All -Property Id, DisplayName, Mail | Where-Object {$null -ne $_.'mail'}
+    
     # Set Start\End Times as UTC for Graph Queries
     # https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-date-and-time-format-strings#Roundtrip
     $Meetings_StartDateTime_UTC_ISO8601 = Get-Date ([System.TimeZoneInfo]::ConvertTimeToUtc($Meetings_StartDate, $SchoolTimeZone)) -Format 'o'
@@ -709,10 +717,15 @@ try
         $TeacherIndex++
         Write-PSFMessage -Level Significant -Message "Working On Teacher $TeacherIndex of $($TeachersCount): $($teacher.display) [$($teacher.id)] [$($teacher.email)]"
 
-        # Check Teacher is active in Exchange
-        # TODO: Add logic to skip inactive users.
-        # $ExchangeTeacherInfo = Get-mg
-
+        # Make Sure Teacher Exists in Directory
+        if ($teacher.email -notin $($EntraDirectoryUsers.Mail))
+        {
+            # Log Warning and Skip This User
+            $NewMessage = "WARNING: Skipping user [$($teacher.id) - $($teacher.display)] because their email address [$($teacher.email)] cannot be found in the Entra Active Directory."
+            Write-PSFMessage -Level Warning -Message $NewMessage
+            $CustomWarningMessage += "`n$NewMessage"
+            continue
+        }
 
         # Gather Meetings for Teacher
         $TeacherMeetings = $Meetings | Where-Object {$_.teachers.id -match "(^)$($teacher.id)($)"} | Sort-Object -Property start_time, group_name
