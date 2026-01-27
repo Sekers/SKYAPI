@@ -123,7 +123,6 @@ function Get-SchoolScheduleMeeting
        
     # Set the endpoints
     $endpoint = 'https://api.sky.blackbaud.com/school/v1/schedules/meetings'
-    $endUrl = ''
 
     # Set the response field
     $ResponseField = "value"
@@ -219,11 +218,11 @@ function Get-SchoolScheduleMeeting
 
         if ($PSVersionTable.PSEdition -EQ 'Desktop')
         {
-            $response_objects = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+            $response_objects = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         }
         else
         {
-            $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -ReturnRaw
+            $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -ReturnRaw
             $response_objects = (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
         }
 

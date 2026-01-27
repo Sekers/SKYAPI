@@ -79,10 +79,10 @@ function Get-SchoolCourse
 
     if ($ReturnRaw)
     {
-        $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
         return $response
     }
 
-    $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+    $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     $response
 }
