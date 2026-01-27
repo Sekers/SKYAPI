@@ -86,24 +86,32 @@ function Get-SchoolUserAuditByRole
 
         # Set the response field
         $ResponseField = "value"
-    }
-
-    process
-    {
-        # Set the parameters
-        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-        foreach ($parameter in $PSBoundParameters.GetEnumerator())
-        {
-            $parameters.Add($parameter.Key,$parameter.Value) 
-        }
-
-        # Remove the $ReturnRaw & $Role_ID parameters since we don't pass them on to the API.
-        $parameters.Remove('ReturnRaw') | Out-Null
-        $parameters.Remove('Role_ID') | Out-Null
 
         # Get the SKY API subscription key
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $sky_api_subscription_key = $sky_api_config.api_subscription_key
+    }
+
+    process
+    {
+        # Set the parameters (don't use $PSBoundParameters when working with pipeline input)
+        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
+        if (-not [string]::IsNullOrWhiteSpace($start_date)) { $parameters['start_date'] = $start_date }
+        if (-not [string]::IsNullOrWhiteSpace($end_date))   { $parameters['end_date']   = $end_date }
+
+        
+        # TODO: Double-check this is how the endpoint works if you can. Otherwise make this the default.
+        # Default start_date to 7 days ago if not provided
+        if ([string]::IsNullOrWhiteSpace($start_date))
+        {
+            $start_date = (Get-Date).AddDays(-7).ToString('yyyy-MM-dd')
+        }
+
+        # #TODO: Temporary fix for "end_date" not actually defaulting to "start_date + 7 days" if not specified.
+        if ([string]::IsNullOrWhiteSpace($end_date))
+        {
+            $end_date = (Get-Date -Date $start_date).AddDays(7).ToString('yyyy-MM-dd')
+        }
 
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
@@ -117,7 +125,7 @@ function Get-SchoolUserAuditByRole
             if ($ReturnRaw)
             {
                 $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
-                return $response
+                return $response # TODO: Make this continue to not break the pipeline?
             }
 
             $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
