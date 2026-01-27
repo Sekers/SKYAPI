@@ -15,23 +15,40 @@ function Get-SchoolUserAuditByRole
         .PARAMETER role_id
         Role to return audit information for.
         Use Get-SchoolRole to get a list of role IDs.
+        
+        Accepts pipeline input:
+          - By value (e.g. "12","34" | Get-SchoolUserAuditByRole)
+          - By property name (e.g. objects with a Role_ID property)
+
         .PARAMETER start_date
         The date to begin looking for changes. Must be greater than 01/01/1990. Use ISO-8601 date format (2022-04-08).
         #TODO: ???? If not specified, defaults to 30 days from start_date.
+        Accepts pipeline input by property name only (objects with start_date).
         
         .PARAMETER end_date
         The date to end looking for changes. Must be within 1 year of start_date. Use ISO-8601 date format (2022-04-08).
         If not specified, returns start_date + 7 days.
+        Accepts pipeline input by property name only (objects with end_date)
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolTerm
+        "15425","15427" | Get-SchoolUserAuditByRole -start_date "2025-01-01" -end_date "2025-01-08"
+
         .EXAMPLE
-        Get-SchoolTerm -school_year '2021-2022'
-        .EXAMPLE
-        Note: offering_type 1 is Academics
-        Get-SchoolTerm -offering_type 1 | Select-Object description
+        $userAuditPSObject = @(
+            [PSCustomObject]@{
+                role_id    = '15425'
+                start_date = '2025-01-01'
+                end_date = '2025-01-08'
+            },
+            [PSCustomObject]@{
+                role_id    = '15427'
+                start_date = '2025-01-01'
+            }
+        )
+        $userAuditPSObject | Get-SchoolUserAuditByRole
+
     #>
     
     [cmdletbinding()]
@@ -39,7 +56,7 @@ function Get-SchoolUserAuditByRole
         [Parameter(
         Position=0,
         Mandatory=$true,
-        ValueFromPipeline=$true,
+        ValueFromPipeline=$true, # Only have one unnamed parameter (per parameter set) accepting pipeline input by value because otherwise it gets messy.
         ValueFromPipelineByPropertyName=$true)]
         [string[]]$Role_ID,
 
