@@ -736,11 +736,7 @@ Function Get-SKYAPIUnpagedEntity
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-        $authorisation.access_token = $($AuthTokensFromFile.access_token)
-        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        $authorisation = Get-SKYAPIAuthTokensFromFile
     }
     
     # Create Request Uri
@@ -807,12 +803,8 @@ Function Get-SKYAPIUnpagedEntity
             $LastCaughtError = ($_)
             $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
 
-            # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-            $authorisation.access_token = $($AuthTokensFromFile.access_token)
-            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+            # Just in case the token was refreshed by the error catcher, update $authorisation
+            $authorisation = Get-SKYAPIAuthTokensFromFile
         }
     }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
 
@@ -841,11 +833,7 @@ Function Get-SKYAPIPagedEntity
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-        $authorisation.access_token = $($AuthTokensFromFile.access_token)
-        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        $authorisation = Get-SKYAPIAuthTokensFromFile
     }
 
     # Create Request Uri
@@ -945,12 +933,8 @@ Function Get-SKYAPIPagedEntity
             $LastCaughtError = ($_)
             $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
 
-            # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-            $authorisation.access_token = $($AuthTokensFromFile.access_token)
-            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+            # Just in case the token was refreshed by the error catcher, update $authorisation
+            $authorisation = Get-SKYAPIAuthTokensFromFile
         }
     }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
 
@@ -969,11 +953,7 @@ Function Remove-SKYAPIEntity
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-        $authorisation.access_token = $($AuthTokensFromFile.access_token)
-        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        $authorisation = Get-SKYAPIAuthTokensFromFile
     }
     
     # Create Request Uri
@@ -1024,12 +1004,8 @@ Function Remove-SKYAPIEntity
             $LastCaughtError = ($_)
             $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
 
-            # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-            $authorisation.access_token = $($AuthTokensFromFile.access_token)
-            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+            # Just in case the token was refreshed by the error catcher, update $authorisation
+            $authorisation = Get-SKYAPIAuthTokensFromFile
         }
     }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
 
@@ -1048,11 +1024,7 @@ function Submit-SKYAPIEntity
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-        $authorisation.access_token = $($AuthTokensFromFile.access_token)
-        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        $authorisation = Get-SKYAPIAuthTokensFromFile
     }
 
     # Create Request Uri
@@ -1103,12 +1075,8 @@ function Submit-SKYAPIEntity
             $LastCaughtError = ($_)
             $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
 
-            # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-            $authorisation.access_token = $($AuthTokensFromFile.access_token)
-            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+            # Just in case the token was refreshed by the error catcher, update $authorisation
+            $authorisation = Get-SKYAPIAuthTokensFromFile
         }
     }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
 
@@ -1127,11 +1095,7 @@ function Update-SKYAPIEntity
     if (-NOT (Confirm-SKYAPITokenIsFresh -TokenCreation $authorisation.access_token_creation -TokenType Access))
     {
         Connect-SKYAPI -ForceRefresh
-        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-        $authorisation.access_token = $($AuthTokensFromFile.access_token)
-        $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-        $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-        $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+        $authorisation = Get-SKYAPIAuthTokensFromFile
     }
 
     # Create Request Uri
@@ -1182,12 +1146,8 @@ function Update-SKYAPIEntity
             $LastCaughtError = ($_)
             $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
 
-            # Just in case the token was refreshed by the error catcher, update these
-            $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-            $authorisation.access_token = $($AuthTokensFromFile.access_token)
-            $authorisation.refresh_token = $($AuthTokensFromFile.refresh_token)
-            $authorisation.refresh_token_creation = $($AuthTokensFromFile.refresh_token_creation)
-            $authorisation.access_token_creation = $($AuthTokensFromFile.access_token_creation)
+            # Just in case the token was refreshed by the error catcher, update $authorisation
+            $authorisation = Get-SKYAPIAuthTokensFromFile
         }
     }while ($NextAction -eq 'retry' -and $InvokeCount -lt $MaxInvokeCount)
 
