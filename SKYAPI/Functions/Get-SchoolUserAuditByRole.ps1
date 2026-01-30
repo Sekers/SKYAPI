@@ -22,7 +22,7 @@ function Get-SchoolUserAuditByRole
 
         .PARAMETER start_date
         The date to begin looking for changes. Must be greater than 01/01/1990. Use ISO-8601 date format (2022-04-08).
-        #TODO: ???? If not specified, defaults to 30 days from start_date.
+        If not specified, start_date is set to "Today - 6 days" (last 7 days including current date). This is not documented in the API documentation but was confirmed in testing.
         Accepts pipeline input by property name only (objects with start_date).
         
         .PARAMETER end_date
@@ -100,17 +100,11 @@ function Get-SchoolUserAuditByRole
         if (-not [string]::IsNullOrWhiteSpace($end_date))   { $parameters['end_date']   = $end_date }
 
         
-        # TODO: Double-check this is how the endpoint works if you can. Otherwise make this the default.
-        # Default start_date to 7 days ago if not provided
-        if ([string]::IsNullOrWhiteSpace($start_date))
+        #TODO: PART 1 of 2 > Temporary fix for "end_date" not actually defaulting to "start_date + 7 days" if not specified.
+        # I wonder if they really mean + 6 days since including the start_date +6 days is 7 days and that's how start_date works?
+        if ((-not [string]::IsNullOrWhiteSpace($start_date)) -and ([string]::IsNullOrWhiteSpace($end_date)))
         {
-            $start_date = (Get-Date).AddDays(-7).ToString('yyyy-MM-dd')
-        }
-
-        # #TODO: Temporary fix for "end_date" not actually defaulting to "start_date + 7 days" if not specified.
-        if ([string]::IsNullOrWhiteSpace($end_date))
-        {
-            $end_date = (Get-Date -Date $start_date).AddDays(7).ToString('yyyy-MM-dd')
+            $end_date = (Get-Date -Date $start_date).AddDays(7).ToString('yyyy-MM-dd') 
         }
 
         # Grab the security tokens
@@ -121,6 +115,10 @@ function Get-SchoolUserAuditByRole
             # Reset role_id parameter for each iteration
             $parameters.Remove('role_id') | Out-Null
             $parameters.Add('role_id',$rid) 
+
+            #TODO: PART 2 of 2 > Temporary fix for "end_date" not actually defaulting to "start_date + 7 days" if not specified.
+            $parameters.Remove('end_date') | Out-Null
+            $parameters.Add('end_date',$end_date) 
 
             if ($ReturnRaw)
             {
