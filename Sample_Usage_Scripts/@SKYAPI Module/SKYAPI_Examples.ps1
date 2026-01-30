@@ -382,6 +382,7 @@
     (Use Get-SchoolUserAddressType to get a list of address types)
 #>
 # New-SchoolUserAddress -User_ID 3156271 -type_id 1005 -country 'United States' -line_one '129 Huntington Drive'
+
 # $params = @{
 #     'User_ID'             = 3156271
 #     'type_id'             = 1005
@@ -419,6 +420,7 @@
     New-SchoolUserOccupation
 #>
 # New-SchoolUserOccupation -User_ID 3156271, 3294459 -business_name "Don's Auto" -job_title "Director of Shiny Things" -current $true
+
 # $params = @{
 #     'User_ID'           = 3156271
 #     'business_name'     = "Don's Auto"
@@ -538,6 +540,25 @@
 # Get-SchoolTypeTableValue -tableID 4
 # Get-SchoolTypeTableValue -tableName 'Citizenship'
 # Get-SchoolTypeTableValue -tableName 'Citizenship' -includeInactive $true
+
+<#
+    Get-SchoolUserAuditByRole
+    (Use Get-SchoolRole to get a list of role IDs)
+#>
+# "15425","15427" | Get-SchoolUserAuditByRole -start_date "2025-01-01" -end_date "2025-01-08"
+
+# $userAuditPSObject = @(
+#     [PSCustomObject]@{
+#         role_id    = '15425'
+#         start_date = '2025-01-01'
+#         end_date = '2025-01-08'
+#     },
+#     [PSCustomObject]@{
+#         role_id    = '15427'
+#         start_date = '2025-01-01'
+#     }
+# )
+# $userAuditPSObject | Get-SchoolUserAuditByRole
 
 ############################
 # OneRoster API Endpoints #
