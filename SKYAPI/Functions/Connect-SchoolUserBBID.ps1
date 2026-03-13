@@ -124,11 +124,23 @@ function Connect-SchoolUserBBID
             {
                 throw [System.Management.Automation.ValidationMetadataException]::new("All elements in the array must be either a Hashtable or a PSCustomObject.")
             }
+
             # Check if the current object has an 'id' property (will check each array item independently).
-            if (($null -eq $_.id) -or ($_.id -isnot [int]))
+            if ($null -eq $_.id)
             {
                 throw [System.Management.Automation.ValidationMetadataException]::new("All elements in the array must have a valid [Int32]id property.")
             }
+            
+            # Try to cast the 'id' property to an [Int32] to ensure it is valid. Doing it this way allows a string that can be cast to an int (like '12345') to pass validation, while still catching invalid strings (like 'abcde') that cannot be cast to an int.
+            try
+            {
+                [void][int]$_.id
+            }
+            catch
+            {
+                throw [System.Management.Automation.ValidationMetadataException]::new("All elements in the array must have a valid [Int32]id property.")
+            }
+            
             return $true
         })]
         [object[]]$ConnectionRequest # Array of ConnectionRequest objects (will accept either hashtables or PSCustomObjects).
@@ -154,7 +166,11 @@ function Connect-SchoolUserBBID
         if ($PSCmdlet.ParameterSetName -eq 'SingleConnectionRequest')
         {
             # Set the parameters
-            [array]$Parameters = ,([ordered]@{ id = $id; email = $email; send_invite = $send_invite })
+            [array]$Parameters = ,([ordered]@{
+                id          = $id
+                email       = $email
+                send_invite = $send_invite
+            })
         }
         else
         {
@@ -162,10 +178,21 @@ function Connect-SchoolUserBBID
             {
                 switch ($conRequest.GetType().Name)
                 {
-                    Hashtable { $SingleConnectionParametersHashtable = $conRequest }
-                    PSCustomObject { # Convert the PSCustomObject to a hashtable.
-                        $SingleConnectionParametersHashtable = @{} # Just in case the following errors out.
-                        $SingleConnectionParametersHashtable = [ordered]@{id = $conRequest.id; email = $conRequest.email; send_invite = $conRequest.send_invite }
+                    Hashtable
+                    {
+                        $SingleConnectionParametersHashtable = [ordered]@{
+                            id          = [int]$conRequest.id # Cast the 'id' property to an int to ensure it is the correct type for the API.
+                            email       = $conRequest.email # API can handle $null values, so no need to check if the property exists before including it in the hashtable.
+                            send_invite = $conRequest.send_invite # API can handle $null values, so no need to check if the property exists before including it in the hashtable.
+                        }
+                    }
+                    PSCustomObject # Convert the PSCustomObject to a hashtable.
+                    {
+                        $SingleConnectionParametersHashtable = [ordered]@{
+                            id          = [int]$conRequest.id # Cast the 'id' property to an int to ensure it is the correct type for the API.
+                            email       = $conRequest.email # API can handle $null values, so no need to check if the property exists before including it in the hashtable.
+                            send_invite = $conRequest.send_invite # API can handle $null values, so no need to check if the property exists before including it in the hashtable.
+                        }
                     }
                     Default { throw "Unexpected error processing ConnectionRequest object of type $($conRequest.GetType().Name). All elements in the array must be either a hashtable or a PSCustomObject."}
                 }
