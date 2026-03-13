@@ -8,38 +8,46 @@ function Connect-SchoolUserBBID
         Endpoint: https://developer.sky.blackbaud.com/api#api=afe-edcor&operation=V1UsersBbidConnectPatch
         
         .SYNOPSIS
-        Education Management Education Core API - Connects a set of BBID accounts.
+        Education Management Education Core API - Connects a set of Blackbaud ID (BBID) accounts.
 
         .DESCRIPTION
-        Education Management Education Core API - Connects a set of BBID accounts.
+        Education Management Education Core API - Connects a set of Blackbaud ID (BBID) accounts.
+        If an Education Management account is already connected to a BBID account, it will reconnect with the submitted email if it is different than the currently connected email.
 
         Requires at least one of the following roles in the Education Management system:
           - Platform Manager
           - Admissions Manager
 
         .PARAMETER id
-        Used for a SINGLE connection request or MULTIPLE connection requests from the pipeline. The user ID to connect to a BBID account.
+        Used for a SINGLE connection request when providing parameters directly.
+        The user ID to connect to a BBID account. Required when not using the 'ConnectionRequest' parameter.
         .PARAMETER email
-        Used for a SINGLE connection request or from the pipeline. The email to use for the BBID. If blank, the contact email will be used, if present. If not, an error is returned.
+        Used for a SINGLE connection request when providing parameters directly.
+        The email to use for the BBID. If not specified, the contact email will be used if present (if not, an error is returned).
+        .PARAMETER send_invite
+        Used for a SINGLE connection request when providing parameters directly.
+        Specifies whether to send an invite email to the user. If not specified, the default behavior is to not send an invite.
         .PARAMETER ConnectionRequest
-        Used to submit MULTIPLE connection requests at the same time with or without using the pipeline using an array. Must be an array of hashtables and/or PSCustomObjects, each containing an 'id' property (int) and optionally an 'email' property (string).
-        If 'email' is not provided for a given object, the contact email will be used, if present. If not, an error is returned.
-
+        Used to submit one or more connection requests as Hashtable/PSCustomObject(s).
+        - Each request must contain an id (int) and may include email (string) and send_invite (bool).
+        - If passed as an array via -ConnectionRequest, all requests are sent in one API call.
+        - If provided via the pipeline, each piped object is processed as it is received (one API call per object).
         .EXAMPLE
         # Single example: use user's already existing email address.
         Connect-SchoolUserBBID -id 5809872
         .EXAMPLE
-        # Single example: specify an email address.
-        Connect-SchoolUserBBID -id 5809872 -email 'example@school.edu'
+        # Single example: specify an email address and choose to send an invitation.
+        Connect-SchoolUserBBID -id 5809872 -email 'example@school.edu' -send_invite $true
         .EXAMPLE
         # Multi example: array of hashtables using 'ConnectionRequest' parameter.
         $UsersHashtable = @(
             @{
-                id    = 101101
+                id          = 101101
             },
             @{
-                id    = 103103
-                email = 'carol@school.edu'
+                id          = 103103
+                email       = 'carol@school.edu'
+                send_invite = $true
             }
         )
         Connect-SchoolUserBBID -ConnectionRequest $UsersHashtable
@@ -47,11 +55,12 @@ function Connect-SchoolUserBBID
         # Multi example: array of hashtables using pipeline.
         $UsersHashtable = @(
             @{
-                id    = 101101
+                id          = 101101
             },
             @{
-                id    = 103103
-                email = 'carol@school.edu'
+                id          = 103103
+                email       = 'carol@school.edu'
+                send_invite = $true
             }
         )
         $UsersHashtable | Connect-SchoolUserBBID
@@ -59,11 +68,12 @@ function Connect-SchoolUserBBID
         # Multi example: array of PSCustomObjects using 'ConnectionRequest' parameter.
         $UsersPSObject = @(
             [PSCustomObject]@{
-                id    = 101101
+                id          = 101101
             },
             [PSCustomObject]@{
-                id    = 103103
-                email = 'carol@school.edu'
+                id          = 103103
+                email       = 'carol@school.edu'
+                send_invite = $true
             }
         )
         Connect-SchoolUserBBID -ConnectionRequest $UsersPSObject
@@ -71,11 +81,12 @@ function Connect-SchoolUserBBID
         # Multi example: array of PSCustomObjects using pipeline.
         $UsersPSObject = @(
             [PSCustomObject]@{
-                id    = 101101
+                id          = 101101
             },
             [PSCustomObject]@{
-                id    = 103103
-                email = 'carol@school.edu'
+                id          = 103103
+                email       = 'carol@school.edu'
+                send_invite = $true
             }
         )
         $UsersPSObject | Connect-SchoolUserBBID
@@ -86,26 +97,27 @@ function Connect-SchoolUserBBID
         [Parameter(
         Position=0,
         ParameterSetName = 'SingleConnectionRequest',
-        Mandatory=$true,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
+        Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
         [Int]$id,
 
         [Parameter(
         Position=1,
         ParameterSetName = 'SingleConnectionRequest',
-        Mandatory=$false,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
+        Mandatory=$false)]
         [string]$email,
 
         [Parameter(
         Position=2,
+        ParameterSetName = 'SingleConnectionRequest',
+        Mandatory=$false)]
+        [bool]$send_invite,
+
+        [Parameter(
+        Position=3,
         ParameterSetName = 'ConnectionRequestObject',
         Mandatory=$true,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
+        ValueFromPipeline=$true)]
         [ValidateScript({
             # Check if the current object is a Hashtable or a PSCustomObject.
             if (-not ($_.GetType().Name -eq 'Hashtable' -or $_.GetType().Name -eq 'PSCustomObject'))
@@ -142,26 +154,30 @@ function Connect-SchoolUserBBID
         if ($PSCmdlet.ParameterSetName -eq 'SingleConnectionRequest')
         {
             # Set the parameters
-            [array]$Parameters = @{id = $id; email = $email }
+            [array]$Parameters = ,([ordered]@{ id = $id; email = $email; send_invite = $send_invite })
         }
         else
         {
-            foreach ($conRequest in $ConnectionRequest)
+            [array]$Parameters = foreach ($conRequest in $ConnectionRequest)
             {
                 switch ($conRequest.GetType().Name)
                 {
-                    Hashtable { $Parameters = $conRequest }
+                    Hashtable { $SingleConnectionParametersHashtable = $conRequest }
                     PSCustomObject { # Convert the PSCustomObject to a hashtable.
-                        $Parameters = @{}
-                        $Parameters = @{id = $conRequest.id; email = $conRequest.email } # TODO: Test if allowing a $null email works once the endpoint is opened up for everyone.
+                        $SingleConnectionParametersHashtable = @{} # Just in case the following errors out.
+                        $SingleConnectionParametersHashtable = [ordered]@{id = $conRequest.id; email = $conRequest.email; send_invite = $conRequest.send_invite }
                     }
                     Default { throw "Unexpected error processing ConnectionRequest object of type $($conRequest.GetType().Name). All elements in the array must be either a hashtable or a PSCustomObject."}
                 }
 
-                $response = Update-SKYAPIEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $Parameters
-                $response
+                # Output to the $Parameters array.
+                $SingleConnectionParametersHashtable
             }
         }
+        
+        # Send the API request.
+        $response = Update-SKYAPIEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $Parameters
+        $response
     }
 
     end {}
