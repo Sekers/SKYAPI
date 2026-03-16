@@ -1053,8 +1053,8 @@ catch
             Set-ScriptMessageConfigFilePath -Path $ScriptMessageConfigFilePath
 
             # Add More Email Attributes
-            $MessageArguments.Subject = "SIS Faculty Schedules Sync - Error"
-            $MessageArguments.Body = "There has been an error running the SIS Faculty Schedules Sync Script (Name: `"$($_.InvocationInfo.ScriptName)`" | Line: $($_.InvocationInfo.ScriptLineNumber)):`n`n$_`n`nThank you,`nThe IT Team"
+            $MessageArguments.Subject = "SIS Schedules Sync - Error"
+            $MessageArguments.Body = "There has been an error running the SIS Schedules Sync Script (Name: `"$($_.InvocationInfo.ScriptName)`" | Line: $($_.InvocationInfo.ScriptLineNumber)):`n`n$_`n`nThank you,`nThe IT Team"
             $MessageArguments.Attachment = $null # No attachments because we don't want anything to accidentally prevent the alert email from being sent.
 
             # Send Error Message Alert
