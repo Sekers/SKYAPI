@@ -30,6 +30,11 @@
 # - You only need Microsoft.Graph.Authentication and Microsoft.Graph.Calendar if you want to minimize the installation footprint.
 # OPTIONAL: PSFramework (only needed if logging - https://github.com/PowershellFrameworkCollective/psframework)
 # OPTIONAL: ScriptMessage (only needing if sending alerts from the script - https://github.com/Sekers/ScriptMessage)
+# - Using MgGraph as messaging service so this requires: 
+# -- Microsoft.Graph.Authentication (Mail & Chat)
+# -- Microsoft.Graph.Users.Actions (Mail Only)
+# -- Microsoft.Graph.Teams (Chat Only)
+# -- Microsoft.Graph.Files (Mail & Chat - Only if OneDrive Uploads Are Needed)
 
 #############
 # FUNCTIONS #
