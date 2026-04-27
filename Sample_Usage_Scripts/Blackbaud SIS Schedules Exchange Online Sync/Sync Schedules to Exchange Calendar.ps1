@@ -320,6 +320,8 @@ if ($EmailonError -or $EmailonWarning)
         Body            = $null
         Attachment      = $null
     }
+
+    $CustomWarningMessage = $null # Reset Message
 }
 
 # 'Import Meetings To Ignore' & 'Teacher Preferences' Settings
@@ -406,9 +408,6 @@ foreach ($moduleInfo in Get-Module)
 {
     Write-PSFMessage -Level Verbose -Message "$($moduleInfo.Name) Module Version: $($moduleInfo.Version)"
 }
-
-# Create & Reset Variables to Default
-$CustomWarningMessage = $null # Reset Message
 
 # Begin Program Work (Try/Catch for Error/Warning Processing & Notification)
 try
@@ -733,7 +732,7 @@ try
             # Log Warning and Skip This User
             $NewMessage = "WARNING: Skipping user [$($teacher.id) - $($teacher.display)] because their email address [$($teacher.email)] cannot be found in the Entra Active Directory."
             Write-PSFMessage -Level Warning -Message $NewMessage
-            $CustomWarningMessage += "`n$NewMessage"
+            if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
             continue
         }
 
@@ -1004,7 +1003,7 @@ try
     }
 
     # Email Warning Message, if enabled in config.
-    If ($EmailonWarning -and $null -ne $CustomWarningMessage)
+    If ($EmailonWarning -and -not [string]::IsNullOrEmpty($CustomWarningMessage))
     {
         # Get Rid of Extra Line at Beginning
         $CustomWarningMessage = $CustomWarningMessage.Trim()
