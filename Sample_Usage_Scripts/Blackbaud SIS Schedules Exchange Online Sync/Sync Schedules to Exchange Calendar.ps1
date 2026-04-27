@@ -27,6 +27,9 @@
 
 # SKYAPI PowerShell Module (for connecting to the SIS - https://github.com/Sekers/SKYAPI)
 # Microsoft Graph PowerShell SDK (for connecting to Microsoft Graph - https://learn.microsoft.com/en-us/powershell/microsoftgraph/installation)
+# - You only need Microsoft.Graph.Authentication and Microsoft.Graph.Calendar if you want to minimize the installation footprint.
+# OPTIONAL: PSFramework (only needed if logging - https://github.com/PowershellFrameworkCollective/psframework)
+# OPTIONAL: ScriptMessage (only needing if sending alerts from the script - https://github.com/Sekers/ScriptMessage)
 
 #############
 # FUNCTIONS #
