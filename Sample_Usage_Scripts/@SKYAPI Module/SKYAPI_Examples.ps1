@@ -146,12 +146,12 @@
     (Use Get-SchoolRole to get a list of school roles)
     Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff.
-    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
-    The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
-    because the returned object type is a PSCustomObject and not an array in those cases. 
+    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count property.
+    In Windows PowerShell (5.1), the .Count property returns $null instead of 1 when only a single response is returned,
+    because the returned object type is a PSCustomObject and not an array in those cases.
     PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
 #>
-# [array]$StudentBBIDStatus = Get-SchoolUserBBIDStatus -Base_Role_Ids "332,15,14" | Where-Object {@('0','0') -Contains $_.status_id} | Select-Object -Property id, name, username, email, status
+# [array]$StudentBBIDStatus = Get-SchoolUserBBIDStatus -Base_Role_Ids "332,15,14" | Where-Object { $_.status_id -in '0','1' } | Select-Object -Property id, name, username, email, status
 # $StudentBBIDStatus.Count
 
 <#
@@ -162,9 +162,9 @@
 <#
     Get-SchoolUserByRole
     (Use Get-SchoolRole to get a list of school roles)
-    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
-    The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
-    because the returned object type is a PSCustomObject and not an array in those cases. 
+    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count property.
+    In Windows PowerShell (5.1), the .Count property returns $null instead of 1 when only a single response is returned,
+    because the returned object type is a PSCustomObject and not an array in those cases.
     PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
 #>
  # $list = Get-SchoolUserByRole -Roles "15434,15426"
@@ -177,9 +177,9 @@
     Note that this takes BASE ROLE IDs and not roles. So a person might show up in the Staff list even if they are not in the Staff role
     because they are in the "Admin Team" role which has the same base_role_id as Staff. This parameter is passed on directly to the
     API endpoint and should be a string, not an array.
-    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count
-    The .Count function will NOT work if you only a single response and are using Windows Powershell (5.1)
-    because the returned object type is a PSCustomObject and not an array in those cases. 
+    Suggest making the variable an array if you expect a single item in the list response and you need to use the .Count property.
+    In Windows PowerShell (5.1), the .Count property returns $null instead of 1 when only a single response is returned,
+    because the returned object type is a PSCustomObject and not an array in those cases.
     PowerShell Core (6+) WILL count correctly even if only a single PSCustomObject is returned.
 #>
 # [array]$list = Get-SchoolUserExtendedByBaseRole -base_role_ids "332,15,14"
