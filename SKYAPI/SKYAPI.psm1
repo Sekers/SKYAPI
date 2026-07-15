@@ -293,7 +293,7 @@ Function Show-SKYAPIOAuthWindow
         default # EdgeWebView2
         {            
             # Set EdgeWebView2 Control Version to Use
-            $EdgeWebView2Control_VersionNumber = '1.0.3650.58'
+            $EdgeWebView2Control_VersionNumber = '1.0.4078.44'
             switch ($PSVersionTable.PSEdition)
             {
                 Desktop {$EdgeWebView2Control_DotNETVersion = "net462"}
@@ -313,10 +313,13 @@ Function Show-SKYAPIOAuthWindow
             # Load Assemblies
             Add-Type -AssemblyName System.Windows.Forms
 
-            # Unpack the nupkg and grab the following two DLLs out of the /lib /lib_manual folders.
-            # - Microsoft.Web.WebView2.WinForms.dll (there's a different version for each .NET type, but the same file for x86 & x64)
-            # - Microsoft.Web.WebView2.Core.dll (while there's a copy for each .NET type, so far they have been the same exact file; same file for x86 & x64 too)
-            # In addition, get the following file from the /runtimes folder and put it in the same locations.
+            # TODO: Consider arm64 support in the future.
+            # Download the WebView2 control: https://www.nuget.org/packages/Microsoft.Web.WebView2/
+            # Release Notes for the WebView2 SDK: https://learn.microsoft.com/en-us/microsoft-edge/webview2/release-notes/
+            # Unpack the nupkg and grab the following two DLLs out of the '/lib/net462' and '/lib_manual/netcoreapp3.0' folders.
+            # - Microsoft.Web.WebView2.Core.dll (while there's a copy for each .NET type, so far they have been the same exact file; same file for x86 & x64)
+            # - Microsoft.Web.WebView2.WinForms.dll (there's a different version for each .NET type; same file for x86 & x64)
+            # In addition, get the following file from the '/runtimes' folder and put it in the same locations.
             # - WebView2Loader.dll (different for x86 & x64, but same for .NET Core & .NET 45)
             Add-Type -Path "$PSScriptRoot\Dependencies\Microsoft.Web.WebView2\$EdgeWebView2Control_VersionNumber\$EdgeWebView2Control_DotNETVersion\$EdgeWebView2Control_OSArchitecture\Microsoft.Web.WebView2.WinForms.dll"
 
