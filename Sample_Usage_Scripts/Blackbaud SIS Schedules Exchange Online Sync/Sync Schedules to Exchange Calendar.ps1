@@ -19,7 +19,7 @@
 
 # TODO: Add support for multiple terms lengths by level_id. Right now, even if term is selected the entire year is synced due to one term being that length of 1 instead of 2 semesters.
 
-# TODO: Add support for non-teachers (students, etc.).
+# TODO: Add support for non-teacher roles (students, etc.).
 
 #################
 # PREREQUISITES #
@@ -258,7 +258,7 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 # Set General Properties and Verify Type
 [bool]$EmailonError = $Config.General.EmailonError
 [bool]$EmailonWarning = $Config.General.EmailonWarning
-[int32[]]$TeacherRoleIDs = $Config.General.TeacherRoleIDs
+[int32[]]$UserRoleIDs = $Config.General.UserRoleIDs
 [string]$Meetings_DateSelection = $Config.General.Meetings_DateSelection # 'Year' or 'Term' or 'Range'
 [int32]$Meetings_DaysToAppearBefore = $Config.General.Meetings_DaysToAppearBefore
 [Nullable[int32]]$Meetings_MaxPastDaysToSync = $Config.General.Meetings_MaxPastDaysToSync # Needs to be nullable in case we don't want a limit
@@ -272,9 +272,9 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 [string]$EventsAppIdentifier_Name = $Config.General.EventsAppIdentifier_Name
 [string]$EventsAppIdentifier_Value = $Config.General.EventsAppIdentifier_Value
 [string]$MySchoolAppDomain = $Config.General.MySchoolAppDomain
-[string]$SaveTeachersSyncHistoryPath = $ExecutionContext.InvokeCommand.ExpandString($Config.General.SaveTeachersSyncHistoryPath) -replace '%date%', $(Get-Date -Format 'yyyy-MM-dd')  # Optional. The location where you want a teacher sync history saved. Can accept PowerShell variables.
-[string]$TeachersSyncHistoryRotateFilter = $ExecutionContext.InvokeCommand.ExpandString($Config.General.TeachersSyncHistoryRotateFilter)
-[int32]$TeachersSyncHistoryRetentionTimeInDays = $Config.General.TeachersSyncHistoryRetentionTimeInDays
+[string]$SaveUsersSyncHistoryPath = $ExecutionContext.InvokeCommand.ExpandString($Config.General.SaveUsersSyncHistoryPath) -replace '%date%', $(Get-Date -Format 'yyyy-MM-dd')  # Optional. The location where you want a user sync history saved. Can accept PowerShell variables.
+[string]$UsersSyncHistoryRotateFilter = $ExecutionContext.InvokeCommand.ExpandString($Config.General.UsersSyncHistoryRotateFilter)
+[int32]$UsersSyncHistoryRetentionTimeInDays = $Config.General.UsersSyncHistoryRetentionTimeInDays
 
 # Configure SKYAPI and Verify Type
 [string]$SKYAPIConfigFilePath = $ExecutionContext.InvokeCommand.ExpandString($Config.SKYAPI.ConfigFilePath) # The location where you placed your Blackbaud SKY API configuration file. Can accept PowerShell variables.
@@ -286,7 +286,7 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 [string]$MgClientID = $Config.MSGraph.MgClientID
 [string]$MgTenantID = $Config.MSGraph.MgTenantID
 [string]$MgApp_AuthenticationType = $Config.MSGraph.MgApp_AuthenticationType
-[string]$MgApp_CertificatePath = $ExecutionContext.InvokeCommand.ExpandString($Config.General.MgApp_CertificatePath)
+[string]$MgApp_CertificatePath = $ExecutionContext.InvokeCommand.ExpandString($Config.MSGraph.MgApp_CertificatePath)
 [string]$MgApp_CertificateName = $Config.MSGraph.MgApp_CertificateName
 [string]$MgApp_CertificateThumbprint = $Config.MSGraph.MgApp_CertificateThumbprint
 [string]$MgApp_EncryptedCertificatePassword = $Config.MSGraph.MgApp_EncryptedCertificatePassword
@@ -324,12 +324,12 @@ if ($EmailonError -or $EmailonWarning)
     $CustomWarningMessage = $null # Reset Message
 }
 
-# 'Import Meetings To Ignore' & 'Teacher Preferences' Settings
+# 'Import Meetings To Ignore' & 'User Preferences' Settings
 $MeetingsToIgnore = Get-Content -Path "$PSScriptRoot\Config\config_meetings_to_ignore.json" | ConvertFrom-Json
-$TeacherPreferences = Get-Content -Path "$PSScriptRoot\Config\config_teacher_preferences.json" | ConvertFrom-Json
+$UserPreferences = Get-Content -Path "$PSScriptRoot\Config\config_user_preferences.json" | ConvertFrom-Json
 
 # Create List of Custom Preferences to Compare
-$TeacherPreferencesToVerify = @('ShowAs','isReminderOn','ReminderMinutesBeforeStart')
+$UserPreferencesToVerify = @('ShowAs','isReminderOn','ReminderMinutesBeforeStart')
 
 # Set Fields To Match Between APIs to Compare Existence
 [array]$FieldsToMatch = @(
@@ -412,35 +412,35 @@ foreach ($moduleInfo in Get-Module)
 # Begin Program Work (Try/Catch for Error/Warning Processing & Notification)
 try
 {
-    # If set, test path to writable list of teacher calendar synchronizations and create file if necessary.
-    if (-not [string]::IsNullOrEmpty($SaveTeachersSyncHistoryPath))
+    # If set, test path to writable list of user calendar synchronizations and create file if necessary.
+    if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
     {
         # Get parent folder path
-        $SaveTeachersSyncHistoryParentDirectory = ([System.IO.Path]::GetDirectoryName($SaveTeachersSyncHistoryPath))
+        $SaveUsersSyncHistoryParentDirectory = ([System.IO.Path]::GetDirectoryName($SaveUsersSyncHistoryPath))
 
-        # Cleanup old teacher history files, if necessary.
-        $TeacherSyncHistoryFiles = Get-ChildItem -Path $SaveTeachersSyncHistoryParentDirectory -Filter $TeachersSyncHistoryRotateFilter
-        $TeacherSyncHistoryFiles | Where-Object -Property LastWriteTime -gt (Get-Date).AddDays($TeachersSyncHistoryRetentionTimeInDays) | Remove-Item -Force
+        # Cleanup old user history files, if necessary.
+        $UserSyncHistoryFiles = Get-ChildItem -Path $SaveUsersSyncHistoryParentDirectory -Filter $UsersSyncHistoryRotateFilter
+        $UserSyncHistoryFiles | Where-Object -Property LastWriteTime -gt (Get-Date).AddDays($UsersSyncHistoryRetentionTimeInDays) | Remove-Item -Force
 
         # Create Destination Folder (In Case It Doesn't Already Exist)
-        $null = New-Item -ItemType Directory -Path $SaveTeachersSyncHistoryParentDirectory -Force
+        $null = New-Item -ItemType Directory -Path $SaveUsersSyncHistoryParentDirectory -Force
         # Verify Write Access to Destination Folder
-        if (!(Test-Write -Path $SaveTeachersSyncHistoryParentDirectory))
+        if (!(Test-Write -Path $SaveUsersSyncHistoryParentDirectory))
         {
-            Write-Error "You do not have create & write access to the the teachers synchronization history parent folder: $($SaveTeachersSyncHistoryParentDirectory)" -ErrorAction Stop
+            Write-Error "You do not have create & write access to the the users synchronization history parent folder: $($SaveUsersSyncHistoryParentDirectory)" -ErrorAction Stop
         }
 
         # Create CSV File With Headers, If Necessary
-        if (-not (Test-Path $SaveTeachersSyncHistoryPath))
+        if (-not (Test-Path $SaveUsersSyncHistoryPath))
         {
-            $TeacherSyncHistoryHeader = '"Timestamp","ID","Name","Email","MeetingsCount"'
+            $UserSyncHistoryHeader = '"Timestamp","ID","Name","Email","MeetingsCount"'
             if ($PSVersionTable.PSEdition.ToString() -eq 'Desktop') # Hack because Windows PowerShell 5.1 adds the Byte order mark (BOM) to the beginning of the export (which we don't want). In Windows PowerShell, any Unicode encoding, except UTF7, always creates a BOM. PowerShell (v6 and higher) defaults to utf8NoBOM for all text output.
             {
-                $TeacherSyncHistoryHeader | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Set-Content -Encoding Byte -Path $SaveTeachersSyncHistoryPath -NoNewline
+                $UserSyncHistoryHeader | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Set-Content -Encoding Byte -Path $SaveUsersSyncHistoryPath -NoNewline
             }
             else # PowerShell Core Exports without the BOM
             {
-                $TeacherSyncHistoryHeader | Out-String | Set-Content -Encoding UTF8 -Path $SaveTeachersSyncHistoryPath -NoNewline
+                $UserSyncHistoryHeader | Out-String | Set-Content -Encoding UTF8 -Path $SaveUsersSyncHistoryPath -NoNewline
             }
         }
     }
@@ -671,7 +671,7 @@ try
     $Meetings = [System.Collections.Generic.List[Object]]::new()
     foreach ($meetingFromSIS in $MeetingsFromSIS)
     {
-        $TeacherMeetingObject = [PSCustomObject]@{}
+        $UserMeetingObject = [PSCustomObject]@{}
         foreach ($sISMeetingProperty in $SISMeetingProperties)
         {
             switch ($sISMeetingProperty)
@@ -682,7 +682,7 @@ try
                     $SKYAPIValue = Get-Date -Date ($meetingFromSIS.($sISMeetingProperty)) -Format 'o'
                     # $OriginalValueName = $sISMeetingProperty + '_original'
                     # $NewPSObjectProperty = [PSNoteProperty]::new($OriginalValueName, ($meetingFromSIS.($sISMeetingProperty)))
-                    # $TeacherMeetingObject.psobject.Properties.Add($NewPSObjectProperty)
+                    # $UserMeetingObject.psobject.Properties.Add($NewPSObjectProperty)
                 }
                 Default
                 {
@@ -690,23 +690,23 @@ try
                 }
             }
             $NewPSObjectProperty = [PSNoteProperty]::new($sISMeetingProperty, $SKYAPIValue)
-            $TeacherMeetingObject.psobject.Properties.Add($NewPSObjectProperty)
+            $UserMeetingObject.psobject.Properties.Add($NewPSObjectProperty)
         }
-        $Meetings.Add($TeacherMeetingObject)
+        $Meetings.Add($UserMeetingObject)
     }
 
-    # Get All Teachers
+    # Get All Users
     [array]$SchoolRoles = Get-SchoolRole
-    [array]$TeacherRoles = foreach ($teacherRoleID in $TeacherRoleIDs)
+    [array]$UserRoles = foreach ($userRoleID in $UserRoleIDs)
     {
-        $SchoolRoles | Where-Object -Property id -EQ $teacherRoleID
+        $SchoolRoles | Where-Object -Property id -EQ $userRoleID
     }
-    [array]$Teachers = foreach ($teacherRole in $TeacherRoles)
+    [array]$Users = foreach ($userRole in $UserRoles)
     {
-        Get-SchoolUserByRole -roles $teacherRole.id
+        Get-SchoolUserByRole -roles $userRole.id
     }
-    $Teachers = $Teachers | Sort-Object -Property display -Unique
-    $TeachersCount = $Teachers.Count
+    $Users = $Users | Sort-Object -Property display -Unique
+    $UsersCount = $Users.Count
 
     # Collect All Directory Member Users
     # Used to make sure users exist before trying to access their calendar.
@@ -719,65 +719,70 @@ try
     $Meetings_EndDateTime_UTC_ISO8601 = Get-Date (([System.TimeZoneInfo]::ConvertTimeToUtc($Meetings_EndDate, $SchoolTimeZone)).AddDays(1)) -Format 'o'
 
     # Create Needed Events & Remove Extra Events
-    Write-PSFMessage -Level Important -Message "Beginning Processing Meetings & Existing Calendar Events For Each Teacher"
-    $TeacherIndex = 0
-    foreach ($teacher in $Teachers)
+    Write-PSFMessage -Level Important -Message "Beginning Processing Meetings & Existing Calendar Events For Each User"
+    $UserIndex = 0
+    foreach ($user in $Users)
     {
-        $TeacherIndex++
-        Write-PSFMessage -Level Significant -Message "Working On Teacher $TeacherIndex of $($TeachersCount): $($teacher.display) [$($teacher.id)] [$($teacher.email)]"
+        $UserIndex++
+        Write-PSFMessage -Level Significant -Message "Working On User $UserIndex of $($UsersCount): $($user.display) [$($user.id)] [$($user.email)]"
 
-        # Make Sure Teacher Exists in Directory
-        if ($teacher.email -notin $($EntraDirectoryUsers.Mail))
+        # Make Sure User Exists in Directory
+        if ($user.email -notin $($EntraDirectoryUsers.Mail))
         {
             # Log Warning and Skip This User
-            $NewMessage = "WARNING: Skipping user [$($teacher.id) - $($teacher.display)] because their email address [$($teacher.email)] cannot be found in the Entra Active Directory."
+            $NewMessage = "WARNING: Skipping user [$($user.id) - $($user.display)] because their email address [$($user.email)] cannot be found in the Entra Active Directory."
             Write-PSFMessage -Level Warning -Message $NewMessage
             if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
             continue
         }
 
-        # Gather Meetings for Teacher
-        $TeacherMeetings = $Meetings | Where-Object {$_.teachers.id -match "(^)$($teacher.id)($)"} | Sort-Object -Property start_time, group_name
-        $TeacherMeetingsCount = $TeacherMeetings.Count
+        # Gather Meetings for User
+        # TODO: This only handles teachers right now because the students in the rosters are not pulled using Get-SchoolScheduleMeeting
+        #       (because https://api.sky.blackbaud.com/school/v1/schedules/meetings endpoint does not return the students in the roster).
+        #       There is an 'IncludeRosters' parameter for Get-SchoolScheduleMeeting, but it uses other functions to get these rosters and
+        #       greatly increases the number of API calls and the time it takes to run the script. Need to see if that is really the best way
+        #       to add in students or if there is a better way to get the students for each meeting.
+        $UserMeetings = $Meetings | Where-Object {$_.teachers.id -match "(^)$($user.id)($)"} | Sort-Object -Property start_time, group_name
+        $UserMeetingsCount = $UserMeetings.Count
 
-        # If set, begin to create a writable list of teacher calendar synchronizations.
-        if (-not [string]::IsNullOrEmpty($SaveTeachersSyncHistoryPath))
+        # If set, begin to create a writable list of user calendar synchronizations.
+        if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
         {
-            $TeacherSyncHistoryLine = [PSCustomObject]@{
+            $UserSyncHistoryLine = [PSCustomObject]@{
                 Timestamp     = $([DateTime]::UtcNow.ToString('u'))
-                ID            = $($teacher.id)
-                Name          = $($teacher.display)
-                Email         = $($teacher.email)
-                MeetingsCount = $TeacherMeetingsCount
+                ID            = $($user.id)
+                Name          = $($user.display)
+                Email         = $($user.email)
+                MeetingsCount = $UserMeetingsCount
             }
 
             if ($PSVersionTable.PSEdition.ToString() -eq 'Desktop') # Hack because Windows PowerShell 5.1 adds the Byte order mark (BOM) to the beginning of the export (which we don't want). In Windows PowerShell, any Unicode encoding, except UTF7, always creates a BOM. PowerShell (v6 and higher) defaults to utf8NoBOM for all text output.
             {
-                $TeacherSyncHistoryLine | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Add-Content -Encoding Byte -Path $SaveTeachersSyncHistoryPath -NoNewline
+                $UserSyncHistoryLine | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Add-Content -Encoding Byte -Path $SaveUsersSyncHistoryPath -NoNewline
             }
             else # PowerShell Core Exports without the BOM
             {
-                $TeacherSyncHistoryLine | Export-Csv -Encoding UTF8 -Path $SaveTeachersSyncHistoryPath -NoTypeInformation -Append
+                $UserSyncHistoryLine | Export-Csv -Encoding UTF8 -Path $SaveUsersSyncHistoryPath -NoTypeInformation -Append
             }
         }
 
-        # Gather Teacher Custom Preferences
-        $TeacherPreference = $TeacherPreferences | Where-Object -Property TeacherEmail -EQ $teacher.email
-        $IsReminderOn = if ($TeacherPreference.IsReminderOn) { $TeacherPreference.IsReminderOn} else { $DefaultIsReminderOn }
-        $ReminderMinutesBeforeStart = if ($TeacherPreference.ReminderMinutesBeforeStart) { $TeacherPreference.ReminderMinutesBeforeStart} else { $DefaultReminderMinutesBeforeStart }
-        $ShowAs = if ($TeacherPreference.ShowAs) { $TeacherPreference.ShowAs} else { $DefaultShowAs }
+        # Gather User Custom Preferences
+        $UserPreference = $UserPreferences | Where-Object -Property UserEmail -EQ $user.email
+        $IsReminderOn = if ($UserPreference.IsReminderOn) { $UserPreference.IsReminderOn} else { $DefaultIsReminderOn }
+        $ReminderMinutesBeforeStart = if ($UserPreference.ReminderMinutesBeforeStart) { $UserPreference.ReminderMinutesBeforeStart} else { $DefaultReminderMinutesBeforeStart }
+        $ShowAs = if ($UserPreference.ShowAs) { $UserPreference.ShowAs} else { $DefaultShowAs }
 
         # Create Categories in Outlook, if necessary.
-        $TeacherCourses = $TeacherMeetings.course_title | Sort-Object -Unique
-        $ExistingTeacherCategories = @(Get-MgUserOutlookMasterCategory -UserId $teacher.email)
-        foreach ($teacherCourse in $TeacherCourses)
+        $UserCourses = $UserMeetings.course_title | Sort-Object -Unique
+        $ExistingUserCategories = @(Get-MgUserOutlookMasterCategory -UserId $user.email)
+        foreach ($userCourse in $UserCourses)
         {
-            if ($teacherCourse -notin $ExistingTeacherCategories.DisplayName)
+            if ($userCourse -notin $ExistingUserCategories.DisplayName)
             {
-                $NextTeacherCategoryColor = Get-NextOutlookCategoryColor -UserId $teacher.email
+                $NextUserCategoryColor = Get-NextOutlookCategoryColor -UserId $user.email
 
-                Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($teacher.display) [$($teacher.id)] [$($teacher.email)]: $($teacherCourse) ($($NextTeacherCategoryColor.Color)::$($NextTeacherCategoryColor.DisplayName))"
-                $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $teacher.email -DisplayName $teacherCourse -Color $NextTeacherCategoryColor.Color
+                Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($user.display) [$($user.id)] [$($user.email)]: $($userCourse) ($($NextUserCategoryColor.Color)::$($NextUserCategoryColor.DisplayName))"
+                $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $user.email -DisplayName $userCourse -Color $NextUserCategoryColor.Color
             }
         }
 
@@ -788,7 +793,7 @@ try
         #       Probably the only other option would be to use a Schema Extension. 
         #       Supposedly, Schema Extensions allow filtering (see https://learn.microsoft.com/en-us/graph/extensibility-overview?tabs=http#comparison-of-extension-types).
         #       However, there are reports where the 'event' API Graph object isn't supported with Schema Extensions: https://stackoverflow.com/questions/54205997/how-to-filter-by-value-of-an-extension-in-microsoft-graph
-        Write-PSFMessage -Level Significant "Teacher $TeacherIndex of $TeachersCount | Collecting Exchange Calendar Events for Teacher: $($teacher.display) [$($teacher.id)] [$($teacher.email)]"
+        Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Collecting Exchange Calendar Events for User: $($user.display) [$($user.id)] [$($user.email)]"
         $Filter_ExtendedProperty = "(singleValueExtendedProperties/any(ep: ep/id eq 'String {$($EventsAppIdentifier_GUID)} Name $($EventsAppIdentifier_Name)' and ep/value eq '$($EventsAppIdentifier_Value)'))"
         $Filter_DateRange = "(Start/DateTime ge '$($Meetings_StartDateTime_UTC_ISO8601)') and (End/DateTime le '$($Meetings_EndDateTime_UTC_ISO8601)')"
         $Filter = "($Filter_ExtendedProperty) and ($Filter_DateRange)"
@@ -815,47 +820,47 @@ try
             'Type',
             'WebLink'
         )
-        [array]$ExistingTeacherEventsFromExchange = Get-MgUserEvent -UserId $teacher.email -All -Filter $Filter -Property $MGEventProperties | Sort-Object -Property {$_.Start.DateTime}
+        [array]$ExistingUserEventsFromExchange = Get-MgUserEvent -UserId $user.email -All -Filter $Filter -Property $MGEventProperties | Sort-Object -Property {$_.Start.DateTime}
 
         # Massage Exchange DateTime Events (Convert to Round-Trip 'o' Format)
-        $ExistingTeacherEvents = [System.Collections.Generic.List[Object]]::new()
-        foreach ($existingTeacherEventFromExchange in $ExistingTeacherEventsFromExchange)
+        $ExistingUserEvents = [System.Collections.Generic.List[Object]]::new()
+        foreach ($existingUserEventFromExchange in $ExistingUserEventsFromExchange)
         {
-            $TeacherEventObject = [PSCustomObject]@{}
+            $UserEventObject = [PSCustomObject]@{}
             foreach ($mGEventProperty in $MGEventProperties)
             {
                 switch ($mGEventProperty)
                 {
                     {$_ -eq 'Start' -or $_ -eq 'End'}
                     {
-                        $GraphTimeZone = $SystemTimeZones | Where-Object -Property Id -EQ $($existingTeacherEventFromExchange.($mGEventProperty).TimeZone)
+                        $GraphTimeZone = $SystemTimeZones | Where-Object -Property Id -EQ $($existingUserEventFromExchange.($mGEventProperty).TimeZone)
                         # Convert to UTC DateTime string
-                        $GraphValue = Get-Date -Date ([System.TimeZoneInfo]::ConvertTimeToUtc(($existingTeacherEventFromExchange.($mGEventProperty).DateTime), $GraphTimeZone)) -Format 'o'
+                        $GraphValue = Get-Date -Date ([System.TimeZoneInfo]::ConvertTimeToUtc(($existingUserEventFromExchange.($mGEventProperty).DateTime), $GraphTimeZone)) -Format 'o'
                     }
                     Default
                     {
-                        $GraphValue = $existingTeacherEventFromExchange.($mGEventProperty)
+                        $GraphValue = $existingUserEventFromExchange.($mGEventProperty)
                     }
                 }
                 $NewPSObjectProperty = [PSNoteProperty]::new($mGEventProperty, $GraphValue)
-                $TeacherEventObject.psobject.Properties.Add($NewPSObjectProperty)
+                $UserEventObject.psobject.Properties.Add($NewPSObjectProperty)
             }
-            $ExistingTeacherEvents.Add($TeacherEventObject)
+            $ExistingUserEvents.Add($UserEventObject)
         }
-        $ExistingTeacherEventsCount = $ExistingTeacherEvents.Count
+        $ExistingUserEventsCount = $ExistingUserEvents.Count
 
         # Process Meetings From SIS
-        Write-PSFMessage -Level Significant "Teacher $TeacherIndex of $TeachersCount | Processing [$TeacherMeetingsCount] SIS Meetings for Teacher: $($teacher.display) [$($teacher.id)] [$($teacher.email)]"
-        $TeacherMeetingIndex = 0
-        foreach ($teacherMeeting in $TeacherMeetings)
+        Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$UserMeetingsCount] SIS Meetings for User: $($user.display) [$($user.id)] [$($user.email)]"
+        $UserMeetingIndex = 0
+        foreach ($userMeeting in $UserMeetings)
         {
-            $TeacherMeetingIndex++
+            $UserMeetingIndex++
             # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
-            Write-Progress -Activity "[$TeacherIndex/$TeachersCount $($teacher.email)] | SIS Meeting $($TeacherMeetingIndex) of $($TeacherMeetingsCount)" -PercentComplete (($TeacherMeetingIndex / $TeacherMeetingsCount) * 100)
+            Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | SIS Meeting $($UserMeetingIndex) of $($UserMeetingsCount)" -PercentComplete (($UserMeetingIndex / $UserMeetingsCount) * 100)
 
             # Create the event, if needed.
             # Start with all Exchange events and filter down.
-            $ExistingEventMatchResults = $ExistingTeacherEvents
+            $ExistingEventMatchResults = $ExistingUserEvents
             $ExistingEventMatchCount = $ExistingEventMatchResults.Count
             foreach ($fieldToMatch in $FieldsToMatch)
             {
@@ -864,14 +869,14 @@ try
                 {
                     break # Leave the foreach loop since we no longer need to check.
                 }
-                $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.Graph) -eq $teacherMeeting.($fieldToMatch.SKYAPI)}
+                $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.Graph) -eq $userMeeting.($fieldToMatch.SKYAPI)}
                 $ExistingEventMatchCount = $ExistingEventMatchResults.Count
             }
 
             # We should rarely see duplicates (unless someone manually modified an event), but adding this in to output and log when it happens.
             if ($ExistingEventMatchCount -gt 1)
             {
-                $NewMessage = "<c='em'>INFO: Skipping processing the following event because it exists [$ExistingEventMatchCount] times on the user's Exchange Calendar (it is possible the user manually modified the event): $($teacher.display) [$($teacher.id)] [$($teacher.email)] > $($teacherMeeting.group_name) ($($teacherMeeting.start_time) to $($teacherMeeting.end_time))</c>"
+                $NewMessage = "<c='em'>INFO: Skipping processing the following event because it exists [$ExistingEventMatchCount] times on the user's Exchange Calendar (it is possible the user manually modified the event): $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))</c>"
                 Write-PSFMessage -Level Significant -Message $NewMessage
                 continue # Skip further work on this event.
             }
@@ -879,23 +884,23 @@ try
             if ($ExistingEventMatchCount -eq 0)
             {
                 # Collect Meeting Data
-                $Event_Subject = $teacherMeeting.group_name
-                $Event_Start = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($teacherMeeting.start_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
-                $Event_End = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($teacherMeeting.end_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
+                $Event_Subject = $userMeeting.group_name
+                $Event_Start = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.start_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
+                $Event_End = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.end_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
                 $Event_Location = @{
-                    displayName = $teacherMeeting.room_name
+                    displayName = $userMeeting.room_name
                 }
-                [string[]]$Categories = @($teacherMeeting.course_title) # Set Categories (array of strings)
+                [string[]]$Categories = @($userMeeting.course_title) # Set Categories (array of strings)
 
-                $SectionRosterURL = switch ($teacherMeeting.offering_type.description)
+                $SectionRosterURL = switch ($userMeeting.offering_type.description)
                 {
-                    Academics { "https://$($MySchoolAppDomain)/app/faculty#academicclass/$($teacherMeeting.section_id)/0/roster" }     
-                    Advisory  { "https://$($MySchoolAppDomain)/app/faculty#advisorypage/$($teacherMeeting.section_id)/advisees" }
-                    Default   { "https://$($MySchoolAppDomain)/app/faculty#academicclass/$($teacherMeeting.section_id)/0/roster" }  
+                    Academics { "https://$($MySchoolAppDomain)/app/faculty#academicclass/$($userMeeting.section_id)/0/roster" }     
+                    Advisory  { "https://$($MySchoolAppDomain)/app/faculty#advisorypage/$($userMeeting.section_id)/advisees" }
+                    Default   { "https://$($MySchoolAppDomain)/app/faculty#academicclass/$($userMeeting.section_id)/0/roster" }  
                 }
                 $Event_Body = @{
                     contentType = "HTML"
-                    content = "<b>Teachers:</b> $(($teacherMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionRosterURL"">Click Here For Roster</a>"
+                    content = "<b>Teachers:</b> $(($userMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionRosterURL"">Click Here For Roster</a>"
                 }
 
                 $UserEventParameters = [ordered]@{
@@ -915,23 +920,23 @@ try
                         }
                     )
                 }
-                Write-PSFMessage -Level Significant -Message "Creating Exchange Calendar Event: $($teacher.display) [$($teacher.id)] [$($teacher.email)] > $($teacherMeeting.group_name) ($($teacherMeeting.start_time) to $($teacherMeeting.end_time))"
-                $NewEventResponse = New-MgUserEvent -UserId $teacher.email -BodyParameter $UserEventParameters
+                Write-PSFMessage -Level Significant -Message "Creating Exchange Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))"
+                $NewEventResponse = New-MgUserEvent -UserId $user.email -BodyParameter $UserEventParameters
             }
         }
         Write-Progress -Completed -Activity 'Completed'
         
         # Remove extra Exchange events and update still active existing ones, if necessary.
         # Start with all SIS meetings and filter down.
-        Write-PSFMessage -Level Significant "Teacher $TeacherIndex of $TeachersCount | Processing [$ExistingTeacherEventsCount] Existing Calendar Events for Teacher: $($teacher.display) [$($teacher.id)] [$($teacher.email)]"
+        Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$ExistingUserEventsCount] Existing Calendar Events for User: $($user.display) [$($user.id)] [$($user.email)]"
         $ExchangeEventIndex = 0
-        foreach ($existingTeacherEvent in $ExistingTeacherEvents)
+        foreach ($existingUserEvent in $ExistingUserEvents)
         {
             $ExchangeEventIndex++
             # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
-            Write-Progress -Activity "[$TeacherIndex/$TeachersCount $($teacher.email)] | Exchange Event $($ExchangeEventIndex) of $($ExistingTeacherEventsCount)" -PercentComplete (($ExchangeEventIndex / $ExistingTeacherEventsCount) * 100)
+            Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | Exchange Event $($ExchangeEventIndex) of $($ExistingUserEventsCount)" -PercentComplete (($ExchangeEventIndex / $ExistingUserEventsCount) * 100)
 
-            $ExistingEventMatchResults = $TeacherMeetings
+            $ExistingEventMatchResults = $UserMeetings
             $ExistingEventMatchCount = $ExistingEventMatchResults.Count
             foreach ($fieldToMatch in $FieldsToMatch)
             {
@@ -940,17 +945,17 @@ try
                 {
                     break # Leave the foreach loop since we no longer need to check.
                 }
-                $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.SKYAPI) -eq $existingTeacherEvent.($fieldToMatch.Graph)}
+                $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.SKYAPI) -eq $existingUserEvent.($fieldToMatch.Graph)}
                 $ExistingEventMatchCount = $ExistingEventMatchResults.Count
             }
 
             if ($ExistingEventMatchCount -eq 0) # DELETE IT
             {
-                Write-PSFMessage -Level Significant -Message "Removing Extra Calendar Event: $($teacher.display) [$($teacher.id)] [$($teacher.email)] > $($existingTeacherEvent.Subject) ($($existingTeacherEvent.Start) to $($existingTeacherEvent.End))"
+                Write-PSFMessage -Level Significant -Message "Removing Extra Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End))"
                 # Catch 'Status: 404 (NotFound)' errors and ignore. This might happen if an event was already removed between the events pull and this part of script.
                 try
                 {
-                    $RemoveEventResponse = Remove-MgUserEvent -UserId $teacher.email -EventId $existingTeacherEvent.Id -Confirm:$false
+                    $RemoveEventResponse = Remove-MgUserEvent -UserId $user.email -EventId $existingUserEvent.Id -Confirm:$false
                 }
                 catch 
                 {
@@ -959,32 +964,32 @@ try
             }
             else # UPDATE IT, IF NECESSARY
             {
-                foreach ($teacherPreferenceToVerify in $TeacherPreferencesToVerify)
+                foreach ($userPreferenceToVerify in $UserPreferencesToVerify)
                 {
-                    switch ($teacherPreferenceToVerify)
+                    switch ($userPreferenceToVerify)
                     {
                         ShowAs
                         {
-                            if ($existingTeacherEvent.ShowAs -ine $ShowAs)
+                            if ($existingUserEvent.ShowAs -ine $ShowAs)
                             {
-                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for teacher $($teacher.display) [$($teacher.id)] [$($teacher.email)] > $($existingTeacherEvent.Subject) ($($existingTeacherEvent.Start) to $($existingTeacherEvent.End)) > ShowAs from '$($existingTeacherEvent.ShowAs)' to '$ShowAs'"
-                                $UpdateEventResponse = Update-MgUserEvent -UserId $teacher.email -EventId $existingTeacherEvent.Id -ShowAs $ShowAs
+                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ShowAs from '$($existingUserEvent.ShowAs)' to '$ShowAs'"
+                                $UpdateEventResponse = Update-MgUserEvent -UserId $user.email -EventId $existingUserEvent.Id -ShowAs $ShowAs
                             }
                         }
                         isReminderOn
                         {
-                            if ($existingTeacherEvent.isReminderOn -ine $isReminderOn)
+                            if ($existingUserEvent.isReminderOn -ine $isReminderOn)
                             {
-                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for teacher $($teacher.display) [$($teacher.id)] [$($teacher.email)] > $($existingTeacherEvent.Subject) ($($existingTeacherEvent.Start) to $($existingTeacherEvent.End)) > isReminderOn from '$($existingTeacherEvent.isReminderOn)' to '$isReminderOn'"
-                                $UpdateEventResponse = Update-MgUserEvent -UserId $teacher.email -EventId $existingTeacherEvent.Id -IsReminderOn:$isReminderOn
+                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > isReminderOn from '$($existingUserEvent.isReminderOn)' to '$isReminderOn'"
+                                $UpdateEventResponse = Update-MgUserEvent -UserId $user.email -EventId $existingUserEvent.Id -IsReminderOn:$isReminderOn
                             }
                         }
                         ReminderMinutesBeforeStart
                         {
-                            if ($existingTeacherEvent.ReminderMinutesBeforeStart -ine $ReminderMinutesBeforeStart)
+                            if ($existingUserEvent.ReminderMinutesBeforeStart -ine $ReminderMinutesBeforeStart)
                             {
-                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for teacher $($teacher.display) [$($teacher.id)] [$($teacher.email)] > $($existingTeacherEvent.Subject) ($($existingTeacherEvent.Start) to $($existingTeacherEvent.End)) > ReminderMinutesBeforeStart from '$($existingTeacherEvent.ReminderMinutesBeforeStart)' to '$ReminderMinutesBeforeStart'"
-                                $UpdateEventResponse = Update-MgUserEvent -UserId $teacher.email -EventId $existingTeacherEvent.id -ReminderMinutesBeforeStart $ReminderMinutesBeforeStart
+                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ReminderMinutesBeforeStart from '$($existingUserEvent.ReminderMinutesBeforeStart)' to '$ReminderMinutesBeforeStart'"
+                                $UpdateEventResponse = Update-MgUserEvent -UserId $user.email -EventId $existingUserEvent.id -ReminderMinutesBeforeStart $ReminderMinutesBeforeStart
                             }
                         }
                         Default {} # Do Nothing
