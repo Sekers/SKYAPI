@@ -2,9 +2,12 @@
     "General": {
         "EmailonError": false,
         "EmailonWarning": false,
-        "UserRoleIDs": [
+        "TeacherRoleIDs": [
             15426,
             15472
+        ],
+        "StudentRoleIDs": [
+            15425
         ],
         "Meetings_DateSelection": "Term",
         "Meetings_DaysToAppearBefore": 14,

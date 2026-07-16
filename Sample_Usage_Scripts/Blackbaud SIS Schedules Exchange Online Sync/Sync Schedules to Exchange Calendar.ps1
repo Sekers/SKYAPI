@@ -19,8 +19,6 @@
 
 # TODO: Add support for multiple terms lengths by level_id. Right now, even if term is selected the entire year is synced due to one term being that length of 1 instead of 2 semesters.
 
-# TODO: Add support for non-teacher roles (students, etc.).
-
 #################
 # PREREQUISITES #
 #################
@@ -258,7 +256,8 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 # Set General Properties and Verify Type
 [bool]$EmailonError = $Config.General.EmailonError
 [bool]$EmailonWarning = $Config.General.EmailonWarning
-[int32[]]$UserRoleIDs = $Config.General.UserRoleIDs
+[int32[]]$TeacherRoleIDs = $Config.General.TeacherRoleIDs # May be empty/absent (e.g. a student-only sync).
+[int32[]]$StudentRoleIDs = $Config.General.StudentRoleIDs # May be empty/absent. Rosters are only pulled when there are student roles.
 [string]$Meetings_DateSelection = $Config.General.Meetings_DateSelection # 'Year' or 'Term' or 'Range'
 [int32]$Meetings_DaysToAppearBefore = $Config.General.Meetings_DaysToAppearBefore
 [Nullable[int32]]$Meetings_MaxPastDaysToSync = $Config.General.Meetings_MaxPastDaysToSync # Needs to be nullable in case we don't want a limit
@@ -412,6 +411,12 @@ foreach ($moduleInfo in Get-Module)
 # Begin Program Work (Try/Catch for Error/Warning Processing & Notification)
 try
 {
+    # Determine which roles to sync and whether rosters are needed (teachers are included in the meeting info from SKY API but students are not so we need extra api calls to get students).
+    [bool]$PullRosters = ($StudentRoleIDs.Count -gt 0) # Whether to pull section rosters (needed to match students to their section meetings).
+    # Combined roles to sync (teachers + students).
+    [int32[]]$UserRoleIDs = @($TeacherRoleIDs) + @($StudentRoleIDs) | Where-Object {$null -ne $_}
+    if ($UserRoleIDs.Count -eq 0) { throw "At least one of 'TeacherRoleIDs' or 'StudentRoleIDs' must be configured in the general configuration file; otherwise there are no users to sync." }
+
     # If set, test path to writable list of user calendar synchronizations and create file if necessary.
     if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
     {
@@ -642,7 +647,7 @@ try
         end_date = $Meetings_EndDate
         offering_types = $OfferingTypes.id -join ','
     }
-    $SISMeetingProperties = @(
+    $SISMeetingProperties = [System.Collections.Generic.List[string]]@(
         'course_title',
         'end_time',
         'faculty_name',
@@ -654,6 +659,17 @@ try
         'start_time',
         'teachers'
     )
+
+    # Only pull section rosters when student roles are configured. Rosters let us match students to their
+    # section meetings (the meetings endpoint only returns the section's teachers/leads), but add a
+    # one-time API cost, so they are opt-in. When pulled, keep the attached 'roster' property so it
+    # survives the Select-Object and DateTime-massage below.
+    if ($PullRosters)
+    {
+        $HashArguments['IncludeRosters'] = $true
+        $SISMeetingProperties.Add('roster')
+    }
+
     $MeetingsFromSIS = Get-SchoolScheduleMeeting @HashArguments | Select-Object -Property $SISMeetingProperties
 
     # Remove Meetings That Should Be Ignored
@@ -693,6 +709,53 @@ try
             $UserMeetingObject.psobject.Properties.Add($NewPSObjectProperty)
         }
         $Meetings.Add($UserMeetingObject)
+    }
+
+    # Build a lookup of each user's meetings so per-user gathering is a fast hashtable lookup instead of
+    # scanning every meeting per user. A user is associated with a meeting if they are one of the meeting's
+    # teachers (leads) OR, when rosters were pulled, an enrolled member of that meeting's section roster.
+    #   $SectionMemberIds : section_id (string) -> string[] of member user IDs (built once per section).
+    #   $MeetingsByUserId : user_id (string)    -> list of that user's meetings (teacher or member).
+    # Note: teachers correspond to roster members with 'leader.is_leader' = true, so a roster member who is
+    # not a lead is a student/participant. The teacher-vs-student decision for the event body link is made
+    # later per meeting using the meeting's 'teachers' list.
+    $SectionMemberIds = @{}
+    if ($PullRosters)
+    {
+        foreach ($meeting in $Meetings)
+        {
+            $SectionIdKey = [string]$meeting.section_id
+            if (-not $SectionMemberIds.ContainsKey($SectionIdKey))
+            {
+                [array]$MemberIds = @()
+                if ($null -ne $meeting.roster -and $null -ne $meeting.roster.roster)
+                {
+                    $MemberIds = @($meeting.roster.roster.user.id | Where-Object {$null -ne $_} | ForEach-Object {[string]$_})
+                }
+                $SectionMemberIds[$SectionIdKey] = $MemberIds
+            }
+        }
+    }
+
+    $MeetingsByUserId = @{}
+    foreach ($meeting in $Meetings)
+    {
+        # De-duplicate so a teacher who also appears in the roster as faculty isn't added twice.
+        $UserIdsForMeeting = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($teacherId in $meeting.teachers.id) { [void]$UserIdsForMeeting.Add([string]$teacherId) }
+        if ($PullRosters)
+        {
+            foreach ($memberId in $SectionMemberIds[[string]$meeting.section_id]) { [void]$UserIdsForMeeting.Add($memberId) }
+        }
+
+        foreach ($userIdForMeeting in $UserIdsForMeeting)
+        {
+            if (-not $MeetingsByUserId.ContainsKey($userIdForMeeting))
+            {
+                $MeetingsByUserId[$userIdForMeeting] = [System.Collections.Generic.List[Object]]::new()
+            }
+            $MeetingsByUserId[$userIdForMeeting].Add($meeting)
+        }
     }
 
     # Get All Users
@@ -736,13 +799,8 @@ try
             continue
         }
 
-        # Gather Meetings for User
-        # TODO: This only handles teachers right now because the students in the rosters are not pulled using Get-SchoolScheduleMeeting
-        #       (because https://api.sky.blackbaud.com/school/v1/schedules/meetings endpoint does not return the students in the roster).
-        #       There is an 'IncludeRosters' parameter for Get-SchoolScheduleMeeting, but it uses other functions to get these rosters and
-        #       greatly increases the number of API calls and the time it takes to run the script. Need to see if that is really the best way
-        #       to add in students or if there is a better way to get the students for each meeting.
-        $UserMeetings = $Meetings | Where-Object {$_.teachers.id -match "(^)$($user.id)($)"} | Sort-Object -Property start_time, group_name
+        # Gather Meetings for User (as a teacher/lead or, when rosters were pulled, an enrolled member).
+        $UserMeetings = $MeetingsByUserId[[string]$user.id] | Sort-Object -Property start_time, group_name
         $UserMeetingsCount = $UserMeetings.Count
 
         # If set, begin to create a writable list of user calendar synchronizations.
@@ -892,15 +950,27 @@ try
                 }
                 [string[]]$Categories = @($userMeeting.course_title) # Set Categories (array of strings)
 
-                $SectionRosterURL = switch ($userMeeting.offering_type.description)
+                # Link the user to their section: teachers get the faculty Roster, students get the student
+                # Bulletin Board. For our offering types teachers and students never overlap, so a user is a
+                # teacher of this section exactly when they're in its 'teachers' list; that single check picks
+                # both the app (faculty vs student) and the destination (roster vs bulletin board). The only
+                # difference between the faculty and student URLs is the '/app/faculty' vs '/app/student' segment.
+                $UserIsTeacher = ([string]$user.id -in ($userMeeting.teachers.id | ForEach-Object {[string]$_}))
+                $LinkApp = if ($UserIsTeacher) { 'faculty' } else { 'student' }
+                $SectionId = $userMeeting.section_id
+                $SectionPath = switch ($userMeeting.offering_type.description)
                 {
-                    Academics { "https://$($MySchoolAppDomain)/app/faculty#academicclass/$($userMeeting.section_id)/0/roster" }     
-                    Advisory  { "https://$($MySchoolAppDomain)/app/faculty#advisorypage/$($userMeeting.section_id)/advisees" }
-                    Default   { "https://$($MySchoolAppDomain)/app/faculty#academicclass/$($userMeeting.section_id)/0/roster" }  
+                    'Academics'  { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
+                    'Activities' { if ($UserIsTeacher) { "activitypage/$SectionId/roster" }     else { "activitypage/$SectionId/bulletinboard" } }
+                    'Advisory'   { if ($UserIsTeacher) { "advisorypage/$SectionId/advisees" }   else { "advisorypage/$SectionId/bulletinboard" } }
+                    'Athletics'  { if ($UserIsTeacher) { "athleticteam/$SectionId/roster" }      else { "athleticteam/$SectionId/teampage" } }
+                    Default      { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
                 }
+                $SectionLinkURL = "https://$MySchoolAppDomain/app/${LinkApp}?svcid=edu#$SectionPath"
+                $SectionLinkText = if ($UserIsTeacher) { 'Click Here For Roster' } else { 'Click Here For The Bulletin Board' }
                 $Event_Body = @{
                     contentType = "HTML"
-                    content = "<b>Teachers:</b> $(($userMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionRosterURL"">Click Here For Roster</a>"
+                    content = "<b>Teachers:</b> $(($userMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionLinkURL"">$SectionLinkText</a>"
                 }
 
                 $UserEventParameters = [ordered]@{
