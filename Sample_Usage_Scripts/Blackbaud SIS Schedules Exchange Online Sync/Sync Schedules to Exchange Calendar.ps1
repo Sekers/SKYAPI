@@ -15,8 +15,6 @@
 # https://learn.microsoft.com/en-us/graph/sdks/batch-requests
 # https://learn.microsoft.com/en-us/graph/json-batching
 
-# TODO: Disconnect MG When Done Option > MgDisconnectWhenDone
-
 # TODO: Add support for multiple terms lengths by level_id. Right now, even if term is selected the entire year is synced due to one term being that length of 1 instead of 2 semesters.
 
 #################
@@ -605,6 +603,13 @@ try
             if ($SchoolTermList.Count -eq 0)
             {
                 Write-PSFMessage -Level Important -Message "No school terms found within the date range (this is common during the summer months). Stopping Script."
+
+                # Disconnect from Microsoft Graph API, if enabled in config.
+                if ($MgDisconnectWhenDone)
+                {
+                    Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."
+                    $null = Disconnect-MgGraph -ErrorAction SilentlyContinue
+                }
 
                 # End Logging Message
                 Write-PSFMessage -Level Important -Message "---SCRIPT END---"
