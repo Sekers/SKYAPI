@@ -27,7 +27,11 @@ function Get-SchoolScheduleMeeting
         If not specified, defaults to 30 days from start_date.
         .PARAMETER offering_types
         Can take a single or multiple values as a comma-delimited string of integers (defaults to 1 'Academics').
-        Use Get-SchoolOfferingType to get a list of offering types.
+        Supports the following offering types (use Get-SchoolOfferingType to get a list of all offering types):
+            Academics: 1
+            Activities: 2
+            Advisory: 3
+            Athletics: 9
         .PARAMETER section_ids
         comma-delimited list of integer values for the section identifiers to return. By default the route returns all sections.
         .PARAMETER last_modified
@@ -38,6 +42,10 @@ function Get-SchoolScheduleMeeting
         but if you receive an error, you may have to manually override it with a valid time zone ID.
         This is required because Blackbaud does not return accurate time zone information from this endpoint.
         Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
+        .PARAMETER IncludeRosters
+        Adds the roster information for each meeting. This is a large amount of data, and adds additional API calls, so only use it if you need it.
+        Each returned meeting gains a 'roster' property containing the full section & roster object for that meeting's section.
+        Dropped members are not included.
 
         .EXAMPLE
         Get-SchoolScheduleMeeting -start_date '2022-11-01'
@@ -54,6 +62,12 @@ function Get-SchoolScheduleMeeting
             SchoolTimeZoneId = "Central Standard Time"
         }
         Get-SchoolScheduleMeeting @HashArguments
+        .EXAMPLE
+        # Include the roster for each meeting's section and list the enrolled members of the first meeting.
+        $Meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01' -end_date '2022-11-30' -offering_types '1,3' -IncludeRosters
+        $Meetings[0].roster.roster |
+            Select-Object -ExpandProperty user -Property @{n='is_leader';e={$_.leader.is_leader}}, @{n='is_head';e={$_.leader.is_head}}, @{n='is_faculty';e={$_.leader.is_faculty}} |
+            Select-Object first_name, last_name, email, is_leader, is_head, is_faculty
         .EXAMPLE
         $Meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
         foreach ($meeting in $Meetings)
@@ -118,7 +132,13 @@ function Get-SchoolScheduleMeeting
                 throw "$_ is invalid. Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs."
             }
         })]
-        [string]$SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name)
+        [string]$SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name),
+
+        [Parameter(
+        Position=6,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [switch]$IncludeRosters
     )
        
     # Set the endpoints
@@ -143,8 +163,9 @@ function Get-SchoolScheduleMeeting
         $parameters.Add('offering_types',$($offering_types.Replace(' ','')))
     }
     
-    # Remove the School Time Zone parameter since we don't pass it on to the API.
+    # Remove the 'School Time Zone' and 'IncludeRosters' parameters since we don't pass them on to the API.
     $parameters.Remove('SchoolTimeZoneId') | Out-Null
+    $parameters.Remove('IncludeRosters') | Out-Null
 
     # Convert SchoolTimeZone to TimeZoneInfo object. Check match for ID, then StandardName, then DaylightName.
     $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property Id -EQ $SchoolTimeZoneId
@@ -183,6 +204,12 @@ function Get-SchoolScheduleMeeting
     try {$null = [datetime]$end_date} catch
     {
         throw $_
+    }
+
+    # Validate that the start date is not after the end date.
+    if ([datetime]$start_date -gt [datetime]$end_date)
+    {
+        throw "start_date ($start_date) cannot be after end_date ($end_date)."
     }
 
     # Initialize Variables
@@ -241,6 +268,81 @@ function Get-SchoolScheduleMeeting
     }
     until($FinalIteration -eq $true)
 
+    # Collect rosters if requested and build a lookup keyed by section ID.
+    # Rosters are gathered after the meetings so we only pull rosters for the sections actually returned.
+    # This is a large amount of data and adds additional API calls, which is why it's opt-in via -IncludeRosters.
+    $RosterLookup = @{}
+    if ($IncludeRosters -and $response.Count -gt 0)
+    {
+        # Default to Academics (1) when no offering types were specified, matching the meetings query default.
+        $RosterOfferingTypes = if ([string]::IsNullOrWhiteSpace($offering_types)) { '1' } else { $offering_types }
+
+        # Determine which school year(s) the requested date range overlaps so we pull rosters from each.
+        $OverlappingSchoolYears = Get-SchoolYear | Where-Object {
+            (([datetime]$_.begin_date) -le ([datetime]$end_date)) -and (([datetime]$_.end_date) -ge ([datetime]$start_date))
+        }
+
+        # Map each supported offering type to the function that retrieves its rosters.
+        $RosterFunctionByOfferingType = @{
+            '1' = 'Get-SchoolRoster'          # Academics
+            '2' = 'Get-SchoolActivityRoster'  # Activities
+            '3' = 'Get-SchoolAdvisoryRoster'  # Advisory
+            '9' = 'Get-SchoolAthleticRoster'  # Athletics
+        }
+
+        foreach ($rosterOfferingType in ((($RosterOfferingTypes -replace '\s','') -split ',') | Where-Object {$_ -ne ''}))
+        {
+            $RosterFunction = $RosterFunctionByOfferingType[$rosterOfferingType]
+
+            # Skip unsupported offering types.
+            if ($null -eq $RosterFunction) { continue }
+
+            # Distinct section IDs for this offering type from the returned meetings.
+            [array]$SectionIdsForType = $response | Where-Object {[string]$_.offering_type.id -eq $rosterOfferingType} |
+                Select-Object -ExpandProperty section_id -Unique
+            if ($SectionIdsForType.Count -eq 0) { continue }
+
+            # Batch the section IDs by URL length rather than a fixed count: pack as many IDs as
+            # fit into a single 'section_ids' value, only splitting when the query would get too long.
+            # In most cases this is a single batch (one API call per offering type & school year).
+            # $MaxSectionIdsLength is a conservative budget for the 'section_ids' query value that keeps
+            # the total request URL well under the ~2048-character limit imposed by many servers/proxies.
+            [int]$MaxSectionIdsLength = 1800
+            $SectionIdBatches = [System.Collections.Generic.List[string]]::new()
+            $CurrentBatch = [System.Text.StringBuilder]::new()
+            foreach ($SectionId in $SectionIdsForType)
+            {
+                $SectionIdString = [string]$SectionId
+
+                # Start a new batch if appending this ID (plus its comma separator) would exceed the budget.
+                if ($CurrentBatch.Length -gt 0 -and ($CurrentBatch.Length + 1 + $SectionIdString.Length) -gt $MaxSectionIdsLength)
+                {
+                    $SectionIdBatches.Add($CurrentBatch.ToString())
+                    $CurrentBatch = [System.Text.StringBuilder]::new()
+                }
+
+                if ($CurrentBatch.Length -gt 0) { [void]$CurrentBatch.Append(',') }
+                [void]$CurrentBatch.Append($SectionIdString)
+            }
+            if ($CurrentBatch.Length -gt 0) { $SectionIdBatches.Add($CurrentBatch.ToString()) }
+
+            foreach ($SchoolYear in $OverlappingSchoolYears)
+            {
+                foreach ($SectionIdBatch in $SectionIdBatches)
+                {
+                    # Call the appropriate roster function for this offering type and school year, passing the batched section IDs.
+                    $SectionRosters = & $RosterFunction -school_year $SchoolYear.id -section_ids $SectionIdBatch
+
+                    # Add the roster objects to the lookup keyed by section ID.
+                    foreach ($SectionRoster in $SectionRosters)
+                    {
+                        $RosterLookup[[string]$SectionRoster.section.id] = $SectionRoster
+                    }
+                }
+            }
+        }
+    }
+
     # Massage dates in $response because PowerShell automatically converts API calls to date time...
     $response = foreach ($meeting in $response)
     {
@@ -262,6 +364,12 @@ function Get-SchoolScheduleMeeting
         $meeting.start_time = Get-Date $start_time
         $meeting.end_time = Get-Date $end_time
         $meeting.meeting_date = $meeting_date # Don't convert to DateTime
+
+        # Attach the roster (full section & roster object) for this meeting's section, if collected.
+        if ($IncludeRosters)
+        {
+            $meeting | Add-Member -NotePropertyName 'roster' -NotePropertyValue $RosterLookup[[string]$meeting.section_id] -Force
+        }
 
         # Return the array
         $meeting
