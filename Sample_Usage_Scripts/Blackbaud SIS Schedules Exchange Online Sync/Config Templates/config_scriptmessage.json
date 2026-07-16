@@ -1,0 +1,18 @@
+{
+    "MicrosoftGraph": {
+        "AllowableMessageTypes": ["Mail"],
+        "ChatType": "Group",
+        "IncludeBCCInGroupChat": false,
+        "MgPermissionType": "Application",
+        "MgDelegatedPermission_RequestChatReadPermission": true,
+        "MgDisconnectWhenDone": false,
+        "MgTenantID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "MgClientID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "MgApp_AuthenticationType": "CertificateThumbprint",
+        "MgApp_CertificatePath": "",
+        "MgApp_CertificateName": "",
+        "MgApp_CertificateThumbprint": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "MgApp_EncryptedCertificatePassword": "",
+        "MgApp_EncryptedSecret": ""
+    }
+}

@@ -1,0 +1,12 @@
+[
+    {
+        "UserEmail": "jane.dear@school.edu",
+        "ShowAs": "Free",
+        "isReminderOn": true,
+        "ReminderMinutesBeforeStart": 10
+    },
+    {
+        "UserEmail": "john.doe@school.edu",
+        "isReminderOn": false
+    }
+]

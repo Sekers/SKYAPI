@@ -1,0 +1,8 @@
+{
+    "api_subscription_key":  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "client_id":  "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "client_secret":  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "redirect_uri":  "http://localhost:5000/auth/callback",
+    "authorize_uri":  "https://app.blackbaud.com/oauth/authorize",
+    "token_uri":  "https://oauth2.sky.blackbaud.com/token"
+}
