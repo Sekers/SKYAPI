@@ -28,15 +28,18 @@ function Get-SchoolActivityRoster
         .PARAMETER last_modified
         Limits rosters returned to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
 
+        .PARAMETER include_dropped
+        Set to True to include dropped students in the rosters. Defaults to false, if omitted.
+
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolRoster
+        Get-SchoolActivityRoster
         .EXAMPLE
-        Get-SchoolRoster -school_year '2022-2023'
+        Get-SchoolActivityRoster -school_year '2022-2023'
         .EXAMPLE
-        Get-SchoolRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
+        Get-SchoolActivityRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
     #>
     
     [cmdletbinding()]
@@ -67,6 +70,12 @@ function Get-SchoolActivityRoster
 
         [Parameter(
         Position=4,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$include_dropped,
+
+        [Parameter(
+        Position=5,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw

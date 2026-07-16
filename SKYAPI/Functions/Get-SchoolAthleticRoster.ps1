@@ -1,23 +1,23 @@
-function Get-SchoolRoster
+function Get-SchoolAthleticRoster
 {
     <#
         .LINK
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsRostersGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AthleticsRostersGet
         
         .SYNOPSIS
-        Education Management School API - Returns the academic rosters for a selected year.
+        Education Management School API - Returns the athletic rosters for a selected year.
 
         .DESCRIPTION
-        Education Management School API - Returns the academic rosters for a selected year.
+        Education Management School API - Returns the athletic rosters for a selected year.
         Requires the following role in the Education Management system:
-          - Academic Group Manager
+          - Athletic Group Manager
           - Schedule Manager
 
         .PARAMETER school_year
-        The school year to get academic sections for. You can specify either the ID or label of the school year (Get-SchoolYear). Defaults to the current school year if not specified.
+        The school year to get athletic sections for. You can specify either the ID or label of the school year (Get-SchoolYear). Defaults to the current school year if not specified.
 
         .PARAMETER school_level
         Limits rosters returned to the school level specified.
@@ -35,11 +35,11 @@ function Get-SchoolRoster
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolRoster
+        Get-SchoolAthleticRoster
         .EXAMPLE
-        Get-SchoolRoster -school_year '2022-2023'
+        Get-SchoolAthleticRoster -school_year '2022-2023'
         .EXAMPLE
-        Get-SchoolRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+        Get-SchoolAthleticRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
     #>
     
     [cmdletbinding()]
@@ -82,7 +82,7 @@ function Get-SchoolRoster
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/rosters'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/athletics/rosters'
 
     # Set the response field
     $ResponseField = $null
