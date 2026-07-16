@@ -208,7 +208,7 @@
 #>
 # Get-SchoolActivityRoster
 # Get-SchoolActivityRoster -school_year '2022-2023'
-# Get-SchoolActivityRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
+# Get-SchoolActivityRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
 
 <#
     Get-SchoolAdvisoryBySchoolLevel
@@ -225,7 +225,15 @@
 #>
 # Get-SchoolAdvisoryRoster
 # Get-SchoolAdvisoryRoster -school_year '2022-2023'
-# Get-SchoolAdvisoryRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
+# Get-SchoolAdvisoryRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+
+<#
+    Get-SchoolAthleticRoster
+#>
+# Get-SchoolAthleticRoster
+# Get-SchoolAthleticRoster -school_year '2022-2023'
+# Get-SchoolAthleticRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+
 
 <#
     Get-SchoolSectionBySchoolLevel
@@ -263,7 +271,7 @@
 #>
 # Get-SchoolRoster
 # Get-SchoolRoster -school_year '2022-2023'
-# Get-SchoolRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
+# Get-SchoolRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
 
 <#
     Get-SchoolUserEducation
