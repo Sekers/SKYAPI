@@ -15,8 +15,6 @@
 # https://learn.microsoft.com/en-us/graph/sdks/batch-requests
 # https://learn.microsoft.com/en-us/graph/json-batching
 
-# TODO: Add support for multiple terms lengths by level_id. Right now, even if term is selected the entire year is synced due to one term being that length of 1 instead of 2 semesters.
-
 #################
 # PREREQUISITES #
 #################
@@ -563,6 +561,10 @@ try
     Write-PSFMessage -Level Important -Message "Beginning SIS Meetings Collection"
 
     # Get the date range to sync meetings.
+    # In 'Term' mode this is populated with one current-term window per (level, offering type) so that
+    # meetings can later be filtered to only their own level's current term. It stays $null for the
+    # 'Year' and 'Range' modes, which makes the later per-level filter a no-op for them.
+    $CurrentTermWindows = $null
     switch ($Meetings_DateSelection)
     {
         Year {       
@@ -630,6 +632,28 @@ try
             }
             $Meetings_StartDate = (($TermBeginDates | Sort-Object )[0]).ToString('yyyy-MM-dd')
             $Meetings_EndDate = (($TermEndDates | Sort-Object -Descending)[0]).ToString('yyyy-MM-dd')
+
+            # Build a current-term window per (level, offering type). The global date range above spans ALL
+            # current terms, so on its own it would sync every level for the widest term (e.g. a year-long
+            # advisory term stretches the window across both academic semesters). These windows let us keep
+            # each meeting only within its OWN level's current term (see the per-level filter after the fetch).
+            # Term begin/end are kept as School Time Zone calendar dates (.Date) so they line up with each
+            # meeting's date, which the filter derives from start_time converted to the School Time Zone.
+            # This is the same conversion used just above for $Meetings_StartDate/$Meetings_EndDate.
+            # The *_description fields are carried for readable logging only; the filter matches on the
+            # numeric level_id/offering_type.
+            [array]$CurrentTermWindows = foreach ($schoolTerm in $SchoolTermList)
+            {
+                [PSCustomObject]@{
+                    level_id                  = [string]$schoolTerm.level_id
+                    level_description         = $schoolTerm.level_description
+                    offering_type             = [string]$schoolTerm.offering_type
+                    offering_type_description = ($OfferingTypes | Where-Object {$_.id -eq $schoolTerm.offering_type}).description
+                    description               = $schoolTerm.description
+                    begin_date                = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(([datetime]$schoolTerm.begin_date), $SchoolTimeZone.Id)).Date
+                    end_date                  = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(([datetime]$schoolTerm.end_date), $SchoolTimeZone.Id)).Date
+                }
+            }
         }
         Range{
             # Nothing to do here; the start and end dates are already set.
@@ -646,6 +670,17 @@ try
 
     Write-PSFMessage -Level Significant -Message "Date Selection [Type: $Meetings_DateSelection]: $Meetings_StartDate to $Meetings_EndDate"
 
+    # In 'Term' mode, log each level/offering-type current-term window so the per-level date ranges that
+    # drive the meeting filter are visible in the log (the combined range above just spans all of them).
+    if ($null -ne $CurrentTermWindows)
+    {
+        foreach ($currentTermWindow in $CurrentTermWindows)
+        {
+            $TermWindowLabel = @($currentTermWindow.level_description, $currentTermWindow.offering_type_description, $currentTermWindow.description) | Where-Object {-not [string]::IsNullOrWhiteSpace($_)}
+            Write-PSFMessage -Level Significant -Message "Term Window [$($TermWindowLabel -join ' / ')]: $($currentTermWindow.begin_date.ToString('yyyy-MM-dd')) to $($currentTermWindow.end_date.ToString('yyyy-MM-dd'))"
+        }
+    }
+
     # Set Meetings Parameters & Properties
     $HashArguments = [ordered]@{
         start_date = $Meetings_StartDate
@@ -658,6 +693,7 @@ try
         'faculty_name',
         'faculty_user_id',
         'group_name',
+        'level_number',
         'offering_type',
         'room_name',
         'section_id',
@@ -686,6 +722,29 @@ try
         {
             $MeetingsFromSIS = $MeetingsFromSIS | Where-Object -Property $($meetingsFilterProperty) -NotMatch $meetingsFilterPropertyValue
         }
+    }
+
+    # In 'Term' mode, keep each meeting only within its OWN level's current term. A meeting is kept when a
+    # current-term window matches its (level_number, offering_type) AND the meeting's date falls inside that
+    # window. This prevents a long term for one level/offering (e.g. a year-long advisory term) from pulling
+    # in another level's non-current term (e.g. a second academic semester). $CurrentTermWindows is only set
+    # in 'Term' mode, so 'Year' and 'Range' modes skip this filter entirely.
+    # The meeting's date is taken from start_time converted to the School Time Zone (the same conversion used
+    # elsewhere to build events), so it lines up with the School-Time-Zone term begin/end dates.
+    if ($Meetings_DateSelection -eq 'Term')
+    {
+        $MeetingsBeforeTermFilterCount = @($MeetingsFromSIS).Count
+        $MeetingsFromSIS = $MeetingsFromSIS | Where-Object {
+            $meetingToFilter = $_
+            $meetingDate = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date $meetingToFilter.start_time), $SchoolTimeZone.Id)).Date
+            [bool]($CurrentTermWindows | Where-Object {
+                ($_.level_id -eq [string]$meetingToFilter.level_number) -and
+                ($_.offering_type -eq [string]$meetingToFilter.offering_type.id) -and
+                ($meetingDate -ge $_.begin_date) -and ($meetingDate -le $_.end_date)
+            })
+        }
+        $MeetingsAfterTermFilterCount = @($MeetingsFromSIS).Count
+        Write-PSFMessage -Level Verbose -Message "Term filter: kept $MeetingsAfterTermFilterCount of $MeetingsBeforeTermFilterCount meetings within their level's current term (dropped $($MeetingsBeforeTermFilterCount - $MeetingsAfterTermFilterCount))."
     }
 
     # Massage SIS DateTime Events in Meetings (Convert to Round-Trip 'o' Format)
