@@ -1228,13 +1228,14 @@ function Get-SKYAPIAuthTokensFromFile
 }
 
 # Fix date-only fields since the API returns dates with improper time values (sends it as -05:00 or sometimes -04:00).
-# Converting to UTC should resolve the issue (though it makes the unused time portion 5 AM or 4AM, the date is accurate).
+# Converting to UTC lands the instant at 4-5 AM on the correct calendar day, so we return that day at midnight.
 function Repair-SkyApiDate
 {
+    [OutputType([datetime])]
     param ([DateTime]$Date)
-    $Date = (($(Get-Date($Date).ToUniversalTime()).ToString('o')) -split "T")[0] # Can't use -AsUTC since that's PS Core only (not Windows PS 5.1).
-    # Alternative way to do the same thing? # $Date = $Date.ToUniversalTime() -Format "yyyy-MM-dd"
-    $Date
+
+    # .Date drops the (unused, incorrect) time portion, leaving the accurate calendar date.
+    return $Date.ToUniversalTime().Date
 }
 
 # Iterates through an object replacing all or part of matching string values
@@ -1309,12 +1310,12 @@ function Set-PSObjectText
 }
 
 # Converts From JSON Without Deserializing DateTime Strings
-# Dates must be in the roundtrip format and specify the offset (DateTimeKind.Local or DateTimeKind.Utc).
+# Dates must be in the roundtrip format and specify the offset or a 'Z' (DateTimeKind.Local or DateTimeKind.Utc).
 # Examples:
 #  - 2009-06-15T13:45:30.0000000Z
 #  - 2009-06-15T13:45:30.0000000-07:00
 #  - 2009-06-15T13:45:00-07:00
-# More Information: Since PowerShell v6, ConvertTo-Json automatically deserializes strings that contain
+# More Information: Since PowerShell v6, ConvertFrom-Json automatically deserializes strings that contain
 # an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
 # or a prefix of it that includes at least everything up to the seconds part as [datetime] instances.
 function ConvertFrom-JsonWithoutDateTimeDeserialization
@@ -1328,9 +1329,20 @@ function ConvertFrom-JsonWithoutDateTimeDeserialization
         [string]$InputObject
     )
 
-    # Set the regular expression patterns.
-    $DateTimeRegex = '"(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+(\+|\-)\d+:\d+)"'
-    $DateTimeRegexWithHash = '(#)(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+(\+|\-)\d+:\d+)'
+    # PowerShell 7.3+ can natively keep date/time values as strings, which is exactly what this function
+    # needs - no regex or object walking required. It also covers 'Z'/UTC and offset-less date/times that
+    # the fallback regex below does not. Prefer it whenever the -DateKind parameter is available.
+    if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind'))
+    {
+        return ($InputObject | ConvertFrom-Json -DateKind String)
+    }
+
+    # Fallback for PowerShell 6.0-7.2 (Windows PowerShell 5.1 already leaves date/times as strings):
+    # hide round-trip date/time strings behind a '#' so ConvertFrom-Json won't deserialize them, then
+    # strip the '#' back off afterward. The offset group also matches a trailing 'Z' (UTC) so those
+    # values are kept as strings too.
+    $DateTimeRegex = '"(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+((\+|\-)\d+:\d+|Z))"'
+    $DateTimeRegexWithHash = '(#)(\d+-\d+.\d+T\d+:\d+:\d+\.?\d+((\+|\-)\d+:\d+|Z))'
 
     # Prepend the hash sign to round-trip date/time pattern strings.
     [string]$JsonWithPrefix = $InputObject -replace $DateTimeRegex, '"#$1"'
@@ -1338,10 +1350,8 @@ function ConvertFrom-JsonWithoutDateTimeDeserialization
     # Convert to a PSCustomObject object.
     [pscustomobject]$PSObjectWithPrefix = $JsonWithPrefix | ConvertFrom-Json
 
-    # Remove the added hash signs.
-    Set-PSObjectText -InputObject $PSObjectWithPrefix -OldValue $DateTimeRegexWithHash -NewValue '$2'
-
-    # return $InputObject
+    # Remove the added hash signs and return the cleaned object.
+    return (Set-PSObjectText -InputObject $PSObjectWithPrefix -OldValue $DateTimeRegexWithHash -NewValue '$2')
 }
 
 # Import the functions

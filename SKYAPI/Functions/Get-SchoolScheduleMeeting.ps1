@@ -344,20 +344,31 @@ function Get-SchoolScheduleMeeting
     }
 
     # Massage dates in $response because PowerShell automatically converts API calls to date time...
+    # Extracts the wall-clock time-of-day (HH:mm:ss[.fff]) from an API start/end value. Blackbaud returns
+    # the correct School-local time-of-day but with an unreliable UTC offset, so we keep the time and
+    # re-anchor it to meeting_date in the School time zone (below), which also gets DST right. This accepts
+    # either offset sign (e.g. -06:00 or +10:00, so non-US/positive-offset schools work). If the value ever
+    # comes back as 'Z'/UTC or any other shape, the "time-of-day is School-local" assumption no longer holds,
+    # so throw instead of silently producing wrong times.
+    $ExtractSchoolLocalTime = {
+        param ([string]$ApiDateTime, [string]$FieldName)
+        if ($ApiDateTime -match 'T(\d{2}:\d{2}:\d{2}(?:\.\d+)?)[+-]\d{2}:\d{2}$')
+        {
+            return $Matches[1]
+        }
+        throw "Unexpected '$FieldName' format from the SKY API schedules/meetings endpoint: '$ApiDateTime'. Expected a time with a UTC offset (e.g. ...T14:20:00-06:00). Blackbaud may have changed the endpoint; review the date massaging in Get-SchoolScheduleMeeting."
+    }
+
     $response = foreach ($meeting in $response)
     {
         # Strip the time information from the date.
         $meeting_date = ($meeting.meeting_date -split "T")[0]
-       
-        # Pull the time and combine with the correct date so that daylight saving time is calculated correctly
-        $start_time = ($meeting.start_time -split "T")[1]
-        $start_time = ($start_time -split "-")[0]
-        $start_time = [System.String]::Concat($meeting_date,"T",$start_time)
+
+        # Pull the time and combine with the correct date so that daylight saving time is calculated correctly.
+        $start_time = [System.String]::Concat($meeting_date, "T", (& $ExtractSchoolLocalTime $meeting.start_time 'start_time'))
         $start_time = ([System.TimeZoneInfo]::ConvertTimeToUtc($start_time, $SchoolTimeZone)) # Convert to UTC, specifying the time zone.
 
-        $end_time = (($meeting.end_time) -split "T")[1]
-        $end_time = ($end_time -split "-")[0]
-        $end_time = [System.String]::Concat($meeting_date,"T",$end_time)
+        $end_time = [System.String]::Concat($meeting_date, "T", (& $ExtractSchoolLocalTime $meeting.end_time 'end_time'))
         $end_time = ([System.TimeZoneInfo]::ConvertTimeToUtc($end_time, $SchoolTimeZone)) # Convert to UTC, specifying the time zone.
 
         # Replace values in array
