@@ -26,7 +26,6 @@
         "EventsAppIdentifier_Value": "user_schedule_sync",
         "MySchoolAppDomain": "school.myschoolapp.com",
         "SaveUsersSyncHistoryPath": "$PSScriptRoot\\Logging\\User Sync History-%date%.csv",
-        "UsersSyncHistoryRotateFilter": "User Sync History-*.csv",
         "UsersSyncHistoryRetentionTimeInDays": 30
     },
     "SKYAPI": {
