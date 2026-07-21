@@ -21,7 +21,7 @@
 
 # SKYAPI PowerShell Module (for connecting to the SIS - https://github.com/Sekers/SKYAPI)
 # Microsoft Graph PowerShell SDK (for connecting to Microsoft Graph - https://learn.microsoft.com/en-us/powershell/microsoftgraph/installation)
-# - You only need Microsoft.Graph.Authentication and Microsoft.Graph.Calendar if you want to minimize the installation footprint.
+# - You only need Microsoft.Graph.Authentication, Microsoft.Graph.Calendar & Microsoft.Graph.Users if you want to minimize the installation footprint.
 # OPTIONAL: PSFramework (only needed if logging - https://github.com/PowershellFrameworkCollective/psframework)
 # OPTIONAL: ScriptMessage (only needing if sending alerts from the script - https://github.com/Sekers/ScriptMessage)
 # - Using MgGraph as messaging service so this requires: 
@@ -219,7 +219,7 @@ function Get-NextOutlookCategoryColor
         }
     )
 
-    $ExistingCategories = Get-MgUserOutlookMasterCategory -UserId $UserId
+    $ExistingCategories = Get-MgUserOutlookMasterCategory -UserId $UserId -All
 
     [array]$ExistingCategoriesColorCount = foreach ($outlookCategoryColor in $OutlookCategoryColors)
     {
@@ -275,8 +275,8 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 [string]$SKYAPITokensFilePath = $ExecutionContext.InvokeCommand.ExpandString($Config.SKYAPI.TokensFilePath) # The location where you want the access and refresh tokens to be stored. Can accept PowerShell variables.
 
 # Configure Microsoft Graph and Verify Type
-[string]$MgPermissionType = $Config.MSGraph.MgPermissionType # Delegated or Application. See: https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent#permission-types and https://docs.microsoft.com/en-us/graph/auth/auth-concepts#delegated-and-application-permissions.
-[bool]$MgDisconnectWhenDone = $Config.MSGraph.MgDisconnectWhenDone # Recommended when using the Application permission type.
+# The script uses Application permissions only (see the Microsoft Graph connection section below for why).
+[bool]$MgDisconnectWhenDone = $Config.MSGraph.MgDisconnectWhenDone # Recommended.
 [string]$MgClientID = $Config.MSGraph.MgClientID
 [string]$MgTenantID = $Config.MSGraph.MgTenantID
 [string]$MgApp_AuthenticationType = $Config.MSGraph.MgApp_AuthenticationType
@@ -287,6 +287,8 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 [string]$MgApp_EncryptedSecret = $Config.MSGraph.MgApp_EncryptedSecret
 
 # Configure Logging (See https://psframework.org/documentation/documents/psframework/logging/loggingto/logfile.html)
+# The PSFramework module (and all logging calls) are only used when logging is enabled in the config.
+[bool]$LoggingEnabled = $Config.Logging.Enabled
 $paramSetPSFLoggingProvider = @{
     Name             = $Config.Logging.Name
     InstanceName     = $Config.Logging.InstanceName
@@ -365,42 +367,52 @@ if (!(Get-Module -Name "SKYAPI"))
 # Don't import the entire 'Microsoft.Graph' module because of some issues with doing it that way. Only import the needed modules.
 Import-Module 'Microsoft.Graph.Authentication' -ErrorAction SilentlyContinue
 Import-Module 'Microsoft.Graph.Calendar' -ErrorAction SilentlyContinue
-if (!(Get-Module -Name "Microsoft.Graph.Calendar"))
+Import-Module 'Microsoft.Graph.Users' -ErrorAction SilentlyContinue
+if (!(Get-Module -Name "Microsoft.Graph.Calendar") -or !(Get-Module -Name "Microsoft.Graph.Users"))
 {
     # Module is not available.
-    Write-Error "Please First Install the Microsoft.Graph Module (or just the 'Microsoft.Graph.Calendar' submodule) from https://www.powershellgallery.com/packages/Microsoft.Graph/ "
+    Write-Error "Please First Install the Microsoft.Graph Module (or just the 'Microsoft.Graph.Calendar' & 'Microsoft.Graph.Users' submodules) from https://www.powershellgallery.com/packages/Microsoft.Graph/ "
     Return
 }
 
-# Check For PowerShell Framework Module
-Import-Module PSFramework -ErrorAction SilentlyContinue
-if (!(Get-Module -Name "PSFramework"))
+# Check For PowerShell Framework Module (Only Required If Logging Is Enabled)
+if ($LoggingEnabled)
 {
-   # Module is not loaded
-   Write-Error "Please First Install the PowerShell Framework Module from https://psframework.org."
-   Return
+    Import-Module PSFramework -ErrorAction SilentlyContinue
+    if (!(Get-Module -Name "PSFramework"))
+    {
+        # Module is not loaded
+        Write-Error "Please First Install the PowerShell Framework Module from https://psframework.org."
+        Return
+    }
 }
 
-# Check For ScriptMessage PowerShell Module
-Import-Module ScriptMessage -ErrorAction SilentlyContinue
-if (!(Get-Module -Name "ScriptMessage"))
+# Check For ScriptMessage PowerShell Module (Only Required If Email Alerts Are Enabled)
+if ($EmailonError -or $EmailonWarning)
 {
-   # Module is not loaded
-   Write-Error "Please First Install the ScriptMessage Module from https://github.com/Sekers/ScriptMessage."
-   Return
+    Import-Module ScriptMessage -ErrorAction SilentlyContinue
+    if (!(Get-Module -Name "ScriptMessage"))
+    {
+        # Module is not loaded
+        Write-Error "Please First Install the ScriptMessage Module from https://github.com/Sekers/ScriptMessage."
+        Return
+    }
 }
 
 ################
 # PERFORM WORK #
 ################
 
-# Set Logging Data & Log PowerShell & Module Version Information.
-Set-PSFLoggingProvider @paramSetPSFLoggingProvider
-Write-PSFMessage -Level Important -Message "---SCRIPT BEGIN---"
-Write-PSFMessage -Level Verbose -Message "PowerShell Version: $($PSVersionTable.PSVersion.ToString()), $($PSVersionTable.PSEdition.ToString())$(if([Environment]::Is64BitProcess){$(", 64Bit")}else{$(", 32Bit")})"
-foreach ($moduleInfo in Get-Module)
+# If Logging Is Enabled, Set Logging Data & Log PowerShell & Module Version Information.
+if ($LoggingEnabled)
 {
-    Write-PSFMessage -Level Verbose -Message "$($moduleInfo.Name) Module Version: $($moduleInfo.Version)"
+    Set-PSFLoggingProvider @paramSetPSFLoggingProvider
+    Write-PSFMessage -Level Important -Message "---SCRIPT BEGIN---"
+    Write-PSFMessage -Level Verbose -Message "PowerShell Version: $($PSVersionTable.PSVersion.ToString()), $($PSVersionTable.PSEdition.ToString())$(if([Environment]::Is64BitProcess){$(", 64Bit")}else{$(", 32Bit")})"
+    foreach ($moduleInfo in Get-Module)
+    {
+        Write-PSFMessage -Level Verbose -Message "$($moduleInfo.Name) Module Version: $($moduleInfo.Version)"
+    }
 }
 
 # Begin Program Work (Try/Catch for Error/Warning Processing & Notification)
@@ -422,10 +434,6 @@ try
         # Get parent folder path
         $SaveUsersSyncHistoryParentDirectory = ([System.IO.Path]::GetDirectoryName($SaveUsersSyncHistoryPath))
 
-        # Cleanup old user history files, if necessary. Remove files last written before the retention cutoff (today minus the retention days).
-        $UserSyncHistoryFiles = Get-ChildItem -Path $SaveUsersSyncHistoryParentDirectory -Filter $UsersSyncHistoryRotateFilter
-        $UserSyncHistoryFiles | Where-Object -Property LastWriteTime -lt (Get-Date).AddDays(-$UsersSyncHistoryRetentionTimeInDays) | Remove-Item -Force
-
         # Create Destination Folder (In Case It Doesn't Already Exist)
         $null = New-Item -ItemType Directory -Path $SaveUsersSyncHistoryParentDirectory -Force
         # Verify Write Access to Destination Folder
@@ -433,6 +441,10 @@ try
         {
             Write-Error "You do not have create & write access to the the users synchronization history parent folder: $($SaveUsersSyncHistoryParentDirectory)" -ErrorAction Stop
         }
+
+        # Cleanup old user history files, if necessary. Remove files last written before the retention cutoff (today minus the retention days).
+        $UserSyncHistoryFiles = Get-ChildItem -Path $SaveUsersSyncHistoryParentDirectory -Filter $UsersSyncHistoryRotateFilter
+        $UserSyncHistoryFiles | Where-Object -Property LastWriteTime -lt (Get-Date).AddDays(-$UsersSyncHistoryRetentionTimeInDays) | Remove-Item -Force
 
         # Create CSV File With Headers, If Necessary
         if (-not (Test-Path $SaveUsersSyncHistoryPath))
@@ -454,93 +466,112 @@ try
     Set-SKYAPITokensFilePath -Path $SKYAPITokensFilePath
 
     # Connect to Blackbaud SKY API
-    Write-PSFMessage -Level Important -Message "Connecting to the Blackbaud SKY API"
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Connecting to the Blackbaud SKY API"}
     Connect-SKYAPI
 
-    # Connect to the Microsoft Graph API.
-    # E.g. Connect-MgGraph -Scopes "User.Read.All","Group.ReadWrite.All"
-    # You can add additional permissions by repeating the Connect-MgGraph command with the new permission scopes.
+    # Microsoft Graph application permissions this script requires (verified against the connection after connecting;
+    # see the Graph connection block below for what each one is used for). Not configurable: these are intrinsic to what the script does.
+    [string[]]$RequiredMgScopes = @('Calendars.ReadWrite', 'User.Read.All')
+
+    # Connect to the Microsoft Graph API using Application permissions (an app registration consented by an
+    # administrator and authenticated by certificate or client secret). Application permissions are required
+    # because the script manages calendars for every user returned by the SIS; delegated permissions can only
+    # access the signed-in user's own calendar (or calendars shared/delegated to them).
+    # Grant the app registration these Microsoft Graph application permissions (admin consent required):
+    #   - Calendars.ReadWrite:       To create and manage events in user calendars. Also covers reading & creating Outlook
+    #                                categories: Microsoft documents the masterCategories API as requiring the MailboxSettings
+    #                                permissions, but as of July 2026 Graph permits those calls with Calendars.ReadWrite alone.
+    #                                If the category steps ever start failing with ErrorAccessDenied, grant MailboxSettings.ReadWrite.
+    #   - User.Read.All:             To list directory users (verify a user exists before touching their calendar).
     # View the current scopes under which the PowerShell SDK is (trying to) execute cmdlets: Get-MgContext | select -ExpandProperty Scopes
-    # List all the scopes granted on the service principal object (you cn also do it via the Azure AD UI): Get-MgServicePrincipal -Filter "appId eq '14d82eec-204b-4c2f-b7e8-296a70dab67e'" | % { Get-MgServicePrincipalOauth2PermissionGrant -ServicePrincipalId $_.Id } | fl
+    # List all the scopes granted on the service principal object (you can also do it via the Entra admin center): Get-MgServicePrincipal -Filter "appId eq '14d82eec-204b-4c2f-b7e8-296a70dab67e'" | % { Get-MgServicePrincipalOauth2PermissionGrant -ServicePrincipalId $_.Id } | fl
     # Find Graph permission needed. More info on permissions: https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent)
-    #    E.g., Find-MgGraphPermission -SearchString "Teams" -PermissionType Delegated
     #    E.g., Find-MgGraphPermission -SearchString "Teams" -PermissionType Application
-    $MicrosoftGraphScopes = @(
-        'Calendars.ReadWrite', # To create and manage events in user calendars.
-        'MailboxSettings.Read' # To read user mailbox settings (to make sure it exists and is not deleted/soft-deleted). # TODO: Verify it's needed for delegated permissions on mailboxes to access calendar categories.
-    )
-    Write-PSFMessage -Level Important -Message "Connecting to Microsoft Graph With Permission Type: $MgPermissionType"
-    switch ($MgPermissionType)
+    
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Connecting to Microsoft Graph With App Authentication Type: $MgApp_AuthenticationType"}
+    switch ($MgApp_AuthenticationType)
     {
-        Delegated {
-            $null = Connect-MgGraph -Scopes $MicrosoftGraphScopes -TenantId $MgTenantID -ClientId $MgClientID
-        }
-        Application {
-            Write-PSFMessage -Level Important -Message "Microsoft Graph App Authentication Type: $MgApp_AuthenticationType"
-
-            switch ($MgApp_AuthenticationType)
+        CertificateFile {
+            # This is only supported using PowerShell 7.4 and later because 5.1 is missing the necessary parameters when using 'Get-PfxCertificate'.
+            if ($PSVersionTable.PSVersion -lt [Version]'7.4')
             {
-                CertificateFile {
-                    # This is only supported using PowerShell 7.4 and later because 5.1 is missing the necessary parameters when using 'Get-PfxCertificate'.
-                    if ($PSVersionTable.PSVersion -lt [Version]'7.4')
-                    {
-                        $NewMessage = "Connecting to Microsoft Graph using a certificate file is only supported with PowerShell version 7.4 and later."
-                        Write-PSFMessage -Level Error $NewMessage
-                        throw $NewMessage
-                    }
+                $NewMessage = "Connecting to Microsoft Graph using a certificate file is only supported with PowerShell version 7.4 and later."
+                if ($LoggingEnabled) {Write-PSFMessage -Level Error $NewMessage}
+                throw $NewMessage
+            }
 
-                    # Try accessing private key certificate without password using current process credentials.
-                    [X509Certificate]$MgApp_Certificate = $null
-                    try
-                    {
-                        [X509Certificate]$MgApp_Certificate = Get-PfxCertificate -FilePath $MgApp_CertificatePath -NoPromptForPassword
-                    }
-                    catch # If that doesn't work try the included credentials.
-                    {
-                        if ([string]::IsNullOrEmpty($MgApp_EncryptedCertificatePassword))
-                        {
-                            $NewMessage = "Cannot access Microsoft Graph .pfx private key certificate file and no password has been provided."
-                            Write-PSFMessage -Level Error $NewMessage
-                            throw $NewMessage
-                        }
-                        else
-                        {
-                            [SecureString]$MgApp_EncryptedCertificateSecureString = $MgApp_EncryptedCertificatePassword | ConvertTo-SecureString # Can only be decrypted by the same AD account on the same computer.
-                            [X509Certificate]$MgApp_Certificate = Get-PfxCertificate -FilePath $MgApp_CertificatePath -NoPromptForPassword -Password $MgApp_EncryptedCertificateSecureString
-                        }
-                    }
+            # Try accessing private key certificate without password using current process credentials.
+            [X509Certificate]$MgApp_Certificate = $null
+            try
+            {
+                [X509Certificate]$MgApp_Certificate = Get-PfxCertificate -FilePath $MgApp_CertificatePath -NoPromptForPassword
+            }
+            catch # If that doesn't work try the included credentials.
+            {
+                if ([string]::IsNullOrEmpty($MgApp_EncryptedCertificatePassword))
+                {
+                    $NewMessage = "Cannot access Microsoft Graph .pfx private key certificate file and no password has been provided."
+                    if ($LoggingEnabled) {Write-PSFMessage -Level Error $NewMessage}
+                    throw $NewMessage
+                }
+                else
+                {
+                    [SecureString]$MgApp_EncryptedCertificateSecureString = $MgApp_EncryptedCertificatePassword | ConvertTo-SecureString # Can only be decrypted by the same AD account on the same computer.
+                    [X509Certificate]$MgApp_Certificate = Get-PfxCertificate -FilePath $MgApp_CertificatePath -NoPromptForPassword -Password $MgApp_EncryptedCertificateSecureString
+                }
+            }
 
-                    $null = Connect-MgGraph -TenantId $MgTenantID -ClientId $MgClientID -Certificate $MgApp_Certificate
+            $null = Connect-MgGraph -TenantId $MgTenantID -ClientId $MgClientID -Certificate $MgApp_Certificate
+        }
+        CertificateName {
+            $null = Connect-MgGraph -TenantId $MgTenantID -ClientId $MgClientID -CertificateName $MgApp_CertificateName
+        }
+        CertificateThumbprint {
+            $null = Connect-MgGraph -TenantId $MgTenantID -ClientId $MgClientID -CertificateThumbprint $MgApp_CertificateThumbprint
+        }
+        ClientSecret {
+            [System.Version]$GraphAuthVersion = Get-Module -Name 'Microsoft.Graph.Authentication' | Select-Object -ExpandProperty Version
+            if ($GraphAuthVersion -lt [System.Version]'2.0.0')
+            {
+                $MgApp_Secret = [System.Net.NetworkCredential]::new("", $($MgApp_EncryptedSecret | ConvertTo-SecureString)).Password # Can only be decrypted by the same AD account on the same computer.
+                $Body =  @{
+                    Grant_Type    = "client_credentials"
+                    Scope         = "https://graph.microsoft.com/.default"
+                    Client_Id     = $MgClientID
+                    Client_Secret = $MgApp_Secret
                 }
-                CertificateName {
-                    $null = Connect-MgGraph -TenantId $MgTenantID -ClientId $MgClientID -CertificateName $MgApp_CertificateName
-                }
-                CertificateThumbprint {
-                    $null = Connect-MgGraph -TenantId $MgTenantID -ClientId $MgClientID -CertificateThumbprint $MgApp_CertificateThumbprint
-                }
-                ClientSecret {
-                    $MgApp_Secret = [System.Net.NetworkCredential]::new("", $($MgApp_EncryptedSecret | ConvertTo-SecureString)).Password # Can only be decrypted by the same AD account on the same computer.
-                    $Body =  @{
-                        Grant_Type    = "client_credentials"
-                        Scope         = "https://graph.microsoft.com/.default"
-                        Client_Id     = $MgClientID
-                        Client_Secret = $MgApp_Secret
-                    }
-                    $Connection = Invoke-RestMethod `
-                        -Uri https://login.microsoftonline.com/$MgTenantID/oauth2/v2.0/token `
-                        -Method POST `
-                        -Body $Body
-                    $AccessToken = $Connection.access_token
-                    $null = Connect-MgGraph -AccessToken $AccessToken
-                }
-                Default {throw "Invalid `'MgApp_AuthenticationType`' value in the configuration file."}
+                $Connection = Invoke-RestMethod `
+                    -Uri https://login.microsoftonline.com/$MgTenantID/oauth2/v2.0/token `
+                    -Method POST `
+                    -Body $Body
+                $null = Connect-MgGraph -AccessToken $($Connection.access_token | ConvertTo-SecureString -AsPlainText -Force)
+            }
+            else # If Graph PowerShell SDK is version 2.0.0 or higher.
+            {
+                $ClientSecretCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $MgClientID, $($MgApp_EncryptedSecret | ConvertTo-SecureString) # Can only be decrypted by the same AD account on the same computer.
+                $null = Connect-MgGraph -TenantId $MgTenantID -ClientSecretCredential $ClientSecretCredential
             }
         }
-        Default {throw "Invalid `'MgPermissionType`' value in the configuration file."}
+        Default {throw "Invalid `'MgApp_AuthenticationType`' value in the configuration file."}
     }
 
-    # TODO: Verify Scopes Granted to the App Match Needed Scopes.
+    # Verify Scopes Granted to the App Match Needed Scopes.
+    # These are the Microsoft Graph application permissions this script requires
+    # (see the Graph connection block above for what each one is used for).
     $MgContext = Get-MgContext
+    if ($null -eq $MgContext)
+    {
+        $NewMessage = "Not connected to Microsoft Graph (Get-MgContext returned nothing)."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Error $NewMessage}
+        throw $NewMessage
+    }
+    [string[]]$MissingMgScopes = $RequiredMgScopes | Where-Object {$_ -notin $MgContext.Scopes}
+    if ($MissingMgScopes.Count -gt 0)
+    {
+        $NewMessage = "The connected Microsoft Graph app is missing required permission scope(s): $($MissingMgScopes -join ', '). Grant these application permissions to the app registration (admin consent required) and try again. Currently granted: $($MgContext.Scopes -join ', ')."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Error $NewMessage}
+        throw $NewMessage
+    }
 
     # Convert SchoolTimeZone to TimeZoneInfo object. Check match for ID, then StandardName, then DaylightName.
     $SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name)
@@ -554,14 +585,19 @@ try
     {
         $SchoolTimeZone = $SystemTimeZones | Where-Object -Property DaylightName -EQ $SchoolTimeZoneId
     }
+    if ([string]::IsNullOrEmpty($SchoolTimeZone))
+    {
+        throw "Unable to match the school time zone `"$SchoolTimeZoneId`" to a time zone on this system (checked Id, StandardName & DaylightName)."
+    }
+    $SchoolTimeZone = @($SchoolTimeZone)[0] # A StandardName/DaylightName match can return more than one zone; use the first.
 
     # Get Offering School Types
-    Write-PSFMessage -Level Important -Message "Beginning SIS School Offering Types Collection"
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Beginning SIS School Offering Types Collection"}
     $SchoolOfferingTypes = Get-SchoolOfferingType
     $OfferingTypes = foreach ($meetings_OfferingType in $Meetings_OfferingTypes) {$SchoolOfferingTypes | Where-Object {$_.description -eq ($meetings_OfferingType)}}
 
     # Get Meetings
-    Write-PSFMessage -Level Important -Message "Beginning SIS Meetings Collection"
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Beginning SIS Meetings Collection"}
 
     # Get the date range to sync meetings.
     # In 'Term' mode this is populated with one current-term window per (level, offering type) so that
@@ -581,8 +617,9 @@ try
             # May need events from the next school year.
             if ($Meetings_DaysToAppearBefore -gt 0)
             {
+                # The next school year may not exist yet in the SIS (or today+1yr may fall in the summer gap between school years).
                 $NextSchoolYear = (Get-SchoolYear | Where-Object {(([datetime]$_.begin_date) -le (Get-Date).AddYears(1)) -and (([datetime]$_.end_date) -ge (Get-Date).AddYears(1))})
-                if (([datetime]$NextSchoolYear.begin_date) -le (Get-Date).AddDays($Meetings_DaysToAppearBefore))
+                if ($NextSchoolYear -and (([datetime]$NextSchoolYear.begin_date) -le (Get-Date).AddDays($Meetings_DaysToAppearBefore)))
                 {
                     $Meetings_EndDate = ([datetime]$NextSchoolYear.end_date).ToString('yyyy-MM-dd')
                 }
@@ -595,9 +632,13 @@ try
             # May need events from the next school year.
             if ($Meetings_DaysToAppearBefore -gt 0)
             {
+                # The next school year may not exist yet in the SIS (or today+1yr may fall in the summer gap between school years).
                 $NextSchoolYear = (Get-SchoolYear | Where-Object {(([datetime]$_.begin_date) -le (Get-Date).AddYears(1)) -and (([datetime]$_.end_date) -ge (Get-Date).AddYears(1))})
-                $SchoolTermList += Get-SchoolTerm -school_year $NextSchoolYear.school_year_label | Where-Object -Property offering_type -in $OfferingTypes.id 
-                $SchoolTermList = $SchoolTermList | Sort-Object -Property begin_date
+                if ($NextSchoolYear)
+                {
+                    $SchoolTermList += Get-SchoolTerm -school_year $NextSchoolYear.school_year_label | Where-Object -Property offering_type -in $OfferingTypes.id
+                    $SchoolTermList = $SchoolTermList | Sort-Object -Property begin_date
+                }
             }
             
             # Filter out terms that are not within the date range.
@@ -607,18 +648,18 @@ try
             # If no terms within the date range are found, stop script (this is common during the summer months).
             if ($SchoolTermList.Count -eq 0)
             {
-                Write-PSFMessage -Level Important -Message "No school terms found within the date range (this is common during the summer months). Stopping Script."
+                if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "No school terms found within the date range (this is common during the summer months). Stopping Script."}
 
                 # Disconnect from Microsoft Graph API, if enabled in config.
                 if ($MgDisconnectWhenDone)
                 {
-                    Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."
+                    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."}
                     $null = Disconnect-MgGraph -ErrorAction SilentlyContinue
                 }
 
                 # End Logging Message
-                Write-PSFMessage -Level Important -Message "---SCRIPT END---"
-                Wait-PSFMessage # Make Sure Logging Is Flushed Before Terminating
+                if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
+                if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
 
                 # Stop the script.
                 exit
@@ -671,7 +712,7 @@ try
         $Meetings_StartDate = (@([datetime]$Meetings_StartDate, [datetime]$Meetings_StartDate_OldestAllowed) | Sort-Object | Select-Object -Last 1).ToString('yyyy-MM-dd')
     }
 
-    Write-PSFMessage -Level Significant -Message "Date Selection [Type: $Meetings_DateSelection]: $Meetings_StartDate to $Meetings_EndDate"
+    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Date Selection [Type: $Meetings_DateSelection]: $Meetings_StartDate to $Meetings_EndDate"}
 
     # In 'Term' mode, log each level/offering-type current-term window so the per-level date ranges that
     # drive the meeting filter are visible in the log (the combined range above just spans all of them).
@@ -680,7 +721,7 @@ try
         foreach ($currentTermWindow in $CurrentTermWindows)
         {
             $TermWindowLabel = @($currentTermWindow.level_description, $currentTermWindow.offering_type_description, $currentTermWindow.description) | Where-Object {-not [string]::IsNullOrWhiteSpace($_)}
-            Write-PSFMessage -Level Significant -Message "Term Window [$($TermWindowLabel -join ' / ')]: $($currentTermWindow.begin_date.ToString('yyyy-MM-dd')) to $($currentTermWindow.end_date.ToString('yyyy-MM-dd'))"
+            if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Term Window [$($TermWindowLabel -join ' / ')]: $($currentTermWindow.begin_date.ToString('yyyy-MM-dd')) to $($currentTermWindow.end_date.ToString('yyyy-MM-dd'))"}
         }
     }
 
@@ -723,7 +764,8 @@ try
         $MeetingsFilterPropertyValues = $MeetingsToIgnore.($meetingsFilterProperty)
         foreach ($meetingsFilterPropertyValue in $MeetingsFilterPropertyValues)
         {
-            $MeetingsFromSIS = $MeetingsFromSIS | Where-Object -Property $($meetingsFilterProperty) -NotMatch $meetingsFilterPropertyValue
+            # Escape the configured value so it matches as a literal, case-insensitive substring rather than as a regular expression.
+            $MeetingsFromSIS = $MeetingsFromSIS | Where-Object -Property $($meetingsFilterProperty) -NotMatch ([regex]::Escape($meetingsFilterPropertyValue))
         }
     }
 
@@ -747,7 +789,7 @@ try
             })
         }
         $MeetingsAfterTermFilterCount = @($MeetingsFromSIS).Count
-        Write-PSFMessage -Level Verbose -Message "Term filter: kept $MeetingsAfterTermFilterCount of $MeetingsBeforeTermFilterCount meetings within their level's current term (dropped $($MeetingsBeforeTermFilterCount - $MeetingsAfterTermFilterCount))."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Verbose -Message "Term filter: kept $MeetingsAfterTermFilterCount of $MeetingsBeforeTermFilterCount meetings within their level's current term (dropped $($MeetingsBeforeTermFilterCount - $MeetingsAfterTermFilterCount))."}
     }
 
     # Massage SIS DateTime Events in Meetings (Convert to Round-Trip 'o' Format)
@@ -825,6 +867,8 @@ try
         }
     }
 
+    if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Data summary: total meetings=$($Meetings.Count), sections=$($SectionMemberIds.Count), users with meetings=$($MeetingsByUserId.Count), PullRosters=$PullRosters"}
+
     # Get All Users
     [array]$SchoolRoles = Get-SchoolRole
     [array]$UserRoles = foreach ($userRoleID in $UserRoleIDs)
@@ -835,312 +879,337 @@ try
     {
         Get-SchoolUserByRole -roles $userRole.id
     }
-    $Users = $Users | Sort-Object -Property display -Unique
+    # De-duplicate by id (users can hold multiple synced roles), then sort by display name for readable processing order.
+    # Note: display names are not unique, so they must not be used as the de-duplication key.
+    $Users = $Users | Sort-Object -Property id -Unique | Sort-Object -Property display
     $UsersCount = $Users.Count
+    if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Users to process: $UsersCount"}
 
     # Collect All Directory Member Users
     # Used to make sure users exist before trying to access their calendar.
     # It does not check to see if they have an Exchange Online mailbox; it only verifies that an email address is set due to the extra Graph API calls that would be needed to verify an actual mailbox exists (one per user).
     $EntraDirectoryUsers = Get-MgUser -All -Property Id, DisplayName, Mail | Where-Object {$null -ne $_.'mail'}
-    
+    if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Entra directory users with mail: $($EntraDirectoryUsers.Count)"}
+
     # Set Start\End Times as UTC for Graph Queries
     # https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-date-and-time-format-strings#Roundtrip
     $Meetings_StartDateTime_UTC_ISO8601 = Get-Date ([System.TimeZoneInfo]::ConvertTimeToUtc($Meetings_StartDate, $SchoolTimeZone)) -Format 'o'
     $Meetings_EndDateTime_UTC_ISO8601 = Get-Date (([System.TimeZoneInfo]::ConvertTimeToUtc($Meetings_EndDate, $SchoolTimeZone)).AddDays(1)) -Format 'o'
 
     # Create Needed Events & Remove Extra Events
-    Write-PSFMessage -Level Important -Message "Beginning Processing Meetings & Existing Calendar Events For Each User"
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Beginning Processing Meetings & Existing Calendar Events For Each User"}
     $UserIndex = 0
     foreach ($user in $Users)
     {
         $UserIndex++
-        Write-PSFMessage -Level Significant -Message "Working On User $UserIndex of $($UsersCount): $($user.display) [$($user.id)] [$($user.email)]"
+        if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Working On User $UserIndex of $($UsersCount): $($user.display) [$($user.id)] [$($user.email)]"}
 
-        # Make Sure User Exists in Directory
-        if ($user.email -notin $($EntraDirectoryUsers.Mail))
+        # Process this user inside try/catch so one broken user/mailbox (e.g. missing license, soft-deleted)
+        # logs a warning and moves on instead of aborting the sync for all remaining users.
+        try
         {
-            # Log Warning and Skip This User
-            $NewMessage = "WARNING: Skipping user [$($user.id) - $($user.display)] because their email address [$($user.email)] cannot be found in the Entra Active Directory."
-            Write-PSFMessage -Level Warning -Message $NewMessage
+            # Make Sure User Exists in Directory
+            # Keep the matched Entra user so Graph calls can address the account by its immutable object Id.
+            # Graph resolves '/users/{x}' by Id or UserPrincipalName only; the SIS email is matched against the
+            # Mail attribute, which is not guaranteed to equal the UPN.
+            $EntraUser = $EntraDirectoryUsers | Where-Object -Property Mail -EQ $user.email | Select-Object -First 1
+            if ($null -eq $EntraUser)
+            {
+                # Log Warning and Skip This User
+                $NewMessage = "WARNING: Skipping user [$($user.id) - $($user.display)] because their email address [$($user.email)] cannot be found in the Entra Active Directory."
+                if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage}
+                if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+                continue
+            }
+
+            # Gather Meetings for User (as a teacher/lead or, when rosters were pulled, an enrolled member).
+            $UserMeetings = $MeetingsByUserId[[string]$user.id] | Sort-Object -Property start_time, group_name
+            $UserMeetingsCount = $UserMeetings.Count
+            if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Desired SIS Meetings for $($user.email) [$UserMeetingsCount]: $(@($UserMeetings.group_name) -join '; ')"}
+
+            # If set, begin to create a writable list of user calendar synchronizations.
+            if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
+            {
+                $UserSyncHistoryLine = [PSCustomObject]@{
+                    Timestamp     = $([DateTime]::UtcNow.ToString('u'))
+                    ID            = $($user.id)
+                    Name          = $($user.display)
+                    Email         = $($user.email)
+                    MeetingsCount = $UserMeetingsCount
+                }
+
+                if ($PSVersionTable.PSEdition.ToString() -eq 'Desktop') # Hack because Windows PowerShell 5.1 adds the Byte order mark (BOM) to the beginning of the export (which we don't want). In Windows PowerShell, any Unicode encoding, except UTF7, always creates a BOM. PowerShell (v6 and higher) defaults to utf8NoBOM for all text output.
+                {
+                    $UserSyncHistoryLine | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Add-Content -Encoding Byte -Path $SaveUsersSyncHistoryPath -NoNewline
+                }
+                else # PowerShell Core Exports without the BOM
+                {
+                    $UserSyncHistoryLine | Export-Csv -Encoding UTF8 -Path $SaveUsersSyncHistoryPath -NoTypeInformation -Append
+                }
+            }
+
+            # Gather User Custom Preferences
+            $UserPreference = $UserPreferences | Where-Object -Property UserEmail -EQ $user.email
+            # Null checks (not truthiness) so that overrides of 'false' or '0' are honored.
+            $IsReminderOn = if ($null -ne $UserPreference.IsReminderOn) { $UserPreference.IsReminderOn } else { $DefaultIsReminderOn }
+            $ReminderMinutesBeforeStart = if ($null -ne $UserPreference.ReminderMinutesBeforeStart) { $UserPreference.ReminderMinutesBeforeStart } else { $DefaultReminderMinutesBeforeStart }
+            $ShowAs = if (-not [string]::IsNullOrEmpty($UserPreference.ShowAs)) { $UserPreference.ShowAs } else { $DefaultShowAs }
+
+            # Create Categories in Outlook, if necessary.
+            $UserCourses = $UserMeetings.course_title | Sort-Object -Unique
+            $ExistingUserCategories = @(Get-MgUserOutlookMasterCategory -UserId $EntraUser.Id -All)
+            foreach ($userCourse in $UserCourses)
+            {
+                if ($userCourse -notin $ExistingUserCategories.DisplayName)
+                {
+                    $NextUserCategoryColor = Get-NextOutlookCategoryColor -UserId $EntraUser.Id
+
+                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($user.display) [$($user.id)] [$($user.email)]: $($userCourse) ($($NextUserCategoryColor.Color)::$($NextUserCategoryColor.DisplayName))"}
+                    $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $EntraUser.Id -DisplayName $userCourse -Color $NextUserCategoryColor.Color
+                }
+            }
+
+            # Collect Existing Events Created By The App\Script
+            # (Filter By Extended Property and Date Range)
+            # Note: We are using Extended Properties (https://learn.microsoft.com/en-us/graph/api/resources/extended-properties-overview)
+            #       Filter on the field: https://learn.microsoft.com/en-us/graph/api/singlevaluelegacyextendedproperty-get
+            #       Probably the only other option would be to use a Schema Extension. 
+            #       Supposedly, Schema Extensions allow filtering (see https://learn.microsoft.com/en-us/graph/extensibility-overview?tabs=http#comparison-of-extension-types).
+            #       However, there are reports where the 'event' API Graph object isn't supported with Schema Extensions: https://stackoverflow.com/questions/54205997/how-to-filter-by-value-of-an-extension-in-microsoft-graph
+            if ($LoggingEnabled) {Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Collecting Exchange Calendar Events for User: $($user.display) [$($user.id)] [$($user.email)]"}
+            $Filter_ExtendedProperty = "(singleValueExtendedProperties/any(ep: ep/id eq 'String {$($EventsAppIdentifier_GUID)} Name $($EventsAppIdentifier_Name)' and ep/value eq '$($EventsAppIdentifier_Value)'))"
+            $Filter_DateRange = "(Start/DateTime ge '$($Meetings_StartDateTime_UTC_ISO8601)') and (End/DateTime le '$($Meetings_EndDateTime_UTC_ISO8601)')"
+            $Filter = "($Filter_ExtendedProperty) and ($Filter_DateRange)"
+            if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Event filter for $($user.email): $Filter"}
+            $MGEventProperties = @(
+                'Body',
+                'BodyPreview',
+                'Categories',
+                'ChangeKey',
+                'CreatedDateTime',
+                'End',
+                'ICalUId',
+                'Id',
+                'Importance'
+                'IsReminderOn',
+                'LastModifiedDateTime',
+                'Location',
+                'Locations',
+                'Organizer',
+                'ReminderMinutesBeforeStart',
+                'Sensitivity',
+                'ShowAs',
+                'Start',
+                'Subject',
+                'Type',
+                'WebLink'
+            )
+            [array]$ExistingUserEventsFromExchange = Get-MgUserEvent -UserId $EntraUser.Id -All -Filter $Filter -Property $MGEventProperties | Sort-Object -Property {$_.Start.DateTime}
+
+            # Massage Exchange DateTime Events (Convert to Round-Trip 'o' Format)
+            $ExistingUserEvents = [System.Collections.Generic.List[Object]]::new()
+            foreach ($existingUserEventFromExchange in $ExistingUserEventsFromExchange)
+            {
+                $UserEventObject = [PSCustomObject]@{}
+                foreach ($mGEventProperty in $MGEventProperties)
+                {
+                    switch ($mGEventProperty)
+                    {
+                        {$_ -eq 'Start' -or $_ -eq 'End'}
+                        {
+                            $GraphTimeZone = $SystemTimeZones | Where-Object -Property Id -EQ $($existingUserEventFromExchange.($mGEventProperty).TimeZone)
+                            # Convert to UTC DateTime string
+                            $GraphValue = Get-Date -Date ([System.TimeZoneInfo]::ConvertTimeToUtc(($existingUserEventFromExchange.($mGEventProperty).DateTime), $GraphTimeZone)) -Format 'o'
+                        }
+                        Default
+                        {
+                            $GraphValue = $existingUserEventFromExchange.($mGEventProperty)
+                        }
+                    }
+                    $NewPSObjectProperty = [PSNoteProperty]::new($mGEventProperty, $GraphValue)
+                    $UserEventObject.psobject.Properties.Add($NewPSObjectProperty)
+                }
+                $ExistingUserEvents.Add($UserEventObject)
+            }
+            $ExistingUserEventsCount = $ExistingUserEvents.Count
+            if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Existing Exchange Events for $($user.email) [$ExistingUserEventsCount]: $(@($ExistingUserEvents.Subject) -join '; ')"}
+
+            # Process Meetings From SIS
+            if ($LoggingEnabled) {Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$UserMeetingsCount] SIS Meetings for User: $($user.display) [$($user.id)] [$($user.email)]"}
+            $UserMeetingIndex = 0
+            foreach ($userMeeting in $UserMeetings)
+            {
+                $UserMeetingIndex++
+                # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
+                Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | SIS Meeting $($UserMeetingIndex) of $($UserMeetingsCount)" -PercentComplete (($UserMeetingIndex / $UserMeetingsCount) * 100)
+
+                # Create the event, if needed.
+                # Start with all Exchange events and filter down.
+                $ExistingEventMatchResults = $ExistingUserEvents
+                $ExistingEventMatchCount = $ExistingEventMatchResults.Count
+                foreach ($fieldToMatch in $FieldsToMatch)
+                {
+                    # Filter Down (if necessary)
+                    if ($ExistingEventMatchCount -eq 0)
+                    {
+                        break # Leave the foreach loop since we no longer need to check.
+                    }
+                    $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.Graph) -eq $userMeeting.($fieldToMatch.SKYAPI)}
+                    $ExistingEventMatchCount = $ExistingEventMatchResults.Count
+                }
+
+                # We should rarely see duplicates (unless someone manually modified an event), but adding this in to output and log when it happens.
+                if ($ExistingEventMatchCount -gt 1)
+                {
+                    $NewMessage = "<c='em'>INFO: Skipping processing the following event because it exists [$ExistingEventMatchCount] times on the user's Exchange Calendar (it is possible the user manually modified the event): $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))</c>"
+                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message $NewMessage}
+                    continue # Skip further work on this event.
+                }
+
+                if ($ExistingEventMatchCount -eq 0)
+                {
+                    # Collect Meeting Data
+                    $Event_Subject = $userMeeting.group_name
+                    $Event_Start = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.start_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
+                    $Event_End = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.end_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
+                    $Event_Location = @{
+                        displayName = $userMeeting.room_name
+                    }
+                    [string[]]$Categories = @($userMeeting.course_title) # Set Categories (array of strings)
+
+                    # Link the user to their section: teachers get the faculty Roster, students get the student
+                    # Bulletin Board. For our offering types teachers and students never overlap, so a user is a
+                    # teacher of this section exactly when they're in its 'teachers' list; that single check picks
+                    # both the app (faculty vs student) and the destination (roster vs bulletin board). The only
+                    # difference between the faculty and student URLs is the '/app/faculty' vs '/app/student' segment.
+                    $UserIsTeacher = ([string]$user.id -in ($userMeeting.teachers.id | ForEach-Object {[string]$_}))
+                    $LinkApp = if ($UserIsTeacher) { 'faculty' } else { 'student' }
+                    $SectionId = $userMeeting.section_id
+                    $SectionPath = switch ($userMeeting.offering_type.description)
+                    {
+                        'Academics'  { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
+                        'Activities' { if ($UserIsTeacher) { "activitypage/$SectionId/roster" }     else { "activitypage/$SectionId/bulletinboard" } }
+                        'Advisory'   { if ($UserIsTeacher) { "advisorypage/$SectionId/advisees" }   else { "advisorypage/$SectionId/bulletinboard" } }
+                        'Athletics'  { if ($UserIsTeacher) { "athleticteam/$SectionId/roster" }      else { "athleticteam/$SectionId/teampage" } }
+                        Default      { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
+                    }
+                    $SectionLinkURL = "https://$MySchoolAppDomain/app/${LinkApp}?svcid=edu#$SectionPath"
+                    $SectionLinkText = if ($UserIsTeacher) { 'Click Here For Roster' } else { 'Click Here For The Bulletin Board' }
+                    $Event_Body = @{
+                        contentType = "HTML"
+                        content = "<b>Teachers:</b> $(($userMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionLinkURL"">$SectionLinkText</a>"
+                    }
+
+                    $UserEventParameters = [ordered]@{
+                        subject = $Event_Subject
+                        body = $Event_Body
+                        start = $Event_Start
+                        end = $Event_End
+                        location = $Event_Location
+                        categories = $Categories
+                        isReminderOn = $IsReminderOn
+                        reminderMinutesBeforeStart = $ReminderMinutesBeforeStart
+                        showAs = $ShowAs
+                        singleValueExtendedProperties = @(
+                            @{
+                                id = "String {$($EventsAppIdentifier_GUID)} Name $($EventsAppIdentifier_Name)"
+                                value = $EventsAppIdentifier_Value
+                            }
+                        )
+                    }
+                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Creating Exchange Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))"}
+                    $NewEventResponse = New-MgUserEvent -UserId $EntraUser.Id -BodyParameter $UserEventParameters
+                }
+            }
+            Write-Progress -Completed -Activity 'Completed'
+            
+            # Remove extra Exchange events and update still active existing ones, if necessary.
+            # Start with all SIS meetings and filter down.
+            if ($LoggingEnabled) {Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$ExistingUserEventsCount] Existing Calendar Events for User: $($user.display) [$($user.id)] [$($user.email)]"}
+            $ExchangeEventIndex = 0
+            foreach ($existingUserEvent in $ExistingUserEvents)
+            {
+                $ExchangeEventIndex++
+                # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
+                Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | Exchange Event $($ExchangeEventIndex) of $($ExistingUserEventsCount)" -PercentComplete (($ExchangeEventIndex / $ExistingUserEventsCount) * 100)
+
+                $ExistingEventMatchResults = $UserMeetings
+                $ExistingEventMatchCount = $ExistingEventMatchResults.Count
+                foreach ($fieldToMatch in $FieldsToMatch)
+                {
+                    # Filter Down (if necessary)
+                    if ($ExistingEventMatchCount -eq 0)
+                    {
+                        break # Leave the foreach loop since we no longer need to check.
+                    }
+                    $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.SKYAPI) -eq $existingUserEvent.($fieldToMatch.Graph)}
+                    $ExistingEventMatchCount = $ExistingEventMatchResults.Count
+                }
+
+                if ($ExistingEventMatchCount -eq 0) # DELETE IT
+                {
+                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Removing Extra Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End))"}
+                    # Catch 'Status: 404 (NotFound)' errors and ignore. This might happen if an event was already removed between the events pull and this part of script.
+                    try
+                    {
+                        $RemoveEventResponse = Remove-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -Confirm:$false
+                    }
+                    catch 
+                    {
+                        if (-not ($_.Exception.Message -match 'ErrorItemNotFound')) { throw $_  }
+                    }
+                }
+                else # UPDATE IT, IF NECESSARY
+                {
+                    foreach ($userPreferenceToVerify in $UserPreferencesToVerify)
+                    {
+                        switch ($userPreferenceToVerify)
+                        {
+                            ShowAs
+                            {
+                                if ($existingUserEvent.ShowAs -ine $ShowAs)
+                                {
+                                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ShowAs from '$($existingUserEvent.ShowAs)' to '$ShowAs'"}
+                                    $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -ShowAs $ShowAs
+                                }
+                            }
+                            isReminderOn
+                            {
+                                if ($existingUserEvent.isReminderOn -ine $isReminderOn)
+                                {
+                                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > isReminderOn from '$($existingUserEvent.isReminderOn)' to '$isReminderOn'"}
+                                    $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -IsReminderOn:$isReminderOn
+                                }
+                            }
+                            ReminderMinutesBeforeStart
+                            {
+                                if ($existingUserEvent.ReminderMinutesBeforeStart -ine $ReminderMinutesBeforeStart)
+                                {
+                                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ReminderMinutesBeforeStart from '$($existingUserEvent.ReminderMinutesBeforeStart)' to '$ReminderMinutesBeforeStart'"}
+                                    $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.id -ReminderMinutesBeforeStart $ReminderMinutesBeforeStart
+                                }
+                            }
+                            Default {} # Do Nothing
+                        }
+                    }
+                }
+            }
+            Write-Progress -Completed -Activity 'Completed'
+        }
+        catch
+        {
+            $NewMessage = "WARNING: Skipping user [$($user.id) - $($user.display)] [$($user.email)] due to an error during their sync (Line: $($_.InvocationInfo.ScriptLineNumber)): $_"
+            if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage -ErrorRecord $_}
             if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+            Write-Progress -Completed -Activity 'Completed'
             continue
         }
-
-        # Gather Meetings for User (as a teacher/lead or, when rosters were pulled, an enrolled member).
-        $UserMeetings = $MeetingsByUserId[[string]$user.id] | Sort-Object -Property start_time, group_name
-        $UserMeetingsCount = $UserMeetings.Count
-
-        # If set, begin to create a writable list of user calendar synchronizations.
-        if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
-        {
-            $UserSyncHistoryLine = [PSCustomObject]@{
-                Timestamp     = $([DateTime]::UtcNow.ToString('u'))
-                ID            = $($user.id)
-                Name          = $($user.display)
-                Email         = $($user.email)
-                MeetingsCount = $UserMeetingsCount
-            }
-
-            if ($PSVersionTable.PSEdition.ToString() -eq 'Desktop') # Hack because Windows PowerShell 5.1 adds the Byte order mark (BOM) to the beginning of the export (which we don't want). In Windows PowerShell, any Unicode encoding, except UTF7, always creates a BOM. PowerShell (v6 and higher) defaults to utf8NoBOM for all text output.
-            {
-                $UserSyncHistoryLine | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Add-Content -Encoding Byte -Path $SaveUsersSyncHistoryPath -NoNewline
-            }
-            else # PowerShell Core Exports without the BOM
-            {
-                $UserSyncHistoryLine | Export-Csv -Encoding UTF8 -Path $SaveUsersSyncHistoryPath -NoTypeInformation -Append
-            }
-        }
-
-        # Gather User Custom Preferences
-        $UserPreference = $UserPreferences | Where-Object -Property UserEmail -EQ $user.email
-        $IsReminderOn = if ($UserPreference.IsReminderOn) { $UserPreference.IsReminderOn} else { $DefaultIsReminderOn }
-        $ReminderMinutesBeforeStart = if ($UserPreference.ReminderMinutesBeforeStart) { $UserPreference.ReminderMinutesBeforeStart} else { $DefaultReminderMinutesBeforeStart }
-        $ShowAs = if ($UserPreference.ShowAs) { $UserPreference.ShowAs} else { $DefaultShowAs }
-
-        # Create Categories in Outlook, if necessary.
-        $UserCourses = $UserMeetings.course_title | Sort-Object -Unique
-        $ExistingUserCategories = @(Get-MgUserOutlookMasterCategory -UserId $user.email)
-        foreach ($userCourse in $UserCourses)
-        {
-            if ($userCourse -notin $ExistingUserCategories.DisplayName)
-            {
-                $NextUserCategoryColor = Get-NextOutlookCategoryColor -UserId $user.email
-
-                Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($user.display) [$($user.id)] [$($user.email)]: $($userCourse) ($($NextUserCategoryColor.Color)::$($NextUserCategoryColor.DisplayName))"
-                $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $user.email -DisplayName $userCourse -Color $NextUserCategoryColor.Color
-            }
-        }
-
-        # Collect Existing Events Created By The App\Script
-        # (Filter By Extended Property and Date Range)
-        # Note: We are using Extended Properties (https://learn.microsoft.com/en-us/graph/api/resources/extended-properties-overview)
-        #       Filter on the field: https://learn.microsoft.com/en-us/graph/api/singlevaluelegacyextendedproperty-get
-        #       Probably the only other option would be to use a Schema Extension. 
-        #       Supposedly, Schema Extensions allow filtering (see https://learn.microsoft.com/en-us/graph/extensibility-overview?tabs=http#comparison-of-extension-types).
-        #       However, there are reports where the 'event' API Graph object isn't supported with Schema Extensions: https://stackoverflow.com/questions/54205997/how-to-filter-by-value-of-an-extension-in-microsoft-graph
-        Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Collecting Exchange Calendar Events for User: $($user.display) [$($user.id)] [$($user.email)]"
-        $Filter_ExtendedProperty = "(singleValueExtendedProperties/any(ep: ep/id eq 'String {$($EventsAppIdentifier_GUID)} Name $($EventsAppIdentifier_Name)' and ep/value eq '$($EventsAppIdentifier_Value)'))"
-        $Filter_DateRange = "(Start/DateTime ge '$($Meetings_StartDateTime_UTC_ISO8601)') and (End/DateTime le '$($Meetings_EndDateTime_UTC_ISO8601)')"
-        $Filter = "($Filter_ExtendedProperty) and ($Filter_DateRange)"
-        $MGEventProperties = @(
-            'Body',
-            'BodyPreview',
-            'Categories',
-            'ChangeKey',
-            'CreatedDateTime',
-            'End',
-            'ICalUId',
-            'Id',
-            'Importance'
-            'IsReminderOn',
-            'LastModifiedDateTime',
-            'Location',
-            'Locations',
-            'Organizer',
-            'ReminderMinutesBeforeStart',
-            'Sensitivity',
-            'ShowAs',
-            'Start',
-            'Subject',
-            'Type',
-            'WebLink'
-        )
-        [array]$ExistingUserEventsFromExchange = Get-MgUserEvent -UserId $user.email -All -Filter $Filter -Property $MGEventProperties | Sort-Object -Property {$_.Start.DateTime}
-
-        # Massage Exchange DateTime Events (Convert to Round-Trip 'o' Format)
-        $ExistingUserEvents = [System.Collections.Generic.List[Object]]::new()
-        foreach ($existingUserEventFromExchange in $ExistingUserEventsFromExchange)
-        {
-            $UserEventObject = [PSCustomObject]@{}
-            foreach ($mGEventProperty in $MGEventProperties)
-            {
-                switch ($mGEventProperty)
-                {
-                    {$_ -eq 'Start' -or $_ -eq 'End'}
-                    {
-                        $GraphTimeZone = $SystemTimeZones | Where-Object -Property Id -EQ $($existingUserEventFromExchange.($mGEventProperty).TimeZone)
-                        # Convert to UTC DateTime string
-                        $GraphValue = Get-Date -Date ([System.TimeZoneInfo]::ConvertTimeToUtc(($existingUserEventFromExchange.($mGEventProperty).DateTime), $GraphTimeZone)) -Format 'o'
-                    }
-                    Default
-                    {
-                        $GraphValue = $existingUserEventFromExchange.($mGEventProperty)
-                    }
-                }
-                $NewPSObjectProperty = [PSNoteProperty]::new($mGEventProperty, $GraphValue)
-                $UserEventObject.psobject.Properties.Add($NewPSObjectProperty)
-            }
-            $ExistingUserEvents.Add($UserEventObject)
-        }
-        $ExistingUserEventsCount = $ExistingUserEvents.Count
-
-        # Process Meetings From SIS
-        Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$UserMeetingsCount] SIS Meetings for User: $($user.display) [$($user.id)] [$($user.email)]"
-        $UserMeetingIndex = 0
-        foreach ($userMeeting in $UserMeetings)
-        {
-            $UserMeetingIndex++
-            # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
-            Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | SIS Meeting $($UserMeetingIndex) of $($UserMeetingsCount)" -PercentComplete (($UserMeetingIndex / $UserMeetingsCount) * 100)
-
-            # Create the event, if needed.
-            # Start with all Exchange events and filter down.
-            $ExistingEventMatchResults = $ExistingUserEvents
-            $ExistingEventMatchCount = $ExistingEventMatchResults.Count
-            foreach ($fieldToMatch in $FieldsToMatch)
-            {
-                # Filter Down (if necessary)
-                if ($ExistingEventMatchCount -eq 0)
-                {
-                    break # Leave the foreach loop since we no longer need to check.
-                }
-                $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.Graph) -eq $userMeeting.($fieldToMatch.SKYAPI)}
-                $ExistingEventMatchCount = $ExistingEventMatchResults.Count
-            }
-
-            # We should rarely see duplicates (unless someone manually modified an event), but adding this in to output and log when it happens.
-            if ($ExistingEventMatchCount -gt 1)
-            {
-                $NewMessage = "<c='em'>INFO: Skipping processing the following event because it exists [$ExistingEventMatchCount] times on the user's Exchange Calendar (it is possible the user manually modified the event): $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))</c>"
-                Write-PSFMessage -Level Significant -Message $NewMessage
-                continue # Skip further work on this event.
-            }
-
-            if ($ExistingEventMatchCount -eq 0)
-            {
-                # Collect Meeting Data
-                $Event_Subject = $userMeeting.group_name
-                $Event_Start = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.start_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
-                $Event_End = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.end_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
-                $Event_Location = @{
-                    displayName = $userMeeting.room_name
-                }
-                [string[]]$Categories = @($userMeeting.course_title) # Set Categories (array of strings)
-
-                # Link the user to their section: teachers get the faculty Roster, students get the student
-                # Bulletin Board. For our offering types teachers and students never overlap, so a user is a
-                # teacher of this section exactly when they're in its 'teachers' list; that single check picks
-                # both the app (faculty vs student) and the destination (roster vs bulletin board). The only
-                # difference between the faculty and student URLs is the '/app/faculty' vs '/app/student' segment.
-                $UserIsTeacher = ([string]$user.id -in ($userMeeting.teachers.id | ForEach-Object {[string]$_}))
-                $LinkApp = if ($UserIsTeacher) { 'faculty' } else { 'student' }
-                $SectionId = $userMeeting.section_id
-                $SectionPath = switch ($userMeeting.offering_type.description)
-                {
-                    'Academics'  { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
-                    'Activities' { if ($UserIsTeacher) { "activitypage/$SectionId/roster" }     else { "activitypage/$SectionId/bulletinboard" } }
-                    'Advisory'   { if ($UserIsTeacher) { "advisorypage/$SectionId/advisees" }   else { "advisorypage/$SectionId/bulletinboard" } }
-                    'Athletics'  { if ($UserIsTeacher) { "athleticteam/$SectionId/roster" }      else { "athleticteam/$SectionId/teampage" } }
-                    Default      { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
-                }
-                $SectionLinkURL = "https://$MySchoolAppDomain/app/${LinkApp}?svcid=edu#$SectionPath"
-                $SectionLinkText = if ($UserIsTeacher) { 'Click Here For Roster' } else { 'Click Here For The Bulletin Board' }
-                $Event_Body = @{
-                    contentType = "HTML"
-                    content = "<b>Teachers:</b> $(($userMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionLinkURL"">$SectionLinkText</a>"
-                }
-
-                $UserEventParameters = [ordered]@{
-                    subject = $Event_Subject
-                    body = $Event_Body
-                    start = $Event_Start
-                    end = $Event_End
-                    location = $Event_Location
-                    categories = $Categories
-                    isReminderOn = $IsReminderOn
-                    reminderMinutesBeforeStart = $ReminderMinutesBeforeStart
-                    showAs = $ShowAs
-                    singleValueExtendedProperties = @(
-                        @{
-                            id = "String {$($EventsAppIdentifier_GUID)} Name $($EventsAppIdentifier_Name)"
-                            value = $EventsAppIdentifier_Value
-                        }
-                    )
-                }
-                Write-PSFMessage -Level Significant -Message "Creating Exchange Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))"
-                $NewEventResponse = New-MgUserEvent -UserId $user.email -BodyParameter $UserEventParameters
-            }
-        }
-        Write-Progress -Completed -Activity 'Completed'
-        
-        # Remove extra Exchange events and update still active existing ones, if necessary.
-        # Start with all SIS meetings and filter down.
-        Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$ExistingUserEventsCount] Existing Calendar Events for User: $($user.display) [$($user.id)] [$($user.email)]"
-        $ExchangeEventIndex = 0
-        foreach ($existingUserEvent in $ExistingUserEvents)
-        {
-            $ExchangeEventIndex++
-            # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
-            Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | Exchange Event $($ExchangeEventIndex) of $($ExistingUserEventsCount)" -PercentComplete (($ExchangeEventIndex / $ExistingUserEventsCount) * 100)
-
-            $ExistingEventMatchResults = $UserMeetings
-            $ExistingEventMatchCount = $ExistingEventMatchResults.Count
-            foreach ($fieldToMatch in $FieldsToMatch)
-            {
-                # Filter Down (if necessary)
-                if ($ExistingEventMatchCount -eq 0)
-                {
-                    break # Leave the foreach loop since we no longer need to check.
-                }
-                $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.SKYAPI) -eq $existingUserEvent.($fieldToMatch.Graph)}
-                $ExistingEventMatchCount = $ExistingEventMatchResults.Count
-            }
-
-            if ($ExistingEventMatchCount -eq 0) # DELETE IT
-            {
-                Write-PSFMessage -Level Significant -Message "Removing Extra Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End))"
-                # Catch 'Status: 404 (NotFound)' errors and ignore. This might happen if an event was already removed between the events pull and this part of script.
-                try
-                {
-                    $RemoveEventResponse = Remove-MgUserEvent -UserId $user.email -EventId $existingUserEvent.Id -Confirm:$false
-                }
-                catch 
-                {
-                    if (-not ($_.Exception.Message -match 'ErrorItemNotFound')) { throw $_  }
-                }
-            }
-            else # UPDATE IT, IF NECESSARY
-            {
-                foreach ($userPreferenceToVerify in $UserPreferencesToVerify)
-                {
-                    switch ($userPreferenceToVerify)
-                    {
-                        ShowAs
-                        {
-                            if ($existingUserEvent.ShowAs -ine $ShowAs)
-                            {
-                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ShowAs from '$($existingUserEvent.ShowAs)' to '$ShowAs'"
-                                $UpdateEventResponse = Update-MgUserEvent -UserId $user.email -EventId $existingUserEvent.Id -ShowAs $ShowAs
-                            }
-                        }
-                        isReminderOn
-                        {
-                            if ($existingUserEvent.isReminderOn -ine $isReminderOn)
-                            {
-                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > isReminderOn from '$($existingUserEvent.isReminderOn)' to '$isReminderOn'"
-                                $UpdateEventResponse = Update-MgUserEvent -UserId $user.email -EventId $existingUserEvent.Id -IsReminderOn:$isReminderOn
-                            }
-                        }
-                        ReminderMinutesBeforeStart
-                        {
-                            if ($existingUserEvent.ReminderMinutesBeforeStart -ine $ReminderMinutesBeforeStart)
-                            {
-                                Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ReminderMinutesBeforeStart from '$($existingUserEvent.ReminderMinutesBeforeStart)' to '$ReminderMinutesBeforeStart'"
-                                $UpdateEventResponse = Update-MgUserEvent -UserId $user.email -EventId $existingUserEvent.id -ReminderMinutesBeforeStart $ReminderMinutesBeforeStart
-                            }
-                        }
-                        Default {} # Do Nothing
-                    }
-                }
-            }
-        }
-        Write-Progress -Completed -Activity 'Completed'
     }
 
     # Disconnect from Microsoft Graph API, if enabled in config.
     if ($MgDisconnectWhenDone)
     {
-        Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."}
         $null = Disconnect-MgGraph -ErrorAction SilentlyContinue
     }
 
@@ -1164,32 +1233,32 @@ try
             $SendEmailMessageResult = Send-ScriptMessage @MessageArguments
             if ($null -eq $SendEmailMessageResult.Error -or $SendEmailMessageResult.Error -eq "")
             {
-                Write-PSFMessage -Level Important -Message "Email Alert (Script Warning) sent successfully to: $($SendEmailMessageResult.Recipients.All)"
+                if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Email Alert (Script Warning) sent successfully to: $($SendEmailMessageResult.Recipients.All)"}
             }
             else
             {
-                Write-PSFMessage -Level Error -Message "Email Alert (Script Warning) unable to send: $($SendEmailMessageResult.Error)" -Tag 'Failure' -ErrorRecord $_
+                if ($LoggingEnabled) {Write-PSFMessage -Level Error -Message "Email Alert (Script Warning) unable to send: $($SendEmailMessageResult.Error)" -Tag 'Failure' -ErrorRecord $_}
             }
         }
         catch
         {
-            Write-PSFMessage -Level Error -Message "There has been an error emailing the Script Warning alert message: $_" -Tag 'Failure' -ErrorRecord $_
+            if ($LoggingEnabled) {Write-PSFMessage -Level Error -Message "There has been an error emailing the Script Warning alert message: $_" -Tag 'Failure' -ErrorRecord $_}
         }
     }
 
     # End Logging Message
-    Write-PSFMessage -Level Important -Message "---SCRIPT END---"
-    Wait-PSFMessage # Make Sure Logging Is Flushed Before Terminating
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
+    if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
 }
 catch
 {
     # Log Error Message
-    Write-PSFMessage -Level Error -Message "Error Running Script (Name: `"$($_.InvocationInfo.ScriptName)`" | Line: $($_.InvocationInfo.ScriptLineNumber))" -Tag 'Failure' -ErrorRecord $_
+    if ($LoggingEnabled) {Write-PSFMessage -Level Error -Message "Error Running Script (Name: `"$($_.InvocationInfo.ScriptName)`" | Line: $($_.InvocationInfo.ScriptLineNumber))" -Tag 'Failure' -ErrorRecord $_}
 
     # Disconnect from Microsoft Graph API, if enabled in config.
     if ($MgDisconnectWhenDone)
     {
-        Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."}
         $null = Disconnect-MgGraph -ErrorAction SilentlyContinue
     }
 
@@ -1210,16 +1279,16 @@ catch
             $SendEmailMessageResult = Send-ScriptMessage @MessageArguments
             if ($null -eq $SendEmailMessageResult.Error -or $SendEmailMessageResult.Error -eq "")
             {
-                Write-PSFMessage -Level Important -Message "Email Alert (Script Error) sent successfully to: $($SendEmailMessageResult.Recipients.All)"
+                if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Email Alert (Script Error) sent successfully to: $($SendEmailMessageResult.Recipients.All)"}
             }
             else
             {
-                Write-PSFMessage -Level Error -Message "Email Alert (Script Error) unable to send: $($SendEmailMessageResult.Error)" -Tag 'Failure' -ErrorRecord $_
+                if ($LoggingEnabled) {Write-PSFMessage -Level Error -Message "Email Alert (Script Error) unable to send: $($SendEmailMessageResult.Error)" -Tag 'Failure' -ErrorRecord $_}
             }
         }
         catch
         {
-            Write-PSFMessage -Level Error -Message "There has been an error emailing the Script Error alert message: $_" -Tag 'Failure' -ErrorRecord $_
+            if ($LoggingEnabled) {Write-PSFMessage -Level Error -Message "There has been an error emailing the Script Error alert message: $_" -Tag 'Failure' -ErrorRecord $_}
         }
     }
 
@@ -1230,6 +1299,6 @@ catch
 
 
     # End Logging Message
-    Write-PSFMessage -Level Important -Message "---SCRIPT END---"
-    Wait-PSFMessage # Make Sure Logging Is Flushed Before Terminating
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
+    if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
 }

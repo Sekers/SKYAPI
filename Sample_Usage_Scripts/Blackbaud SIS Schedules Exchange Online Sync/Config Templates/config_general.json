@@ -33,10 +33,9 @@
         "TokensFilePath": "$env:USERPROFILE\\API_Tokens\\SKYAPI_UserSchedules_sky_api_key.json"
     },
     "MSGraph": {
-        "MgPermissionType": "Application",
         "MgDisconnectWhenDone": true,
         "MgClientID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-        "MgTenantID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxxx",
+        "MgTenantID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         "MgApp_AuthenticationType": "CertificateThumbprint",
         "MgApp_CertificatePath": "",
         "MgApp_CertificateName": "",

@@ -24,9 +24,7 @@ The script syncs **section leads (referred to here as "teachers")** and, optiona
 - **Flexible date selection** — `Year`, `Term` (keeps each meeting only within its own level's current term), or a fixed `Range`, plus a configurable look-ahead window and a limit on how far into the past to sync.
 - **Ignore lists** to exclude specific groups or courses from syncing.
 - **Per-user preferences** to override the default *Show As*, reminder on/off, and reminder-minutes settings for individual users.
-- Authentication options for Microsoft Graph:
-  - Delegated Permissions (run using a signed-in user).
-  - Application Permissions (application consented by an administrator and authenticated by certificate or secret).
+- Microsoft Graph authentication via Application permissions (application consented by an administrator and authenticated by certificate or client secret), so the script can run unattended and manage every synced user's calendar.
 - Optional non-blocking logging & email alerting (requires prerequisite modules).
 - Optional per-run user sync-history CSV.
 - Debugging options.
@@ -37,7 +35,7 @@ The script syncs **section leads (referred to here as "teachers")** and, optiona
 
 - [SKYAPI PowerShell Module (Required):](https://github.com/Sekers/SKYAPI) The PowerShell module used to connect to the Blackbaud SIS via the SKY API. You will also need a [Blackbaud SKY API developer account](https://developer.blackbaud.com/skyapi/) with a registered application.
 - [Microsoft.Graph PowerShell SDK (Required):](https://learn.microsoft.com/en-us/powershell/microsoftgraph/installation) Microsoft's Graph API PowerShell module, used to manage Exchange Online calendars.
-  - **Note:** To minimize the installation footprint you only need the `Microsoft.Graph.Authentication` and `Microsoft.Graph.Calendar` submodules rather than the full `Microsoft.Graph` module.
+  - **Note:** To minimize the installation footprint you only need the `Microsoft.Graph.Authentication`, `Microsoft.Graph.Calendar` & `Microsoft.Graph.Users` submodules rather than the full `Microsoft.Graph` module.
 - [PowerShell Framework Module (Optional):](https://psframework.org/) For modern logging. Optional and only needed if using the logging functionality.
 - [ScriptMessage Module (Optional):](https://github.com/Sekers/ScriptMessage) For sending email alerts from the script. Optional and only needed if using the email alerting functionality.
 
@@ -104,25 +102,19 @@ For more information on the Blackbaud SKY API and using these settings with the 
 
 #### MSGraph
 
-- **MgPermissionType (String):** Set the [type of permission](https://learn.microsoft.com/en-us/graph/auth/auth-concepts#delegated-and-application-permissions) you want to use to access the Microsoft Graph API. The script requires the `Calendars.ReadWrite` and `MailboxSettings.Read` scopes.
-  - **Application:** This is the preferred option when you want the script to run or be automated without a signed-in user present. Application permissions can only be [consented by an administrator](https://learn.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-scopes#requesting-consent-for-an-entire-tenant). You will need to [register the script as an app](https://learn.microsoft.com/en-us/graph/auth-v2-service#1-register-your-app) and then [grant admin consent for the necessary scopes](https://learn.microsoft.com/en-us/graph/auth-v2-service#2-configure-permissions-for-microsoft-graph):
+The script connects to Microsoft Graph using **[Application permissions](https://learn.microsoft.com/en-us/graph/auth/auth-concepts#delegated-and-application-permissions)** (an app registration [consented by an administrator](https://learn.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-scopes#requesting-consent-for-an-entire-tenant) and authenticated by certificate or client secret). Application permissions are required because the script manages calendars for every user returned by the SIS (delegated permissions only grant access to the signed-in user's own calendar plus calendars explicitly shared or delegated to them). You will need to [register the script as an app](https://learn.microsoft.com/en-us/graph/auth-v2-service#1-register-your-app) and then [grant admin consent for the necessary scopes](https://learn.microsoft.com/en-us/graph/auth-v2-service#2-configure-permissions-for-microsoft-graph):
 
-    | Application Permission | Display String | Admin Consent Required |
-    | ---------- | -------------- | ---------------------- |
-    | [Calendars.ReadWrite](https://learn.microsoft.com/en-us/graph/permissions-reference#calendarsreadwrite) | Read and write calendars in all mailboxes. | Yes |
-    | [MailboxSettings.Read](https://learn.microsoft.com/en-us/graph/permissions-reference#mailboxsettingsread) | Read all user mailbox settings. | Yes |
+| Application Permission | Display String | Admin Consent Required | Why the Script Needs It |
+| ---------- | -------------- | ---------------------- | ----------------------- |
+| [Calendars.ReadWrite](https://learn.microsoft.com/en-us/graph/permissions-reference#calendarsreadwrite) | Read and write calendars in all mailboxes. | Yes | Create, update & remove the synced calendar events. Also currently suffices for reading & creating the per-course Outlook categories (see note below). |
+| [User.Read.All](https://learn.microsoft.com/en-us/graph/permissions-reference#userreadall) | Read all users' full profiles. | Yes | List directory users to verify each SIS user exists in Entra before touching their calendar. |
 
-  - **Delegated:** The delegated option will cause the script to prompt for a user to sign in and is only recommended for interactive use. Either the user or an administrator would consent to the permissions needed for the script. If you disconnect from the Graph API or if the [tokens expire](https://learn.microsoft.com/en-us/entra/identity-platform/configurable-token-lifetimes), you will need to reauthenticate. Because sign-in is interactive and uses your own app registration (the `MgClientID` app), that app registration must have a redirect URI of `http://localhost` registered — in the Entra admin center, go to **App registrations → your app → Authentication → Add a platform → Mobile and desktop applications** and add `http://localhost`. Scopes needed by this script for delegated permissions are:
+> **Note (MailboxSettings & Outlook categories):** Microsoft's documentation states that the [masterCategories API](https://learn.microsoft.com/en-us/graph/api/outlookuser-list-mastercategories) requires the [MailboxSettings.Read/ReadWrite](https://learn.microsoft.com/en-us/graph/permissions-reference#mailboxsettingsreadwrite) permissions. However, in testing (July 2026), Microsoft Graph permits an app with only `Calendars.ReadWrite` to read, create & remove master categories, so this script does not require `MailboxSettings.ReadWrite`. If Microsoft begins enforcing the documented requirement and the script starts failing on the category steps with `ErrorAccessDenied`, grant the app registration the `MailboxSettings.ReadWrite` application permission.
 
-    | Delegated Permission | Display String | Admin Consent Required |
-    | ---------- | -------------- | ---------------------- |
-    | [Calendars.ReadWrite](https://learn.microsoft.com/en-us/graph/permissions-reference#calendarsreadwrite) | Have full access to user calendars. | No |
-    | [MailboxSettings.Read](https://learn.microsoft.com/en-us/graph/permissions-reference#mailboxsettingsread) | Read user mailbox settings. | No |
-
-- **MgDisconnectWhenDone (Boolean):** Specifies whether to disconnect from the Graph API when the script finishes. Recommended when using the Application permission type. If you do not disconnect, Microsoft Graph PowerShell automatically refreshes the access token for you and sign-in persists across PowerShell sessions because Microsoft Graph PowerShell securely caches the token.
+- **MgDisconnectWhenDone (Boolean):** Specifies whether to disconnect from the Graph API when the script finishes. Recommended. If you do not disconnect, Microsoft Graph PowerShell automatically refreshes the access token for you and sign-in persists across PowerShell sessions because Microsoft Graph PowerShell securely caches the token.
 - **MgClientID (String):** This is where you would enter the [registered application ID value](https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#get-tenant-and-app-id-values-for-signing-in).
 - **MgTenantID (String):** This is where you would enter the [registered tenant ID value](https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#get-tenant-and-app-id-values-for-signing-in).
-- **MgApp_AuthenticationType (String):** Only used when 'MgPermissionType' is set to 'Application'. Authentication options include:
+- **MgApp_AuthenticationType (String):** How the registered application authenticates to Microsoft Graph. Authentication options include:
   - **CertificateFile:** Tells the script that you will specify a path to a certificate with a private key. The paired public certificate (without a private key) should be [added to the registered Azure app registration](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app#add-a-certificate). For testing, you can [create a self-signed public certificate](https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-create-self-signed-certificate) instead of using a Certificate Authority (CA)-signed certificate. **Note:** connecting with a certificate file is only supported on PowerShell 7.4 and later.
   - **CertificateName:** Tells the script that you will specify the Common Name (e.g. 'CN=My Test Certificate Name') of a certificate with a private key. This certificate should be in the current user certificate store of the account that the script runs under. The paired public certificate should be [added to the registered Azure app registration](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app#add-a-certificate).
   - **CertificateThumbprint:** Tells the script that you will specify the thumbprint of a certificate with a private key. This certificate should be in the current user certificate store of the account that the script runs under. The paired public certificate should be [added to the registered Azure app registration](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app#add-a-certificate).
@@ -176,7 +168,7 @@ JSON file that contains the messaging-service settings used by the [ScriptMessag
 
 ### **config_meetings_to_ignore.json**
 
-JSON file that lets you exclude specific meetings from syncing. Each property name is a SIS meeting field, and its array of values are matched against that field — any meeting matching a value is skipped.
+JSON file that lets you exclude specific meetings from syncing. Each property name is a SIS meeting field, and its array of values are matched against that field — any meeting matching a value is skipped. Values are matched as **case-insensitive literal substrings** (no wildcards or regular expressions), so a value of "Homeroom" excludes every meeting whose field contains "Homeroom" anywhere in it.
 
 - **group_name (Array of Strings):** Group names to exclude (matched against each meeting's group name).
 - **course_title (Array of Strings):** Course titles to exclude (matched against each meeting's course title).
@@ -218,7 +210,7 @@ $Filter_ExtendedProperty = "(singleValueExtendedProperties/any(ep: ep/id eq 'Str
 $Filter_DateRange        = "(Start/DateTime ge '$($Meetings_StartDateTime_UTC_ISO8601)') and (End/DateTime le '$($Meetings_EndDateTime_UTC_ISO8601)')"
 $Filter                  = "($Filter_ExtendedProperty) and ($Filter_DateRange)"
 
-Get-MgUserEvent -UserId $user.email -All -Filter $Filter -Property $MGEventProperties
+Get-MgUserEvent -UserId $EntraUser.Id -All -Filter $Filter -Property $MGEventProperties
 ```
 
 **3. The consequence.** Because the calendar is only ever read back through this filter, the "create missing events", "update preferences", and "remove extra events" passes can act on *nothing but* the script's own tagged events within the sync date window. Nothing else on the user's calendar is ever seen or changed.
@@ -250,4 +242,4 @@ Related Microsoft Graph documentation:
     - `config_user_preferences.json`
 2. Edit each copied file and replace the placeholder values (role IDs, tenant/client IDs, certificate details, email addresses, domain, extended-property GUID, etc.) with your own, using the documentation above.
 3. Install the [prerequisite modules](#prerequisites) and run the script (`Sync Schedules to Exchange Calendar.ps1`). On the first run you will be prompted to authorize the SKY API connection; the tokens are then cached at `TokensFilePath` for subsequent runs.
-4. Optionally, schedule the script to run automatically (e.g., using Windows Task Scheduler). For unattended runs, set `MgPermissionType` to 'Application' so Microsoft Graph authenticates without a signed-in user, and run the scheduled task as the same account that performed the initial SKY API authorization so it can access the cached tokens.
+4. Optionally, schedule the script to run automatically (e.g., using Windows Task Scheduler). Microsoft Graph authenticates as the registered application without a signed-in user, so unattended runs just need the scheduled task to run as the same account that performed the initial SKY API authorization so it can access the cached tokens.

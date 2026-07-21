@@ -11,5 +11,5 @@
 # Ignore Any Config Files Inside the Config Folder
 /Config/*.json
 
-Ignore the Logging Folder
+# Ignore the Logging Folder
 /Logging
