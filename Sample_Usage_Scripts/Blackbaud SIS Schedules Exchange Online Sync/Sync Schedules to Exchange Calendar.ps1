@@ -267,8 +267,7 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 [string]$EventsAppIdentifier_Name = $Config.General.EventsAppIdentifier_Name
 [string]$EventsAppIdentifier_Value = $Config.General.EventsAppIdentifier_Value
 [string]$MySchoolAppDomain = $Config.General.MySchoolAppDomain
-[string]$SaveUsersSyncHistoryPath = $ExecutionContext.InvokeCommand.ExpandString($Config.General.SaveUsersSyncHistoryPath) -replace '%date%', $(Get-Date -Format 'yyyy-MM-dd')  # Optional. The location where you want a user sync history saved. Can accept PowerShell variables.
-[string]$UsersSyncHistoryRotateFilter = $ExecutionContext.InvokeCommand.ExpandString($Config.General.UsersSyncHistoryRotateFilter)
+[string]$SaveUsersSyncHistoryPath = $ExecutionContext.InvokeCommand.ExpandString($Config.General.SaveUsersSyncHistoryPath)
 [int32]$UsersSyncHistoryRetentionTimeInDays = $Config.General.UsersSyncHistoryRetentionTimeInDays
 
 # Configure SKYAPI and Verify Type
@@ -416,12 +415,16 @@ try
     # If set, test path to writable list of user calendar synchronizations and create file if necessary.
     if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
     {
+        # Resolve the '%date%' placeholder: a wildcard filter for rotation cleanup and today's date for the actual file path.
+        [string]$UsersSyncHistoryRotateFilter = [System.IO.Path]::GetFileName($SaveUsersSyncHistoryPath) -replace '%date%', '*'
+        [string]$SaveUsersSyncHistoryPath = $SaveUsersSyncHistoryPath -replace '%date%', $(Get-Date -Format 'yyyy-MM-dd')
+
         # Get parent folder path
         $SaveUsersSyncHistoryParentDirectory = ([System.IO.Path]::GetDirectoryName($SaveUsersSyncHistoryPath))
 
-        # Cleanup old user history files, if necessary.
+        # Cleanup old user history files, if necessary. Remove files last written before the retention cutoff (today minus the retention days).
         $UserSyncHistoryFiles = Get-ChildItem -Path $SaveUsersSyncHistoryParentDirectory -Filter $UsersSyncHistoryRotateFilter
-        $UserSyncHistoryFiles | Where-Object -Property LastWriteTime -gt (Get-Date).AddDays($UsersSyncHistoryRetentionTimeInDays) | Remove-Item -Force
+        $UserSyncHistoryFiles | Where-Object -Property LastWriteTime -lt (Get-Date).AddDays(-$UsersSyncHistoryRetentionTimeInDays) | Remove-Item -Force
 
         # Create Destination Folder (In Case It Doesn't Already Exist)
         $null = New-Item -ItemType Directory -Path $SaveUsersSyncHistoryParentDirectory -Force
