@@ -8,8 +8,17 @@
 # Local History for Visual Studio Code
 .history/
 
-# Ignore Any Config Files Inside the Config Folder
-/Config/*.json
+# Ignore Everything Inside the Config Folder Except the Placeholder File.
+# This folder holds live configuration and can also hold a private key certificate (.pfx), so ignore
+# everything rather than just the file types we currently expect to find in there.
+/Config/*
+!/Config/@Place Config Files Here
+
+# Never Commit Private Key Material
+*.pfx
+*.p12
+*.pem
+*.key
 
 # Ignore the Logging Folder
 /Logging

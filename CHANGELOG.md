@@ -1,5 +1,39 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.4.5](https://github.com/Sekers/SKYAPI/tree/0.4.5) - (2026-07-21)
+
+### Fixes
+
+- Updated Endpoint: [Connect-SchoolUserBBID](https://developer.sky.blackbaud.com/api#api=afe-edcor&operation=V1UsersBbidConnectPatch)
+  - This endpoint was previously in closed preview. Now that it's in public preview the function's endpoint code has been updated/corrected and validated.
+- Fixed some built-in help examples.
+- Fixed [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) date handling for schools in positive-offset (non-US) time zones. The meeting start/end time parsing previously assumed a negative UTC offset.
+
+### Features
+
+- Released the first non-beta version of the sample "Blackbaud SIS Schedules Exchange Online Sync" script.
+- Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.4078.44](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.4078.44).
+- New Endpoint: [Get-SchoolUserAuditByRole](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersAuditGet)
+- New Endpoint: [Get-SchoolAthleticRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AthleticsRostersGet)
+- Added new 'include_dropped' parameter to the following functions: Get-SchoolActivityRoster, Get-SchoolAdvisoryRoster, Get-SchoolRoster (Academics).
+- Updated Endpoint: [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet)
+  - Added a new `-IncludeRosters` switch. Each returned meeting gains a `roster` property containing the full section & roster object for that meeting's section.
+
+### Other
+
+- Greatly improved the performance of Get-SchoolScheduleMeeting for PowerShell 7.3+.
+  - This was due to needing to work around Blackbaud's unreliable timezone offsets. Windows PowerShell 5.1 was unaffected by the slowdown and PowerShell 6.0-7.2 has to stay on the older, slower, method.
+  - To do this we modernized internal JSON date handling (used by Get-SchoolYear and Get-SchoolScheduleMeeting) to use PowerShell 7.3+'s native `ConvertFrom-Json -DateKind String` when available, falling back to the prior method on PowerShell 6.0-7.2 (Windows PowerShell 5.1 already leaves dates as strings).
+- Simplified some parts of the authentication process during API calls.
+- Removed erroneous 'endUrl' parameter from functions/endpoints that don't use it.
+- Hardened SKY API date/time parsing to fail with a clear error if Blackbaud ever changes its date format (e.g. to UTC 'Z'), rather than silently returning incorrect times.
+- Minor formatting and link updates to the README file.
+- Minor code comment updates.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
+
 ## [0.4.4](https://github.com/Sekers/SKYAPI/tree/0.4.4) - (2025-12-30)
 
 ### Fixes
@@ -34,12 +68,13 @@
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.3](https://github.com/Sekers/SKYAPI/tree/0.4.3) - (2025-02-19)
 
 ### Fixes (UPDATE 2025-02-24)
 
- - Blackbaud has confirmed the issue with the API endpoint. It's not related to daylight saving time, but instead the call seems to be including an extra day in February (presumably February 29, the leap year date).  Leap year was last year 2024, so that may be why the bug wasn't noticed earlier.
- - The workaround implemented in the SKYAPI PowerShell module 0.4.3 looks to be working with no problems, however. Using the workaround will not cause problems once the endpoint issue is resolved, however we plan to revert the change once the endpoint is confirmed fixed.
+- Blackbaud has confirmed the issue with the API endpoint. It's not related to daylight saving time, but instead the call seems to be including an extra day in February (presumably February 29, the leap year date).  Leap year was last year 2024, so that may be why the bug wasn't noticed earlier.
+- The workaround implemented in the SKYAPI PowerShell module 0.4.3 looks to be working with no problems, however. Using the workaround will not cause problems once the endpoint issue is resolved, however we plan to revert the change once the endpoint is confirmed fixed.
 
 ### Fixes
 
@@ -48,6 +83,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.2](https://github.com/Sekers/SKYAPI/tree/0.4.2) - (2025-02-19)
 
 ### Fixes
@@ -57,6 +93,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.1](https://github.com/Sekers/SKYAPI/tree/0.4.1) - (2025-02-04)
 
 ### Fixes
@@ -70,6 +107,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.0](https://github.com/Sekers/SKYAPI/tree/0.4.0) - (2025-01-22)
 
 ### Fixes
@@ -83,7 +121,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
     | Failure Count | Wait Time Before Next Retry | Total Wait Time |
     | --- | --- | --- |
-    | 1  | 5 | 5 |
+    | 1 | 5 | 5 |
     | 2 | 10 | 15 |
     | 3 | 20 | 35 |
     | 4 | 40 | 75 |
@@ -93,13 +131,14 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Other
 
-- Disabled progress bar in function scope when calling Invoke-WebRequest or Invoke-RestMethod. This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop. More Information: https://github.com/PowerShell/PowerShell/pull/2640
+- Disabled progress bar in function scope when calling Invoke-WebRequest or Invoke-RestMethod. This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop. More Information: <https://github.com/PowerShell/PowerShell/pull/2640>
 - Removed the unimplemented 'MiniHTTPServer' alternate method of capturing authentication as this would be overkill and is unnecessary.
 - Removed the 'LegacyIEControl' alternate method of capturing authentication as it is no longer supported by Blackbaud.
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.11](https://github.com/Sekers/SKYAPI/tree/0.3.11) - (2024-10-14)
 
 ### Features
@@ -116,7 +155,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Other
 
-- Updated links for built-in help to new endpoint documentation URLs. 
+- Updated links for built-in help to new endpoint documentation URLs.
 - Updated authorize URI in various places due to updates on the API end (the old URI still works since it is forwarded to the new one).
 - Minor example and built-in help updates, clarifications, and typo fixes.
 - Removed references to resolved Blackbaud API DATETIME bug.
@@ -125,6 +164,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.10](https://github.com/Sekers/SKYAPI/tree/0.3.10) - (2023-03-21)
 
 ### Fixes
@@ -146,6 +186,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.9](https://github.com/Sekers/SKYAPI/tree/0.3.9) - (2023-03-06)
 
 ### Features
@@ -162,6 +203,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.8](https://github.com/Sekers/SKYAPI/tree/0.3.8) - (2023-02-13)
 
 ### Fixes
@@ -171,6 +213,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.7](https://github.com/Sekers/SKYAPI/tree/0.3.7) - (2023-02-02)
 
 ### Breaking Changes
@@ -195,6 +238,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.6](https://github.com/Sekers/SKYAPI/tree/0.3.6) - (2023-01-19)
 
 ### Fixes
@@ -204,6 +248,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.5](https://github.com/Sekers/SKYAPI/tree/0.3.5) - (2023-01-19)
 
 ### Fixes
@@ -227,6 +272,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.4](https://github.com/Sekers/SKYAPI/tree/0.3.4) - (2022-12-05)
 
 ### Fixes
@@ -256,11 +302,12 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.3](https://github.com/Sekers/SKYAPI/tree/0.3.3) - (2022-11-26)
 
 ### Features
 
-- Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
+- Module now works with POST & PATCH endpoints, thus allowing for NEW-\* & UPDATE-\* PowerShell functions against the SKY API.
 - New Endpoint (Beta): [Get-SchoolUserMe](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersMeGet)
 - New Endpoint: [Get-SchoolUserOccupation](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet)
 - New Endpoint: [Get-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsGet)
@@ -276,6 +323,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.1](https://github.com/Sekers/SKYAPI/tree/0.3.1) - (2022-11-24)
 
 ### Fixes
@@ -285,6 +333,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.0](https://github.com/Sekers/SKYAPI/tree/0.3.0) - (2022-11-24)
 
 ### Fixes
@@ -295,7 +344,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Features
 
-- Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
+- Module now works with POST & PATCH endpoints, thus allowing for NEW-\* & UPDATE-\* PowerShell functions against the SKY API.
 - New Endpoint: [Get-SchoolUserPhoneList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesGet)
 - New Endpoint: [Get-SchoolUserPhoneTypeList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet)
 - New Endpoint (Beta): [Get-SchoolScheduleMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
@@ -313,6 +362,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.2.6b](https://github.com/Sekers/SKYAPI/tree/0.2.6b) - (2022-08-11)
 
 ### Fixes
@@ -322,6 +372,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.2.6](https://github.com/Sekers/SKYAPI/tree/0.2.6) - (2022-08-11)
 
 ### Features
@@ -333,6 +384,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.2.5](https://github.com/Sekers/SKYAPI/tree/0.2.5) - (2022-07-28)
 
 ### Fixes
@@ -361,11 +413,11 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 - Replaced the soon to be deprecated WebBrowser Class (IE popup window for authentication & authorization) with the Microsoft Edge WebView2 control. See [Issue #7](https://github.com/Sekers/SKYAPI/issues/7).
 - Added the "AuthenticationMethod" parameter to the "Connect-SKYAPI" cmdlet which let's you specify how you want to authenticate if authentication is necessary:
-    - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
-                              Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
-    - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
-    - MiniHTTPServer (coming soon as a beta feature): Alternate method of capturing the authentication using your user account's default web browser
-                      and listening for the authentication response using a temporary HTTP server hosted by the module.
+  - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
+    Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
+  - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
+  - MiniHTTPServer (coming soon as a beta feature): Alternate method of capturing the authentication using your user account's default web browser
+    and listening for the authentication response using a temporary HTTP server hosted by the module.
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
