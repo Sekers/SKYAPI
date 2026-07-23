@@ -9,24 +9,37 @@
         "StudentRoleIDs": [
             15425
         ],
-        "Meetings_DateSelection": "Term",
-        "Meetings_DaysToAppearBefore": 14,
-        "Meetings_MaxPastDaysToSync": 30,
-        "Meetings_StartDate": "",
-        "Meetings_EndDate": "",
-        "Meetings_OfferingTypes": [
-            "Academics",
-            "Advisory"
-        ],
-        "DefaultShowAs": "Busy",
-        "DefaultIsReminderOn": false,
-        "DefaultReminderMinutesBeforeStart": 15,
-        "EventsAppIdentifier_GUID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-        "EventsAppIdentifier_Name": "EventsAppIdentifier",
-        "EventsAppIdentifier_Value": "user_schedule_sync",
         "MySchoolAppDomain": "school.myschoolapp.com",
-        "SaveUsersSyncHistoryPath": "$PSScriptRoot\\Logging\\User Sync History-%date%.csv",
-        "UsersSyncHistoryRetentionTimeInDays": 30
+        "Meetings": {
+            "DateSelection": "Term",
+            "DaysToAppearBefore": 14,
+            "MaxPastDaysToSync": 30,
+            "StartDate": "",
+            "EndDate": "",
+            "OfferingTypes": [
+                "Academics",
+                "Advisory"
+            ]
+        },
+        "EventDefaults": {
+            "ShowAs": "Busy",
+            "IsReminderOn": false,
+            "ReminderMinutesBeforeStart": 15
+        },
+        "EventsAppIdentifier": {
+            "GUID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "Name": "EventsAppIdentifier",
+            "Value": "user_schedule_sync"
+        },
+        "DeleteSafety": {
+            "AllowEmptySourceSync": false,
+            "MaxDeletePercentPerUser": 50,
+            "MinDeletesBeforeCheck": 5
+        },
+        "UsersSyncHistory": {
+            "Path": "$PSScriptRoot\\Logging\\User Sync History-%date%.csv",
+            "RetentionTimeInDays": 30
+        }
     },
     "SKYAPI": {
         "ConfigFilePath": "$PSScriptRoot\\Config\\config_sky_api.json",

@@ -2,11 +2,11 @@
     {
         "UserEmail": "jane.dear@school.edu",
         "ShowAs": "Free",
-        "isReminderOn": true,
+        "IsReminderOn": true,
         "ReminderMinutesBeforeStart": 10
     },
     {
         "UserEmail": "john.doe@school.edu",
-        "isReminderOn": false
+        "IsReminderOn": false
     }
 ]

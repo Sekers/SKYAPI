@@ -236,6 +236,90 @@ function Get-NextOutlookCategoryColor
     return $NextCategoryColor
 }
 
+function Write-RunSummary
+{
+    <#
+        .SYNOPSIS
+        Writes the end-of-run tally of what the script did.
+
+        .DESCRIPTION
+        Written to the log when logging is enabled and to the host when it isn't, so that an unattended run
+        always leaves a record of its outcome even with logging & email alerts turned off.
+    #>
+
+    param (
+        [Parameter(Mandatory=$true)][string]$Outcome, # E.g., 'Success', 'Completed With Errors', 'Failed'.
+        [Parameter(Mandatory=$true)][System.Collections.Specialized.OrderedDictionary]$Counters,
+        [bool]$LoggingEnabled = $false,
+        [string]$Detail
+    )
+
+    $CounterText = ($Counters.GetEnumerator() | ForEach-Object {"$($_.Key)=$($_.Value)"}) -join ', '
+    $SummaryText = "Run Summary [$($Outcome)]: $CounterText"
+    if (-not [string]::IsNullOrWhiteSpace($Detail)) { $SummaryText += " | $Detail" }
+
+    # When logging is on the logging provider already writes this to the console, so only write it directly
+    # when it isn't. That way the summary is always seen once, however the script is configured.
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message $SummaryText}
+    else {Write-Host $SummaryText}
+
+    return $SummaryText
+}
+
+function Write-UserSyncHistory
+{
+    <#
+        .SYNOPSIS
+        Appends one user's synchronization result to the users synchronization history file.
+
+        .DESCRIPTION
+        Called once a user's calendar work has finished (successfully or not) so that the row reflects what
+        actually happened rather than what was about to be attempted. Does nothing when no history path is set.
+    #>
+
+    param (
+        [string]$Path,
+        [Parameter(Mandatory=$true)]$User,
+        [int32]$MeetingsCount,
+        [int32]$Created,
+        [int32]$Updated,
+        [int32]$Deleted,
+        [Parameter(Mandatory=$true)][ValidateSet('Success','Failed','DeleteGuardTripped')][string]$Status
+    )
+
+    if ([string]::IsNullOrEmpty($Path)) { return }
+
+    $UserSyncHistoryLine = [PSCustomObject]@{
+        Timestamp     = $([DateTime]::UtcNow.ToString('u'))
+        ID            = $($User.id)
+        Name          = $($User.display)
+        Email         = $($User.email)
+        MeetingsCount = $MeetingsCount
+        Created       = $Created
+        Updated       = $Updated
+        Deleted       = $Deleted
+        Status        = $Status
+    }
+
+    # The history is a record of the sync, not part of it, so a problem writing the file (e.g. it is open in
+    # another program) is reported rather than allowed to interrupt the calendar work.
+    try
+    {
+        if ($PSVersionTable.PSEdition.ToString() -eq 'Desktop') # Hack because Windows PowerShell 5.1 adds the Byte order mark (BOM) to the beginning of the export (which we don't want). In Windows PowerShell, any Unicode encoding, except UTF7, always creates a BOM. PowerShell (v6 and higher) defaults to utf8NoBOM for all text output.
+        {
+            $UserSyncHistoryLine | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Add-Content -Encoding Byte -Path $Path -NoNewline
+        }
+        else # PowerShell Core Exports without the BOM
+        {
+            $UserSyncHistoryLine | Export-Csv -Encoding UTF8 -Path $Path -NoTypeInformation -Append
+        }
+    }
+    catch
+    {
+        Write-Warning "Unable to write the users synchronization history row for [$($User.email)]: $_"
+    }
+}
+
 #################
 # SET VARIABLES #
 #################
@@ -254,21 +338,36 @@ $Config = Get-Content -Path "$PSScriptRoot\Config\config_general.json" | Convert
 [bool]$EmailonWarning = $Config.General.EmailonWarning
 [int32[]]$TeacherRoleIDs = $Config.General.TeacherRoleIDs # May be empty/absent (e.g. a student-only sync).
 [int32[]]$StudentRoleIDs = $Config.General.StudentRoleIDs # May be empty/absent. Rosters are only pulled when there are student roles.
-[string]$Meetings_DateSelection = $Config.General.Meetings_DateSelection # 'Year' or 'Term' or 'Range'
-[int32]$Meetings_DaysToAppearBefore = $Config.General.Meetings_DaysToAppearBefore
-[Nullable[int32]]$Meetings_MaxPastDaysToSync = $Config.General.Meetings_MaxPastDaysToSync # Needs to be nullable in case we don't want a limit
-[string]$Meetings_StartDate = $Config.General.Meetings_StartDate
-[string]$Meetings_EndDate = $Config.General.Meetings_EndDate
-[array]$Meetings_OfferingTypes = $Config.General.Meetings_OfferingTypes
-[string]$DefaultShowAs = $Config.General.DefaultShowAs
-[bool]$DefaultIsReminderOn = $Config.General.DefaultIsReminderOn
-[int32]$DefaultReminderMinutesBeforeStart = $Config.General.DefaultReminderMinutesBeforeStart
-[string]$EventsAppIdentifier_GUID = $Config.General.EventsAppIdentifier_GUID
-[string]$EventsAppIdentifier_Name = $Config.General.EventsAppIdentifier_Name
-[string]$EventsAppIdentifier_Value = $Config.General.EventsAppIdentifier_Value
 [string]$MySchoolAppDomain = $Config.General.MySchoolAppDomain
-[string]$SaveUsersSyncHistoryPath = $ExecutionContext.InvokeCommand.ExpandString($Config.General.SaveUsersSyncHistoryPath)
-[int32]$UsersSyncHistoryRetentionTimeInDays = $Config.General.UsersSyncHistoryRetentionTimeInDays
+[string]$Meetings_DateSelection = $Config.General.Meetings.DateSelection # 'Year' or 'Term' or 'Range'
+[int32]$Meetings_DaysToAppearBefore = $Config.General.Meetings.DaysToAppearBefore
+[Nullable[int32]]$Meetings_MaxPastDaysToSync = $Config.General.Meetings.MaxPastDaysToSync # Needs to be nullable in case we don't want a limit
+[string]$Meetings_StartDate = $Config.General.Meetings.StartDate # Only used when 'DateSelection' is 'Range'.
+[string]$Meetings_EndDate = $Config.General.Meetings.EndDate # Only used when 'DateSelection' is 'Range'.
+[array]$Meetings_OfferingTypes = $Config.General.Meetings.OfferingTypes
+[string]$DefaultShowAs = $Config.General.EventDefaults.ShowAs
+[bool]$DefaultIsReminderOn = $Config.General.EventDefaults.IsReminderOn
+[int32]$DefaultReminderMinutesBeforeStart = $Config.General.EventDefaults.ReminderMinutesBeforeStart
+[string]$EventsAppIdentifier_GUID = $Config.General.EventsAppIdentifier.GUID
+[string]$EventsAppIdentifier_Name = $Config.General.EventsAppIdentifier.Name
+[string]$EventsAppIdentifier_Value = $Config.General.EventsAppIdentifier.Value
+
+# Parse the event tag GUID here because the single-instance lock further below is named after it and needs its
+# canonical form. Whether it is actually usable is reported by the configuration checks inside the main
+# try/catch (so a bad value still gets the normal logging & alerting); this only records what it parsed to.
+$EventsAppIdentifier_GUID_Parsed = [guid]::Empty
+$EventsAppIdentifier_GUID_IsValid = [guid]::TryParse($EventsAppIdentifier_GUID, [ref]$EventsAppIdentifier_GUID_Parsed)
+
+# Deletion Safety Settings.
+# The sync removes any of its own tagged events that no longer match a SIS meeting, so a wrongly-empty or
+# unexpectedly small SIS result would otherwise clear calendars. These limits stop that from happening silently.
+[bool]$AllowEmptySourceSync = $Config.General.DeleteSafety.AllowEmptySourceSync # Allow a run where the SIS returned no meetings at all (this deletes every synced event in range and overrides the per-user percentage limit for that run).
+[int32]$MaxDeletePercentPerUser = $Config.General.DeleteSafety.MaxDeletePercentPerUser # Hold back creations & deletions for a user when MORE than this percentage of their existing synced events would be removed (100 = never hold back).
+[int32]$MinDeletesBeforeCheck = $Config.General.DeleteSafety.MinDeletesBeforeCheck # Only apply the percentage check once at least this many deletions are queued (keeps small calendars from tripping it).
+
+# Users Synchronization History Settings
+[string]$SaveUsersSyncHistoryPath = $ExecutionContext.InvokeCommand.ExpandString($Config.General.UsersSyncHistory.Path)
+[int32]$UsersSyncHistoryRetentionTimeInDays = $Config.General.UsersSyncHistory.RetentionTimeInDays
 
 # Configure SKYAPI and Verify Type
 [string]$SKYAPIConfigFilePath = $ExecutionContext.InvokeCommand.ExpandString($Config.SKYAPI.ConfigFilePath) # The location where you placed your Blackbaud SKY API configuration file. Can accept PowerShell variables.
@@ -325,7 +424,7 @@ $MeetingsToIgnore = Get-Content -Path "$PSScriptRoot\Config\config_meetings_to_i
 $UserPreferences = Get-Content -Path "$PSScriptRoot\Config\config_user_preferences.json" | ConvertFrom-Json
 
 # Create List of Custom Preferences to Compare
-$UserPreferencesToVerify = @('ShowAs','isReminderOn','ReminderMinutesBeforeStart')
+$UserPreferencesToVerify = @('ShowAs','IsReminderOn','ReminderMinutesBeforeStart')
 
 # Set Fields To Match Between APIs to Compare Existence
 [array]$FieldsToMatch = @(
@@ -360,7 +459,7 @@ if (!(Get-Module -Name "SKYAPI"))
 {
    # Module is not loaded
    Write-Error "Please First Install the Blackbaud SKY API Module from https://github.com/Sekers/SKYAPI."
-   Return
+   exit 1
 }
 
 # Check For Microsoft.Graph Module.
@@ -372,7 +471,7 @@ if (!(Get-Module -Name "Microsoft.Graph.Calendar") -or !(Get-Module -Name "Micro
 {
     # Module is not available.
     Write-Error "Please First Install the Microsoft.Graph Module (or just the 'Microsoft.Graph.Calendar' & 'Microsoft.Graph.Users' submodules) from https://www.powershellgallery.com/packages/Microsoft.Graph/ "
-    Return
+    exit 1
 }
 
 # Check For PowerShell Framework Module (Only Required If Logging Is Enabled)
@@ -383,7 +482,7 @@ if ($LoggingEnabled)
     {
         # Module is not loaded
         Write-Error "Please First Install the PowerShell Framework Module from https://psframework.org."
-        Return
+        exit 1
     }
 }
 
@@ -395,7 +494,7 @@ if ($EmailonError -or $EmailonWarning)
     {
         # Module is not loaded
         Write-Error "Please First Install the ScriptMessage Module from https://github.com/Sekers/ScriptMessage."
-        Return
+        exit 1
     }
 }
 
@@ -415,6 +514,60 @@ if ($LoggingEnabled)
     }
 }
 
+# Tally of what the run did. Reported in the end-of-run summary (& the alert emails) and used to pick the
+# script's exit code so that a scheduled task can tell a clean run from a partial or failed one.
+$RunCounters = [ordered]@{
+    UsersProcessed   = 0
+    UsersSkipped     = 0
+    UsersFailed      = 0
+    EventsCreated    = 0
+    EventsUpdated    = 0
+    EventsDeleted    = 0
+    DeleteGuardTrips = 0
+}
+
+# Only allow one copy of this deployment of the script to run at a time.
+# A run can take a while, so a scheduled interval that is shorter than the run time (or a manual run started
+# during a scheduled one) would otherwise have two copies working the same calendars: both would see the same
+# missing events and both would create them, leaving duplicates behind.
+# The lock is named after the deployment's own event tag GUID rather than being a single fixed name, because
+# that GUID is what decides which events a deployment manages: two deployments installed on the same computer
+# with different tags (e.g. a test install alongside the live one, or separate teacher & student syncs) never
+# touch the same events and so are free to run at the same time, while two that share a tag do work on the same
+# events and still take turns.
+# The GUID is used in its parsed, canonical 'N' form (32 hex digits, no braces or hyphens, lower case) rather
+# than as it was typed. Mutex names are case-sensitive and a GUID can be written in several equally valid ways,
+# so the same tag entered as "{A1B2...}" in one deployment's configuration file and "a1b2..." in another's would
+# otherwise produce two different locks for what the calendar sees as one and the same tag. The canonical form
+# is also always a legal mutex name (a name cannot contain a backslash other than the 'Global\' prefix, and is
+# length limited), which matters because this runs before the main try/catch below can report a bad value.
+$SingleInstanceMutexScope = if ($EventsAppIdentifier_GUID_IsValid) {$EventsAppIdentifier_GUID_Parsed.ToString('N')} else {'unparsable-guid'} # An unusable GUID is reported by the configuration checks inside the try/catch below, which stops the run moments from now; this just needs a placeholder to build a name from until then.
+$SingleInstanceMutexName = "Global\SISSchedulesExchangeSync-$SingleInstanceMutexScope"
+$SingleInstanceMutex = [System.Threading.Mutex]::new($false, $SingleInstanceMutexName)
+$SingleInstanceMutexAcquired = $false
+try
+{
+    $SingleInstanceMutexAcquired = $SingleInstanceMutex.WaitOne([TimeSpan]::FromSeconds(10))
+}
+catch [System.Threading.AbandonedMutexException]
+{
+    # The previous holder ended without releasing it (e.g. the process was killed). The lock is ours now.
+    $SingleInstanceMutexAcquired = $true
+    $NewMessage = "The previous run of this script ended without releasing its single-instance lock. Continuing."
+    if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
+}
+
+if (-not $SingleInstanceMutexAcquired)
+{
+    $NewMessage = "Another copy of this deployment of the script is still running (single-instance lock `"$SingleInstanceMutexName`"). Stopping so the two runs don't work on the same calendars at the same time."
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message $NewMessage}
+    $null = Write-RunSummary -Outcome 'Already Running' -Counters $RunCounters -LoggingEnabled $LoggingEnabled -Detail $NewMessage
+    if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
+    if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
+    $SingleInstanceMutex.Dispose()
+    exit 3
+}
+
 # Begin Program Work (Try/Catch for Error/Warning Processing & Notification)
 try
 {
@@ -423,6 +576,154 @@ try
     # Combined roles to sync (teachers + students).
     [int32[]]$UserRoleIDs = @($TeacherRoleIDs) + @($StudentRoleIDs) | Where-Object {$null -ne $_}
     if ($UserRoleIDs.Count -eq 0) { throw "At least one of 'TeacherRoleIDs' or 'StudentRoleIDs' must be configured in the general configuration file; otherwise there are no users to sync." }
+
+    # Verify the offering types are usable. A list that is empty, or that holds blank or null entries, is not
+    # caught by the SIS existence check further below: a JSON null passes through 'Where-Object' as a lone $null,
+    # which collapses to nothing when assigned to a typed array, so it never registers as unmatched. Such a list
+    # instead reaches the SKY API as an empty 'offering_types' value, which falls back to the API's own default of
+    # 'Academics' - synchronizing an offering type that was never configured AND queueing every event of the other
+    # configured types for removal (in 'Term' mode nothing matches at all and the run quietly does nothing).
+    # Note the '@()' wrappers below: they keep a single null entry countable instead of collapsing it away.
+    [string[]]$Meetings_OfferingTypes_Usable = @($Meetings_OfferingTypes | Where-Object {-not [string]::IsNullOrWhiteSpace($_)})
+    if (@($Meetings_OfferingTypes).Count -eq 0)
+    {
+        throw "'Meetings.OfferingTypes' must contain at least one offering type in the general configuration file (e.g. 'Academics')."
+    }
+    if ($Meetings_OfferingTypes_Usable.Count -ne @($Meetings_OfferingTypes).Count)
+    {
+        throw "'Meetings.OfferingTypes' contains a blank or null entry in the general configuration file. Remove it, or replace it with an offering type name (e.g. 'Academics'); a blank entry narrows the meetings pulled from the SIS, which then queues the events of the missing meetings for removal."
+    }
+
+    # Verify the event tag settings. Together they are how the script recognizes the events it created: the same
+    # three values build the tag written onto each new event and the filter used to read those events back. If any
+    # part is missing (or the GUID isn't a GUID, which the named-property format requires) the filter stops
+    # matching, so the script no longer recognizes its own events - it would neither update nor remove them and
+    # would create duplicates alongside them on every run. The GUID also names this deployment's single-instance
+    # lock (see the mutex above), so a blank one would additionally share that lock with every other deployment.
+    if ([string]::IsNullOrWhiteSpace($EventsAppIdentifier_GUID) -or [string]::IsNullOrWhiteSpace($EventsAppIdentifier_Name) -or [string]::IsNullOrWhiteSpace($EventsAppIdentifier_Value))
+    {
+        throw "'EventsAppIdentifier' GUID, Name & Value must all be set in the general configuration file. They form the tag that identifies the events created by this script."
+    }
+    if (-not $EventsAppIdentifier_GUID_IsValid) # Parsed where the configuration values are read, since the single-instance lock above is named after it.
+    {
+        throw "'EventsAppIdentifier.GUID' must be a valid GUID in the general configuration file (currently '$EventsAppIdentifier_GUID'). Generate one by running 'New-Guid' in PowerShell. Note that changing this value once events exist orphans the previously created events."
+    }
+
+    # Verify the deletion safety limits. A missing 'DeleteSafety' section reads as zero, which would quietly
+    # stop the script from ever removing an event, so require a usable percentage rather than assuming one.
+    if (($MaxDeletePercentPerUser -le 0) -or ($MaxDeletePercentPerUser -gt 100))
+    {
+        throw "'DeleteSafety.MaxDeletePercentPerUser' must be between 1 and 100 in the general configuration file (currently '$MaxDeletePercentPerUser'). When removing MORE than this share of a user's synced events is queued in one run, that user's creations & removals are held back and reported instead (100 = even a full clear is allowed)."
+    }
+    if ($MinDeletesBeforeCheck -lt 0)
+    {
+        throw "'DeleteSafety.MinDeletesBeforeCheck' cannot be negative in the general configuration file (currently '$MinDeletesBeforeCheck')."
+    }
+
+    # Verify the meeting date window settings. Both are applied as AddDays() offsets, so a negative value silently
+    # moves the window the opposite way from what was intended: a negative 'MaxPastDaysToSync' pushes the start
+    # date into the future (inverting the range), and a negative 'DaysToAppearBefore' drops the current term(s)
+    # from the term list, which then queues the meetings that went missing with them for removal. Zero is
+    # meaningful for both (never look ahead / start from today), so only reject negatives.
+    if ($Meetings_DaysToAppearBefore -lt 0)
+    {
+        throw "'Meetings.DaysToAppearBefore' cannot be negative in the general configuration file (currently '$Meetings_DaysToAppearBefore'). Use 0 to never look ahead to the next school year or term."
+    }
+    if (($null -ne $Meetings_MaxPastDaysToSync) -and ($Meetings_MaxPastDaysToSync -lt 0))
+    {
+        throw "'Meetings.MaxPastDaysToSync' cannot be negative in the general configuration file (currently '$Meetings_MaxPastDaysToSync'). It counts back from today, so a negative value would move the sync start date into the future. Use null to apply no past cutoff."
+    }
+
+    # Verify the date selection mode. An unrecognized value would otherwise fall through the switch below to its
+    # empty 'Default' block, leaving the start & end dates exactly as configured (blank in the shipped template)
+    # and failing much later with an unhelpful date conversion error.
+    [string[]]$ValidDateSelections = @('Year','Term','Range')
+    if ($Meetings_DateSelection -notin $ValidDateSelections)
+    {
+        throw "'Meetings.DateSelection' must be one of [$($ValidDateSelections -join ', ')] in the general configuration file (currently '$Meetings_DateSelection')."
+    }
+
+    # In 'Range' mode the configured dates are the entire sync window, so verify them here rather than letting a
+    # typo surface as a date conversion error after the SIS meetings have already been pulled. The other modes
+    # compute their own dates and leave these blank, so only check them when they are actually used.
+    if ($Meetings_DateSelection -eq 'Range')
+    {
+        $Meetings_StartDate_Parsed = [datetime]::MinValue
+        $Meetings_EndDate_Parsed = [datetime]::MinValue
+        if (-not [datetime]::TryParseExact($Meetings_StartDate, 'yyyy-MM-dd', [cultureinfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None, [ref]$Meetings_StartDate_Parsed))
+        {
+            throw "'Meetings.StartDate' must be a date in 'yyyy-MM-dd' format (e.g. '2025-08-15') when 'Meetings.DateSelection' is 'Range' in the general configuration file (currently '$Meetings_StartDate')."
+        }
+        if (-not [datetime]::TryParseExact($Meetings_EndDate, 'yyyy-MM-dd', [cultureinfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None, [ref]$Meetings_EndDate_Parsed))
+        {
+            throw "'Meetings.EndDate' must be a date in 'yyyy-MM-dd' format (e.g. '2026-06-05') when 'Meetings.DateSelection' is 'Range' in the general configuration file (currently '$Meetings_EndDate')."
+        }
+        if ($Meetings_EndDate_Parsed -lt $Meetings_StartDate_Parsed)
+        {
+            throw "'Meetings.EndDate' ('$Meetings_EndDate') cannot be earlier than 'Meetings.StartDate' ('$Meetings_StartDate') in the general configuration file."
+        }
+    }
+
+    # Verify the event defaults. 'ShowAs' is handed to Microsoft Graph as-is, so an unrecognized value is rejected
+    # on every event: every user would be marked failed, and because the update comparison would never match, the
+    # script would rewrite every event on every run.
+    [string[]]$ValidShowAsValues = @('Unknown','Free','Tentative','Busy','Oof','WorkingElsewhere')
+    if ($DefaultShowAs -notin $ValidShowAsValues)
+    {
+        throw "'EventDefaults.ShowAs' must be one of [$($ValidShowAsValues -join ', ')] in the general configuration file (currently '$DefaultShowAs'). These are the Microsoft Graph 'freeBusyStatus' values."
+    }
+    if ($DefaultReminderMinutesBeforeStart -lt 0)
+    {
+        throw "'EventDefaults.ReminderMinutesBeforeStart' cannot be negative in the general configuration file (currently '$DefaultReminderMinutesBeforeStart')."
+    }
+
+    # Verify the verbose preference. It is assigned to PowerShell's own $VerbosePreference variable, so an
+    # unrecognized value is not rejected until something first tries to write a verbose message.
+    [string[]]$ValidVerbosePreferences = @('Stop','Inquire','Continue','SilentlyContinue')
+    if ($VerbosePreference -notin $ValidVerbosePreferences)
+    {
+        throw "'Debugging.VerbosePreference' must be one of [$($ValidVerbosePreferences -join ', ')] in the general configuration file (currently '$VerbosePreference')."
+    }
+
+    # Verify the sync history retention. The rotation below removes files last written before 'today minus the
+    # retention days', so zero or a negative value puts that cutoff at (or past) the current moment and clears
+    # every history file, including the one this run is about to append to. Only applies when history is enabled.
+    if ((-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath)) -and ($UsersSyncHistoryRetentionTimeInDays -lt 1))
+    {
+        throw "'UsersSyncHistory.RetentionTimeInDays' must be 1 or greater in the general configuration file (currently '$UsersSyncHistoryRetentionTimeInDays') when 'UsersSyncHistory.Path' is set."
+    }
+
+    # Verify the per-user preference overrides. These are handed to Microsoft Graph the same way the event
+    # defaults above are, so checking them here keeps one bad entry from failing that user midway through the run.
+    foreach ($userPreference in @($UserPreferences))
+    {
+        if ((-not [string]::IsNullOrEmpty($userPreference.ShowAs)) -and ($userPreference.ShowAs -notin $ValidShowAsValues))
+        {
+            throw "'ShowAs' for '$($userPreference.UserEmail)' must be one of [$($ValidShowAsValues -join ', ')] in the user preferences configuration file (currently '$($userPreference.ShowAs)')."
+        }
+
+        # Confirm the type as well as the range: the override is read with a null check rather than a cast, so a
+        # quoted number in the configuration file would reach Graph as a string.
+        if ($null -ne $userPreference.ReminderMinutesBeforeStart)
+        {
+            $UserPreferenceReminderMinutes = 0
+            if ((-not [int32]::TryParse([string]$userPreference.ReminderMinutesBeforeStart, [ref]$UserPreferenceReminderMinutes)) -or ($UserPreferenceReminderMinutes -lt 0))
+            {
+                throw "'ReminderMinutesBeforeStart' for '$($userPreference.UserEmail)' must be a whole number of 0 or greater in the user preferences configuration file (currently '$($userPreference.ReminderMinutesBeforeStart)')."
+            }
+        }
+    }
+
+    # A repeated email makes the preference lookup later in the run return every matching entry instead of one,
+    # which then hands Microsoft Graph an array where it expects a single value. Warn rather than stop, since
+    # every other user is unaffected.
+    [string[]]$DuplicateUserPreferenceEmails = @($UserPreferences | Group-Object -Property UserEmail | Where-Object {$_.Count -gt 1}).Name
+    if ($DuplicateUserPreferenceEmails.Count -gt 0)
+    {
+        $NewMessage = "WARNING: The user preferences configuration file has more than one entry for: $($DuplicateUserPreferenceEmails -join ', '). Only one entry per user is supported, so the duplicated entries will not be applied correctly."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
+        if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+    }
 
     # If set, test path to writable list of user calendar synchronizations and create file if necessary.
     if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
@@ -447,9 +748,22 @@ try
         $UserSyncHistoryFiles | Where-Object -Property LastWriteTime -lt (Get-Date).AddDays(-$UsersSyncHistoryRetentionTimeInDays) | Remove-Item -Force
 
         # Create CSV File With Headers, If Necessary
+        $UserSyncHistoryHeader = '"Timestamp","ID","Name","Email","MeetingsCount","Created","Updated","Deleted","Status"'
+        if (Test-Path $SaveUsersSyncHistoryPath)
+        {
+            # An existing file written by an older version of this script has fewer columns, which would make every
+            # append fail. Set it aside so today's run starts a clean file instead of losing the older rows.
+            $ExistingUserSyncHistoryHeader = Get-Content -Path $SaveUsersSyncHistoryPath -TotalCount 1
+            if ($ExistingUserSyncHistoryHeader -ne $UserSyncHistoryHeader)
+            {
+                $ArchivedUserSyncHistoryPath = [System.IO.Path]::ChangeExtension($SaveUsersSyncHistoryPath, $null) + "(Previous Format $(Get-Date -Format 'HHmmss'))" + [System.IO.Path]::GetExtension($SaveUsersSyncHistoryPath)
+                Rename-Item -Path $SaveUsersSyncHistoryPath -NewName ([System.IO.Path]::GetFileName($ArchivedUserSyncHistoryPath))
+                $NewMessage = "The existing users synchronization history file has an outdated set of columns. It has been renamed to `"$([System.IO.Path]::GetFileName($ArchivedUserSyncHistoryPath))`" and a new file started."
+                if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
+            }
+        }
         if (-not (Test-Path $SaveUsersSyncHistoryPath))
         {
-            $UserSyncHistoryHeader = '"Timestamp","ID","Name","Email","MeetingsCount"'
             if ($PSVersionTable.PSEdition.ToString() -eq 'Desktop') # Hack because Windows PowerShell 5.1 adds the Byte order mark (BOM) to the beginning of the export (which we don't want). In Windows PowerShell, any Unicode encoding, except UTF7, always creates a BOM. PowerShell (v6 and higher) defaults to utf8NoBOM for all text output.
             {
                 $UserSyncHistoryHeader | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Set-Content -Encoding Byte -Path $SaveUsersSyncHistoryPath -NoNewline
@@ -591,10 +905,28 @@ try
     }
     $SchoolTimeZone = @($SchoolTimeZone)[0] # A StandardName/DaylightName match can return more than one zone; use the first.
 
+    # "Today" for every date-window decision below, as a calendar day in the SCHOOL's time zone. School year &
+    # term begin/end dates are calendar days in the school's zone, so comparing them against the host's local
+    # date could shift a window by a day around midnight whenever the script runs in a different time zone.
+    $TodayInSchoolTimeZone = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date), $SchoolTimeZone.Id)).Date
+
     # Get Offering School Types
     if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Beginning SIS School Offering Types Collection"}
     $SchoolOfferingTypes = Get-SchoolOfferingType
     $OfferingTypes = foreach ($meetings_OfferingType in $Meetings_OfferingTypes) {$SchoolOfferingTypes | Where-Object {$_.description -eq ($meetings_OfferingType)}}
+
+    # Fail on a configured offering type that doesn't exist in the SIS (e.g. a typo). Without this the name
+    # silently matches nothing, which narrows (or empties) the meetings pulled below and would then be treated
+    # as "these meetings no longer exist" by the event removal pass.
+    # The '@()' wrapper matters: without it a lone unmatched null would collapse to nothing on assignment and
+    # slip through this check (blank & null entries are already rejected during the configuration checks above).
+    [string[]]$UnmatchedOfferingTypes = @($Meetings_OfferingTypes | Where-Object {$_ -notin $SchoolOfferingTypes.description})
+    if ($UnmatchedOfferingTypes.Count -gt 0)
+    {
+        $NewMessage = "The configured meeting offering type(s) [$($UnmatchedOfferingTypes -join ', ')] do not exist in the SIS. Available offering types: $($SchoolOfferingTypes.description -join ', ')."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Error $NewMessage}
+        throw $NewMessage
+    }
 
     # Get Meetings
     if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Beginning SIS Meetings Collection"}
@@ -618,8 +950,8 @@ try
             if ($Meetings_DaysToAppearBefore -gt 0)
             {
                 # The next school year may not exist yet in the SIS (or today+1yr may fall in the summer gap between school years).
-                $NextSchoolYear = (Get-SchoolYear | Where-Object {(([datetime]$_.begin_date) -le (Get-Date).AddYears(1)) -and (([datetime]$_.end_date) -ge (Get-Date).AddYears(1))})
-                if ($NextSchoolYear -and (([datetime]$NextSchoolYear.begin_date) -le (Get-Date).AddDays($Meetings_DaysToAppearBefore)))
+                $NextSchoolYear = (Get-SchoolYear | Where-Object {(([datetime]$_.begin_date) -le $TodayInSchoolTimeZone.AddYears(1)) -and (([datetime]$_.end_date) -ge $TodayInSchoolTimeZone.AddYears(1))})
+                if ($NextSchoolYear -and (([datetime]$NextSchoolYear.begin_date) -le $TodayInSchoolTimeZone.AddDays($Meetings_DaysToAppearBefore)))
                 {
                     $Meetings_EndDate = ([datetime]$NextSchoolYear.end_date).ToString('yyyy-MM-dd')
                 }
@@ -633,7 +965,7 @@ try
             if ($Meetings_DaysToAppearBefore -gt 0)
             {
                 # The next school year may not exist yet in the SIS (or today+1yr may fall in the summer gap between school years).
-                $NextSchoolYear = (Get-SchoolYear | Where-Object {(([datetime]$_.begin_date) -le (Get-Date).AddYears(1)) -and (([datetime]$_.end_date) -ge (Get-Date).AddYears(1))})
+                $NextSchoolYear = (Get-SchoolYear | Where-Object {(([datetime]$_.begin_date) -le $TodayInSchoolTimeZone.AddYears(1)) -and (([datetime]$_.end_date) -ge $TodayInSchoolTimeZone.AddYears(1))})
                 if ($NextSchoolYear)
                 {
                     $SchoolTermList += Get-SchoolTerm -school_year $NextSchoolYear.school_year_label | Where-Object -Property offering_type -in $OfferingTypes.id
@@ -642,8 +974,10 @@ try
             }
             
             # Filter out terms that are not within the date range.
-            $SchoolTermList = $SchoolTermList | Where-Object {([datetime]$_.begin_date) -le (Get-Date).AddDays(($Meetings_DaysToAppearBefore))}
-            $SchoolTermList = $SchoolTermList | Where-Object {([datetime]$_.end_date) -ge (Get-Date)}
+            # Term begin & end dates are whole calendar days, so compare them against calendar days too. Comparing
+            # an end date (midnight) against the current moment would drop a term on the morning of its final day.
+            $SchoolTermList = $SchoolTermList | Where-Object {([datetime]$_.begin_date).Date -le $TodayInSchoolTimeZone.AddDays(($Meetings_DaysToAppearBefore))}
+            $SchoolTermList = $SchoolTermList | Where-Object {([datetime]$_.end_date).Date -ge $TodayInSchoolTimeZone}
 
             # If no terms within the date range are found, stop script (this is common during the summer months).
             if ($SchoolTermList.Count -eq 0)
@@ -658,21 +992,25 @@ try
                 }
 
                 # End Logging Message
+                $null = Write-RunSummary -Outcome 'Nothing To Do' -Counters $RunCounters -LoggingEnabled $LoggingEnabled -Detail 'No school terms within the date range.'
                 if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
                 if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
 
-                # Stop the script.
-                exit
+                # Stop the script. This is a normal, healthy outcome, so exit successfully.
+                exit 0
             }
-            
+
             # Set Date Range Variables
+            # Term begin & end dates are already whole calendar days in the school's own time zone, so they are
+            # used as-is. Running them through a time zone conversion would interpret them in the host's time
+            # zone and could shift them a day whenever the script runs somewhere other than the school's zone.
             [array]$TermBeginDates = foreach ($termBeginDate in $SchoolTermList.begin_date)
             {
-                [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(([datetime]$termBeginDate), $SchoolTimeZone.Id)
+                ([datetime]$termBeginDate).Date
             }
             [array]$TermEndDates = foreach ($termEndDate in $SchoolTermList.end_date)
             {
-                [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(([datetime]$termEndDate), $SchoolTimeZone.Id)
+                ([datetime]$termEndDate).Date
             }
             $Meetings_StartDate = (($TermBeginDates | Sort-Object )[0]).ToString('yyyy-MM-dd')
             $Meetings_EndDate = (($TermEndDates | Sort-Object -Descending)[0]).ToString('yyyy-MM-dd')
@@ -681,9 +1019,8 @@ try
             # current terms, so on its own it would sync every level for the widest term (e.g. a year-long
             # advisory term stretches the window across both academic semesters). These windows let us keep
             # each meeting only within its OWN level's current term (see the per-level filter after the fetch).
-            # Term begin/end are kept as School Time Zone calendar dates (.Date) so they line up with each
-            # meeting's date, which the filter derives from start_time converted to the School Time Zone.
-            # This is the same conversion used just above for $Meetings_StartDate/$Meetings_EndDate.
+            # Term begin/end are School Time Zone calendar dates (.Date) so they line up with each meeting's
+            # date, which the filter derives from start_time converted to the School Time Zone.
             # The *_description fields are carried for readable logging only; the filter matches on the
             # numeric level_id/offering_type.
             [array]$CurrentTermWindows = foreach ($schoolTerm in $SchoolTermList)
@@ -694,8 +1031,8 @@ try
                     offering_type             = [string]$schoolTerm.offering_type
                     offering_type_description = ($OfferingTypes | Where-Object {$_.id -eq $schoolTerm.offering_type}).description
                     description               = $schoolTerm.description
-                    begin_date                = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(([datetime]$schoolTerm.begin_date), $SchoolTimeZone.Id)).Date
-                    end_date                  = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(([datetime]$schoolTerm.end_date), $SchoolTimeZone.Id)).Date
+                    begin_date                = ([datetime]$schoolTerm.begin_date).Date
+                    end_date                  = ([datetime]$schoolTerm.end_date).Date
                 }
             }
         }
@@ -708,7 +1045,7 @@ try
     # Only synchronize past meetings if the number of days is less than the maximum allowed.
     if ($null -ne $Meetings_MaxPastDaysToSync)
     {
-        $Meetings_StartDate_OldestAllowed = ((Get-Date).AddDays(-$Meetings_MaxPastDaysToSync)).ToString('yyyy-MM-dd')
+        $Meetings_StartDate_OldestAllowed = ($TodayInSchoolTimeZone.AddDays(-$Meetings_MaxPastDaysToSync)).ToString('yyyy-MM-dd')
         $Meetings_StartDate = (@([datetime]$Meetings_StartDate, [datetime]$Meetings_StartDate_OldestAllowed) | Sort-Object | Select-Object -Last 1).ToString('yyyy-MM-dd')
     }
 
@@ -756,6 +1093,7 @@ try
     }
 
     $MeetingsFromSIS = Get-SchoolScheduleMeeting @HashArguments | Select-Object -Property $SISMeetingProperties
+    $MeetingsFromSISCount = @($MeetingsFromSIS).Count # Kept for the deletion safety check below, which reports how many meetings the SIS returned before any filtering.
 
     # Remove Meetings That Should Be Ignored
     [array]$MeetingsFilterProperties = ($MeetingsToIgnore | Get-Member -MemberType NoteProperty).Name
@@ -764,6 +1102,17 @@ try
         $MeetingsFilterPropertyValues = $MeetingsToIgnore.($meetingsFilterProperty)
         foreach ($meetingsFilterPropertyValue in $MeetingsFilterPropertyValues)
         {
+            # Skip blank values. An empty pattern matches every string, so a stray "" in the ignore
+            # configuration would silently drop every meeting (and the removal pass would then clear
+            # every synced event). Warn instead so the bad entry is visible and gets fixed.
+            if ([string]::IsNullOrWhiteSpace($meetingsFilterPropertyValue))
+            {
+                $NewMessage = "WARNING: Ignoring a blank '$meetingsFilterProperty' value in the meetings to ignore configuration file. A blank value would match (and therefore skip) every meeting."
+                if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
+                if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+                continue
+            }
+
             # Escape the configured value so it matches as a literal, case-insensitive substring rather than as a regular expression.
             $MeetingsFromSIS = $MeetingsFromSIS | Where-Object -Property $($meetingsFilterProperty) -NotMatch ([regex]::Escape($meetingsFilterPropertyValue))
         }
@@ -818,6 +1167,19 @@ try
             $UserMeetingObject.psobject.Properties.Add($NewPSObjectProperty)
         }
         $Meetings.Add($UserMeetingObject)
+    }
+
+    # DELETION SAFETY: Stop if there are no meetings left to sync.
+    # Every event this script created that no longer matches a SIS meeting gets removed further below, so an
+    # empty meeting set means "delete every synced event in the date range from every user's calendar". That
+    # is almost always a configuration or data problem (a typo in the meetings to ignore file, an offering type
+    # with no sections, an SIS outage) rather than a real instruction, so fail loudly instead. Set the
+    # 'DeleteSafety.AllowEmptySourceSync' configuration option to $true if an empty sync really is intended.
+    if ($Meetings.Count -eq 0 -and -not $AllowEmptySourceSync)
+    {
+        $NewMessage = "No SIS meetings remain to synchronize (the SIS returned $MeetingsFromSISCount meeting(s) for $Meetings_StartDate to $Meetings_EndDate before the meetings to ignore$(if ($Meetings_DateSelection -eq 'Term'){' and current term'}) filter(s) were applied). Stopping before any calendar events are removed. Verify the configured offering types, the meetings to ignore file & the date range; set 'DeleteSafety.AllowEmptySourceSync' to true if an empty synchronization is expected."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Error $NewMessage}
+        throw $NewMessage
     }
 
     # Build a lookup of each user's meetings so per-user gathering is a fast hashtable lookup instead of
@@ -893,8 +1255,22 @@ try
 
     # Set Start\End Times as UTC for Graph Queries
     # https://learn.microsoft.com/en-us/dotnet/standard/base-types/standard-date-and-time-format-strings#Roundtrip
+    # The end of the range is the start of the day after the last day to sync. Add that day to the school's
+    # calendar date BEFORE converting to UTC: adding 24 hours to the converted value instead would land on the
+    # wrong local time whenever a daylight saving change falls on that day.
     $Meetings_StartDateTime_UTC_ISO8601 = Get-Date ([System.TimeZoneInfo]::ConvertTimeToUtc($Meetings_StartDate, $SchoolTimeZone)) -Format 'o'
-    $Meetings_EndDateTime_UTC_ISO8601 = Get-Date (([System.TimeZoneInfo]::ConvertTimeToUtc($Meetings_EndDate, $SchoolTimeZone)).AddDays(1)) -Format 'o'
+    $Meetings_EndDateTime_UTC_ISO8601 = Get-Date ([System.TimeZoneInfo]::ConvertTimeToUtc((([datetime]$Meetings_EndDate).Date.AddDays(1)), $SchoolTimeZone)) -Format 'o'
+
+    # When an empty synchronization was explicitly allowed AND the SIS really returned no meetings, the whole
+    # point of the run is to remove every synced event in range, so the per-user deletion limit below would
+    # only block the requested cleanup. Note it loudly and let the removals through for this run.
+    $DeleteGuardBypassed = ($AllowEmptySourceSync -and ($Meetings.Count -eq 0))
+    if ($DeleteGuardBypassed)
+    {
+        $NewMessage = "WARNING: 'DeleteSafety.AllowEmptySourceSync' is enabled and no SIS meetings remain to synchronize. Every synced event in the date range will be removed and the per-user deletion limit ('DeleteSafety.MaxDeletePercentPerUser') will not be applied this run."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
+        if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+    }
 
     # Create Needed Events & Remove Extra Events
     if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Beginning Processing Meetings & Existing Calendar Events For Each User"}
@@ -903,6 +1279,14 @@ try
     {
         $UserIndex++
         if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Working On User $UserIndex of $($UsersCount): $($user.display) [$($user.id)] [$($user.email)]"}
+
+        # Reset this user's tally. Rolled into $RunCounters and written to the synchronization history at the
+        # end of the user's processing (including when it fails part way through).
+        $UserMeetingsCount = 0
+        $UserEventsCreated = 0
+        $UserEventsUpdated = 0
+        $UserEventsDeleted = 0
+        $UserDeleteGuardTripped = $false
 
         # Process this user inside try/catch so one broken user/mailbox (e.g. missing license, soft-deleted)
         # logs a warning and moves on instead of aborting the sync for all remaining users.
@@ -917,8 +1301,9 @@ try
             {
                 # Log Warning and Skip This User
                 $NewMessage = "WARNING: Skipping user [$($user.id) - $($user.display)] because their email address [$($user.email)] cannot be found in the Entra Active Directory."
-                if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage}
+                if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
                 if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+                $RunCounters.UsersSkipped++
                 continue
             }
 
@@ -927,47 +1312,12 @@ try
             $UserMeetingsCount = $UserMeetings.Count
             if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Desired SIS Meetings for $($user.email) [$UserMeetingsCount]: $(@($UserMeetings.group_name) -join '; ')"}
 
-            # If set, begin to create a writable list of user calendar synchronizations.
-            if (-not [string]::IsNullOrEmpty($SaveUsersSyncHistoryPath))
-            {
-                $UserSyncHistoryLine = [PSCustomObject]@{
-                    Timestamp     = $([DateTime]::UtcNow.ToString('u'))
-                    ID            = $($user.id)
-                    Name          = $($user.display)
-                    Email         = $($user.email)
-                    MeetingsCount = $UserMeetingsCount
-                }
-
-                if ($PSVersionTable.PSEdition.ToString() -eq 'Desktop') # Hack because Windows PowerShell 5.1 adds the Byte order mark (BOM) to the beginning of the export (which we don't want). In Windows PowerShell, any Unicode encoding, except UTF7, always creates a BOM. PowerShell (v6 and higher) defaults to utf8NoBOM for all text output.
-                {
-                    $UserSyncHistoryLine | ConvertTo-Csv -NoTypeInformation | Select-Object -Skip 1 | Out-String | ForEach-Object {[Text.Encoding]::UTF8.GetBytes($_)} | Add-Content -Encoding Byte -Path $SaveUsersSyncHistoryPath -NoNewline
-                }
-                else # PowerShell Core Exports without the BOM
-                {
-                    $UserSyncHistoryLine | Export-Csv -Encoding UTF8 -Path $SaveUsersSyncHistoryPath -NoTypeInformation -Append
-                }
-            }
-
             # Gather User Custom Preferences
             $UserPreference = $UserPreferences | Where-Object -Property UserEmail -EQ $user.email
             # Null checks (not truthiness) so that overrides of 'false' or '0' are honored.
             $IsReminderOn = if ($null -ne $UserPreference.IsReminderOn) { $UserPreference.IsReminderOn } else { $DefaultIsReminderOn }
             $ReminderMinutesBeforeStart = if ($null -ne $UserPreference.ReminderMinutesBeforeStart) { $UserPreference.ReminderMinutesBeforeStart } else { $DefaultReminderMinutesBeforeStart }
             $ShowAs = if (-not [string]::IsNullOrEmpty($UserPreference.ShowAs)) { $UserPreference.ShowAs } else { $DefaultShowAs }
-
-            # Create Categories in Outlook, if necessary.
-            $UserCourses = $UserMeetings.course_title | Sort-Object -Unique
-            $ExistingUserCategories = @(Get-MgUserOutlookMasterCategory -UserId $EntraUser.Id -All)
-            foreach ($userCourse in $UserCourses)
-            {
-                if ($userCourse -notin $ExistingUserCategories.DisplayName)
-                {
-                    $NextUserCategoryColor = Get-NextOutlookCategoryColor -UserId $EntraUser.Id
-
-                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($user.display) [$($user.id)] [$($user.email)]: $($userCourse) ($($NextUserCategoryColor.Color)::$($NextUserCategoryColor.DisplayName))"}
-                    $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $EntraUser.Id -DisplayName $userCourse -Color $NextUserCategoryColor.Color
-                }
-            }
 
             # Collect Existing Events Created By The App\Script
             # (Filter By Extended Property and Date Range)
@@ -981,6 +1331,14 @@ try
             $Filter_DateRange = "(Start/DateTime ge '$($Meetings_StartDateTime_UTC_ISO8601)') and (End/DateTime le '$($Meetings_EndDateTime_UTC_ISO8601)')"
             $Filter = "($Filter_ExtendedProperty) and ($Filter_DateRange)"
             if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Event filter for $($user.email): $Filter"}
+
+            # The property names here (and in the date filter above) are capitalized to match the event objects
+            # the Graph PowerShell SDK hands back, because this list does double duty: it chooses the properties
+            # to retrieve AND names the properties read off those objects (and copied onto the objects assembled
+            # from them) further below. Microsoft Graph documents these names starting lower case ('showAs',
+            # 'isReminderOn'), which is how they must be spelled when sent as a request body (see the event
+            # creation block below), but it accepts either capitalization when selecting and filtering.
+            # Don't "correct" one of these to match the other; they are separate interfaces.
             $MGEventProperties = @(
                 'Body',
                 'BodyPreview',
@@ -990,7 +1348,7 @@ try
                 'End',
                 'ICalUId',
                 'Id',
-                'Importance'
+                'Importance',
                 'IsReminderOn',
                 'LastModifiedDateTime',
                 'Location',
@@ -1034,98 +1392,17 @@ try
             $ExistingUserEventsCount = $ExistingUserEvents.Count
             if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Existing Exchange Events for $($user.email) [$ExistingUserEventsCount]: $(@($ExistingUserEvents.Subject) -join '; ')"}
 
-            # Process Meetings From SIS
-            if ($LoggingEnabled) {Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$UserMeetingsCount] SIS Meetings for User: $($user.display) [$($user.id)] [$($user.email)]"}
-            $UserMeetingIndex = 0
-            foreach ($userMeeting in $UserMeetings)
-            {
-                $UserMeetingIndex++
-                # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
-                Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | SIS Meeting $($UserMeetingIndex) of $($UserMeetingsCount)" -PercentComplete (($UserMeetingIndex / $UserMeetingsCount) * 100)
-
-                # Create the event, if needed.
-                # Start with all Exchange events and filter down.
-                $ExistingEventMatchResults = $ExistingUserEvents
-                $ExistingEventMatchCount = $ExistingEventMatchResults.Count
-                foreach ($fieldToMatch in $FieldsToMatch)
-                {
-                    # Filter Down (if necessary)
-                    if ($ExistingEventMatchCount -eq 0)
-                    {
-                        break # Leave the foreach loop since we no longer need to check.
-                    }
-                    $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.Graph) -eq $userMeeting.($fieldToMatch.SKYAPI)}
-                    $ExistingEventMatchCount = $ExistingEventMatchResults.Count
-                }
-
-                # We should rarely see duplicates (unless someone manually modified an event), but adding this in to output and log when it happens.
-                if ($ExistingEventMatchCount -gt 1)
-                {
-                    $NewMessage = "<c='em'>INFO: Skipping processing the following event because it exists [$ExistingEventMatchCount] times on the user's Exchange Calendar (it is possible the user manually modified the event): $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))</c>"
-                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message $NewMessage}
-                    continue # Skip further work on this event.
-                }
-
-                if ($ExistingEventMatchCount -eq 0)
-                {
-                    # Collect Meeting Data
-                    $Event_Subject = $userMeeting.group_name
-                    $Event_Start = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.start_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
-                    $Event_End = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.end_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
-                    $Event_Location = @{
-                        displayName = $userMeeting.room_name
-                    }
-                    [string[]]$Categories = @($userMeeting.course_title) # Set Categories (array of strings)
-
-                    # Link the user to their section: teachers get the faculty Roster, students get the student
-                    # Bulletin Board. For our offering types teachers and students never overlap, so a user is a
-                    # teacher of this section exactly when they're in its 'teachers' list; that single check picks
-                    # both the app (faculty vs student) and the destination (roster vs bulletin board). The only
-                    # difference between the faculty and student URLs is the '/app/faculty' vs '/app/student' segment.
-                    $UserIsTeacher = ([string]$user.id -in ($userMeeting.teachers.id | ForEach-Object {[string]$_}))
-                    $LinkApp = if ($UserIsTeacher) { 'faculty' } else { 'student' }
-                    $SectionId = $userMeeting.section_id
-                    $SectionPath = switch ($userMeeting.offering_type.description)
-                    {
-                        'Academics'  { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
-                        'Activities' { if ($UserIsTeacher) { "activitypage/$SectionId/roster" }     else { "activitypage/$SectionId/bulletinboard" } }
-                        'Advisory'   { if ($UserIsTeacher) { "advisorypage/$SectionId/advisees" }   else { "advisorypage/$SectionId/bulletinboard" } }
-                        'Athletics'  { if ($UserIsTeacher) { "athleticteam/$SectionId/roster" }      else { "athleticteam/$SectionId/teampage" } }
-                        Default      { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
-                    }
-                    $SectionLinkURL = "https://$MySchoolAppDomain/app/${LinkApp}?svcid=edu#$SectionPath"
-                    $SectionLinkText = if ($UserIsTeacher) { 'Click Here For Roster' } else { 'Click Here For The Bulletin Board' }
-                    $Event_Body = @{
-                        contentType = "HTML"
-                        content = "<b>Teachers:</b> $(($userMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionLinkURL"">$SectionLinkText</a>"
-                    }
-
-                    $UserEventParameters = [ordered]@{
-                        subject = $Event_Subject
-                        body = $Event_Body
-                        start = $Event_Start
-                        end = $Event_End
-                        location = $Event_Location
-                        categories = $Categories
-                        isReminderOn = $IsReminderOn
-                        reminderMinutesBeforeStart = $ReminderMinutesBeforeStart
-                        showAs = $ShowAs
-                        singleValueExtendedProperties = @(
-                            @{
-                                id = "String {$($EventsAppIdentifier_GUID)} Name $($EventsAppIdentifier_Name)"
-                                value = $EventsAppIdentifier_Value
-                            }
-                        )
-                    }
-                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Creating Exchange Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))"}
-                    $NewEventResponse = New-MgUserEvent -UserId $EntraUser.Id -BodyParameter $UserEventParameters
-                }
-            }
-            Write-Progress -Completed -Activity 'Completed'
-            
-            # Remove extra Exchange events and update still active existing ones, if necessary.
+            # Sort existing Exchange events into the ones to remove (no longer in the SIS) and the ones to keep.
             # Start with all SIS meetings and filter down.
+            # Nothing is changed in this pass: the full set of removals for this user has to be known before
+            # anything is created or removed, so that the deletion safety check below sees the whole picture
+            # first. If replacement events were created before the check ran, the events they replace would
+            # already be duplicated by the time the check held their removal back - and those replacements
+            # would also dilute the removal percentage on every later run, which at some settings would leave
+            # the old/new duplicates in place permanently.
             if ($LoggingEnabled) {Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$ExistingUserEventsCount] Existing Calendar Events for User: $($user.display) [$($user.id)] [$($user.email)]"}
+            $EventsToDelete = [System.Collections.Generic.List[Object]]::new()
+            $EventsToUpdate = [System.Collections.Generic.List[Object]]::new()
             $ExchangeEventIndex = 0
             foreach ($existingUserEvent in $ExistingUserEvents)
             {
@@ -1146,62 +1423,235 @@ try
                     $ExistingEventMatchCount = $ExistingEventMatchResults.Count
                 }
 
-                if ($ExistingEventMatchCount -eq 0) # DELETE IT
+                if ($ExistingEventMatchCount -eq 0)
                 {
-                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Removing Extra Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End))"}
+                    $EventsToDelete.Add($existingUserEvent)
+                }
+                else
+                {
+                    $EventsToUpdate.Add($existingUserEvent)
+                }
+            }
+            Write-Progress -Completed -Activity 'Completed'
+
+            # DELETION SAFETY: Don't clear out a user's calendar because of a partial or bad SIS result.
+            # Removing a large share of a user's synced events at once is far more likely to mean their SIS data
+            # came back incomplete (a dropped roster, a section moved to another term) than that their whole
+            # schedule really disappeared. When the queued removals exceed the configured limit, hold back this
+            # user's removals AND creations (creating the replacement events while the events they replace are
+            # held back would leave old/new duplicates behind), warn, and carry on with the rest of the users.
+            # Preference updates are still applied either way. 'MinDeletesBeforeCheck' keeps the percentage from
+            # tripping on calendars with only a few events, and the check is waived entirely when
+            # 'AllowEmptySourceSync' let an empty SIS result through (see $DeleteGuardBypassed above).
+            if ((-not $DeleteGuardBypassed) -and ($EventsToDelete.Count -ge $MinDeletesBeforeCheck) -and ($ExistingUserEventsCount -gt 0) -and
+                ((($EventsToDelete.Count / $ExistingUserEventsCount) * 100) -gt $MaxDeletePercentPerUser))
+            {
+                $UserDeleteGuardTripped = $true
+                $NewMessage = "WARNING: Holding back all event creations & removals for user [$($user.id) - $($user.display)] [$($user.email)] because removing [$($EventsToDelete.Count)] of [$ExistingUserEventsCount] synced calendar events would exceed the configured deletion limit of $MaxDeletePercentPerUser%. Preference updates are still applied. Verify the user's SIS schedule is complete, then re-run (or raise 'DeleteSafety.MaxDeletePercentPerUser'; a value of 100 allows even a full clear)."
+                if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
+                if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+            }
+            else
+            {
+                # Create Categories in Outlook, if necessary.
+                $UserCourses = $UserMeetings.course_title | Sort-Object -Unique
+                $ExistingUserCategories = @(Get-MgUserOutlookMasterCategory -UserId $EntraUser.Id -All)
+                foreach ($userCourse in $UserCourses)
+                {
+                    if ($userCourse -notin $ExistingUserCategories.DisplayName)
+                    {
+                        $NextUserCategoryColor = Get-NextOutlookCategoryColor -UserId $EntraUser.Id
+
+                        if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Creating Exchange Category for $($user.display) [$($user.id)] [$($user.email)]: $($userCourse) ($($NextUserCategoryColor.Color)::$($NextUserCategoryColor.DisplayName))"}
+                        $NewOutlookCategoryResponse = New-MgUserOutlookMasterCategory -UserId $EntraUser.Id -DisplayName $userCourse -Color $NextUserCategoryColor.Color
+                    }
+                }
+
+                # Process Meetings From SIS
+                if ($LoggingEnabled) {Write-PSFMessage -Level Significant "User $UserIndex of $UsersCount | Processing [$UserMeetingsCount] SIS Meetings for User: $($user.display) [$($user.id)] [$($user.email)]"}
+                $UserMeetingIndex = 0
+                foreach ($userMeeting in $UserMeetings)
+                {
+                    $UserMeetingIndex++
+                    # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
+                    Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | SIS Meeting $($UserMeetingIndex) of $($UserMeetingsCount)" -PercentComplete (($UserMeetingIndex / $UserMeetingsCount) * 100)
+
+                    # Create the event, if needed.
+                    # Start with all Exchange events and filter down.
+                    $ExistingEventMatchResults = $ExistingUserEvents
+                    $ExistingEventMatchCount = $ExistingEventMatchResults.Count
+                    foreach ($fieldToMatch in $FieldsToMatch)
+                    {
+                        # Filter Down (if necessary)
+                        if ($ExistingEventMatchCount -eq 0)
+                        {
+                            break # Leave the foreach loop since we no longer need to check.
+                        }
+                        $ExistingEventMatchResults = $ExistingEventMatchResults | Where-Object {$_.($fieldToMatch.Graph) -eq $userMeeting.($fieldToMatch.SKYAPI)}
+                        $ExistingEventMatchCount = $ExistingEventMatchResults.Count
+                    }
+
+                    # We should rarely see duplicates (unless someone manually modified an event), but adding this in to output and log when it happens.
+                    if ($ExistingEventMatchCount -gt 1)
+                    {
+                        $NewMessage = "<c='em'>INFO: Skipping processing the following event because it exists [$ExistingEventMatchCount] times on the user's Exchange Calendar (it is possible the user manually modified the event): $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))</c>"
+                        if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message $NewMessage}
+                        continue # Skip further work on this event.
+                    }
+
+                    if ($ExistingEventMatchCount -eq 0)
+                    {
+                        # Collect Meeting Data
+                        $Event_Subject = $userMeeting.group_name
+                        $Event_Start = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.start_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
+                        $Event_End = ConvertTo-GraphDateTimeTimeZone -DateTime ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date -Date ($userMeeting.end_time)), $SchoolTimeZone.Id)) -TimeZone $SchoolTimeZone
+                        $Event_Location = @{
+                            displayName = $userMeeting.room_name
+                        }
+                        [string[]]$Categories = @($userMeeting.course_title) # Set Categories (array of strings)
+
+                        # Link the user to their section: teachers get the faculty Roster, students get the student
+                        # Bulletin Board. For our offering types teachers and students never overlap, so a user is a
+                        # teacher of this section exactly when they're in its 'teachers' list; that single check picks
+                        # both the app (faculty vs student) and the destination (roster vs bulletin board). The only
+                        # difference between the faculty and student URLs is the '/app/faculty' vs '/app/student' segment.
+                        $UserIsTeacher = ([string]$user.id -in ($userMeeting.teachers.id | ForEach-Object {[string]$_}))
+                        $LinkApp = if ($UserIsTeacher) { 'faculty' } else { 'student' }
+                        $SectionId = $userMeeting.section_id
+                        $SectionPath = switch ($userMeeting.offering_type.description)
+                        {
+                            'Academics'  { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
+                            'Activities' { if ($UserIsTeacher) { "activitypage/$SectionId/roster" }     else { "activitypage/$SectionId/bulletinboard" } }
+                            'Advisory'   { if ($UserIsTeacher) { "advisorypage/$SectionId/advisees" }   else { "advisorypage/$SectionId/bulletinboard" } }
+                            'Athletics'  { if ($UserIsTeacher) { "athleticteam/$SectionId/roster" }      else { "athleticteam/$SectionId/teampage" } }
+                            Default      { if ($UserIsTeacher) { "academicclass/$SectionId/0/roster" } else { "academicclass/$SectionId/0/bulletinboard" } }
+                        }
+                        $SectionLinkURL = "https://$MySchoolAppDomain/app/${LinkApp}?svcid=edu#$SectionPath"
+                        $SectionLinkText = if ($UserIsTeacher) { 'Click Here For Roster' } else { 'Click Here For The Bulletin Board' }
+                        $Event_Body = @{
+                            contentType = "HTML"
+                            content = "<b>Teachers:</b> $(($userMeeting.teachers | Sort-Object -Property head -Descending).name -join '; ')<br><br><a href=""$SectionLinkURL"">$SectionLinkText</a>"
+                        }
+
+                        # These key names are sent to Microsoft Graph as the request body, so they have to be spelled
+                        # the way Graph documents them (see the event resource link above). Don't capitalize them to
+                        # match the '-ShowAs'/'-IsReminderOn' style parameters used on Update-MgUserEvent below; those
+                        # are PowerShell SDK parameter names, which the SDK converts on its own.
+                        $UserEventParameters = [ordered]@{
+                            subject = $Event_Subject
+                            body = $Event_Body
+                            start = $Event_Start
+                            end = $Event_End
+                            location = $Event_Location
+                            categories = $Categories
+                            isReminderOn = $IsReminderOn
+                            reminderMinutesBeforeStart = $ReminderMinutesBeforeStart
+                            showAs = $ShowAs
+                            singleValueExtendedProperties = @(
+                                @{
+                                    id = "String {$($EventsAppIdentifier_GUID)} Name $($EventsAppIdentifier_Name)"
+                                    value = $EventsAppIdentifier_Value
+                                }
+                            )
+                        }
+                        if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Creating Exchange Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($userMeeting.group_name) ($($userMeeting.start_time) to $($userMeeting.end_time))"}
+                        $NewEventResponse = New-MgUserEvent -UserId $EntraUser.Id -BodyParameter $UserEventParameters
+                        $UserEventsCreated++
+                    }
+                }
+                Write-Progress -Completed -Activity 'Completed'
+
+                # Remove extra Exchange events.
+                $ExchangeEventIndex = 0
+                foreach ($eventToDelete in $EventsToDelete)
+                {
+                    $ExchangeEventIndex++
+                    # NOTE: Keep activity message short or the end can get cut off when displaying (on PS Core).
+                    Write-Progress -Activity "[$UserIndex/$UsersCount $($user.email)] | Removing Event $($ExchangeEventIndex) of $($EventsToDelete.Count)" -PercentComplete (($ExchangeEventIndex / $EventsToDelete.Count) * 100)
+
+                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Removing Extra Calendar Event: $($user.display) [$($user.id)] [$($user.email)] > $($eventToDelete.Subject) ($($eventToDelete.Start) to $($eventToDelete.End))"}
                     # Catch 'Status: 404 (NotFound)' errors and ignore. This might happen if an event was already removed between the events pull and this part of script.
                     try
                     {
-                        $RemoveEventResponse = Remove-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -Confirm:$false
+                        $RemoveEventResponse = Remove-MgUserEvent -UserId $EntraUser.Id -EventId $eventToDelete.Id -Confirm:$false
+                        $UserEventsDeleted++
                     }
-                    catch 
+                    catch
                     {
                         if (-not ($_.Exception.Message -match 'ErrorItemNotFound')) { throw $_  }
                     }
                 }
-                else # UPDATE IT, IF NECESSARY
+                Write-Progress -Completed -Activity 'Completed'
+            }
+
+            # Update still active existing events, if necessary.
+            foreach ($existingUserEvent in $EventsToUpdate)
+            {
+                $ExistingEventUpdated = $false
+                foreach ($userPreferenceToVerify in $UserPreferencesToVerify)
                 {
-                    foreach ($userPreferenceToVerify in $UserPreferencesToVerify)
+                    switch ($userPreferenceToVerify)
                     {
-                        switch ($userPreferenceToVerify)
+                        ShowAs
                         {
-                            ShowAs
+                            if ($existingUserEvent.ShowAs -ine $ShowAs)
                             {
-                                if ($existingUserEvent.ShowAs -ine $ShowAs)
-                                {
-                                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ShowAs from '$($existingUserEvent.ShowAs)' to '$ShowAs'"}
-                                    $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -ShowAs $ShowAs
-                                }
+                                if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ShowAs from '$($existingUserEvent.ShowAs)' to '$ShowAs'"}
+                                $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -ShowAs $ShowAs
+                                # Count the event as updated at the FIRST successful update call: if a later
+                                # property update for the same event fails, the tally & history still reflect
+                                # that this event was modified.
+                                if (-not $ExistingEventUpdated) { $UserEventsUpdated++; $ExistingEventUpdated = $true }
                             }
-                            isReminderOn
-                            {
-                                if ($existingUserEvent.isReminderOn -ine $isReminderOn)
-                                {
-                                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > isReminderOn from '$($existingUserEvent.isReminderOn)' to '$isReminderOn'"}
-                                    $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -IsReminderOn:$isReminderOn
-                                }
-                            }
-                            ReminderMinutesBeforeStart
-                            {
-                                if ($existingUserEvent.ReminderMinutesBeforeStart -ine $ReminderMinutesBeforeStart)
-                                {
-                                    if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ReminderMinutesBeforeStart from '$($existingUserEvent.ReminderMinutesBeforeStart)' to '$ReminderMinutesBeforeStart'"}
-                                    $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.id -ReminderMinutesBeforeStart $ReminderMinutesBeforeStart
-                                }
-                            }
-                            Default {} # Do Nothing
                         }
+                        IsReminderOn
+                        {
+                            if ($existingUserEvent.IsReminderOn -ine $IsReminderOn)
+                            {
+                                if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > IsReminderOn from '$($existingUserEvent.IsReminderOn)' to '$IsReminderOn'"}
+                                $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -IsReminderOn:$IsReminderOn
+                                if (-not $ExistingEventUpdated) { $UserEventsUpdated++; $ExistingEventUpdated = $true }
+                            }
+                        }
+                        ReminderMinutesBeforeStart
+                        {
+                            if ($existingUserEvent.ReminderMinutesBeforeStart -ine $ReminderMinutesBeforeStart)
+                            {
+                                if ($LoggingEnabled) {Write-PSFMessage -Level Significant -Message "Updating Calendar Event for user $($user.display) [$($user.id)] [$($user.email)] > $($existingUserEvent.Subject) ($($existingUserEvent.Start) to $($existingUserEvent.End)) > ReminderMinutesBeforeStart from '$($existingUserEvent.ReminderMinutesBeforeStart)' to '$ReminderMinutesBeforeStart'"}
+                                $UpdateEventResponse = Update-MgUserEvent -UserId $EntraUser.Id -EventId $existingUserEvent.Id -ReminderMinutesBeforeStart $ReminderMinutesBeforeStart
+                                if (-not $ExistingEventUpdated) { $UserEventsUpdated++; $ExistingEventUpdated = $true }
+                            }
+                        }
+                        Default {} # Do Nothing
                     }
                 }
             }
-            Write-Progress -Completed -Activity 'Completed'
+
+            # Roll this user's results into the run totals and record what actually happened for them.
+            $RunCounters.UsersProcessed++
+            $RunCounters.EventsCreated += $UserEventsCreated
+            $RunCounters.EventsUpdated += $UserEventsUpdated
+            $RunCounters.EventsDeleted += $UserEventsDeleted
+            if ($UserDeleteGuardTripped) { $RunCounters.DeleteGuardTrips++ }
+            Write-UserSyncHistory -Path $SaveUsersSyncHistoryPath -User $user -MeetingsCount $UserMeetingsCount `
+                -Created $UserEventsCreated -Updated $UserEventsUpdated -Deleted $UserEventsDeleted `
+                -Status $(if ($UserDeleteGuardTripped) {'DeleteGuardTripped'} else {'Success'})
         }
         catch
         {
             $NewMessage = "WARNING: Skipping user [$($user.id) - $($user.display)] [$($user.email)] due to an error during their sync (Line: $($_.InvocationInfo.ScriptLineNumber)): $_"
-            if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage -ErrorRecord $_}
+            if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage -ErrorRecord $_} else {Write-Warning $NewMessage}
             if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
             Write-Progress -Completed -Activity 'Completed'
+
+            # Record the partial work this user received before the failure so the history isn't silently missing them.
+            $RunCounters.UsersFailed++
+            $RunCounters.EventsCreated += $UserEventsCreated
+            $RunCounters.EventsUpdated += $UserEventsUpdated
+            $RunCounters.EventsDeleted += $UserEventsDeleted
+            if ($UserDeleteGuardTripped) { $RunCounters.DeleteGuardTrips++ }
+            Write-UserSyncHistory -Path $SaveUsersSyncHistoryPath -User $user -MeetingsCount $UserMeetingsCount `
+                -Created $UserEventsCreated -Updated $UserEventsUpdated -Deleted $UserEventsDeleted -Status 'Failed'
             continue
         }
     }
@@ -1212,6 +1662,12 @@ try
         if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "Disconnecting From Microsoft Graph."}
         $null = Disconnect-MgGraph -ErrorAction SilentlyContinue
     }
+
+    # Summarize what the run did. Done before the alert email so the totals can be included in it.
+    # Skipped users count as a warning outcome too: every user in the configured roles was asked for, so a
+    # scheduled task watching the exit code should notice when some of them silently received no sync.
+    $RunOutcome = if (($RunCounters.UsersFailed -gt 0) -or ($RunCounters.UsersSkipped -gt 0) -or ($RunCounters.DeleteGuardTrips -gt 0)) {'Completed With Warnings'} else {'Success'}
+    $RunSummaryText = Write-RunSummary -Outcome $RunOutcome -Counters $RunCounters -LoggingEnabled $LoggingEnabled
 
     # Email Warning Message, if enabled in config.
     If ($EmailonWarning -and -not [string]::IsNullOrEmpty($CustomWarningMessage))
@@ -1226,7 +1682,7 @@ try
 
             # Add More Email Attributes
             $MessageArguments.Subject = "Sync Schedules to Exchange Calendar - Warning"
-            $MessageArguments.Body = "The Sync Schedules to Exchange Calendar script has detected at least one non-critical issue:`n`n$CustomWarningMessage`n`nThank you,`nThe IT Team"
+            $MessageArguments.Body = "The Sync Schedules to Exchange Calendar script has detected at least one non-critical issue:`n`n$CustomWarningMessage`n`n$RunSummaryText`n`nThank you,`nThe IT Team"
             $MessageArguments.Attachment = $null # No attachments because we don't want anything to accidentally prevent the alert email from being sent.
 
             # Send Warning Message Alert
@@ -1249,11 +1705,16 @@ try
     # End Logging Message
     if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
     if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
+
+    # Report the outcome to whatever started the script (see the exit code list in the README).
+    if ($RunOutcome -eq 'Success') { exit 0 } else { exit 2 }
 }
 catch
 {
     # Log Error Message
     if ($LoggingEnabled) {Write-PSFMessage -Level Error -Message "Error Running Script (Name: `"$($_.InvocationInfo.ScriptName)`" | Line: $($_.InvocationInfo.ScriptLineNumber))" -Tag 'Failure' -ErrorRecord $_}
+    $ScriptError = $_ # Kept because $_ refers to something else inside the alert email handling below.
+    $RunSummaryText = Write-RunSummary -Outcome 'Failed' -Counters $RunCounters -LoggingEnabled $LoggingEnabled -Detail "$ScriptError"
 
     # Disconnect from Microsoft Graph API, if enabled in config.
     if ($MgDisconnectWhenDone)
@@ -1272,7 +1733,7 @@ catch
 
             # Add More Email Attributes
             $MessageArguments.Subject = "SIS Schedules Sync - Error"
-            $MessageArguments.Body = "There has been an error running the SIS Schedules Sync Script (Name: `"$($_.InvocationInfo.ScriptName)`" | Line: $($_.InvocationInfo.ScriptLineNumber)):`n`n$_`n`nThank you,`nThe IT Team"
+            $MessageArguments.Body = "There has been an error running the SIS Schedules Sync Script (Name: `"$($ScriptError.InvocationInfo.ScriptName)`" | Line: $($ScriptError.InvocationInfo.ScriptLineNumber)):`n`n$ScriptError`n`n$RunSummaryText`n`nThank you,`nThe IT Team"
             $MessageArguments.Attachment = $null # No attachments because we don't want anything to accidentally prevent the alert email from being sent.
 
             # Send Error Message Alert
@@ -1292,13 +1753,16 @@ catch
         }
     }
 
-
-
-
-
-
-
     # End Logging Message
     if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
     if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
+
+    # Report the failure to whatever started the script (see the exit code list in the README).
+    exit 1
+}
+finally
+{
+    # Let the next run have the single-instance lock.
+    if ($SingleInstanceMutexAcquired) { $SingleInstanceMutex.ReleaseMutex() }
+    $SingleInstanceMutex.Dispose()
 }
