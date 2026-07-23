@@ -194,8 +194,8 @@ JSON file that contains the messaging-service settings used by the [ScriptMessag
 
 JSON file that lets you exclude specific meetings from syncing. Each property name is a SIS meeting field, and its array of values are matched against that field — any meeting matching a value is skipped. Values are matched as **case-insensitive literal substrings** (no wildcards or regular expressions), so a value of "Homeroom" excludes every meeting whose field contains "Homeroom" anywhere in it.
 
-- **group_name (Array of Strings):** Group names to exclude (matched against each meeting's group name).
-- **course_title (Array of Strings):** Course titles to exclude (matched against each meeting's course title).
+- **course_title (Array of Strings):** Course titles to exclude. The *course* is the subject that a section belongs to (e.g. "Algebra I"). This is the level above the group/section described below and what the script uses as the event's Outlook category. Excluding a course title therefore excludes every section of that course.
+- **group_name (Array of Strings):** Group names to exclude. A meeting's *group* is the individual section, advisory, activity or team it belongs to, and its name is what the script uses as the calendar event subject (e.g. "Algebra I - 03", "Homeroom"). The SIS calls this a group rather than a section because the same field covers all of the offering types, not just academic sections.
 
 Leave an array empty (`[]`) to exclude nothing for that field.
 
@@ -205,7 +205,10 @@ Leave an array empty (`[]`) to exclude nothing for that field.
 
 JSON file containing an array of per-user overrides for event settings. Create an array entry for *each* user you want to customize; any omitted field falls back to the corresponding `EventDefaults` value in `config_general.json`.
 
-- **UserEmail (String):** The email address of the user these preferences apply to (matched against the SIS user's email).
+Entries are keyed by SIS user ID. Because an ID is not much use to a human reading the file, each entry also takes an optional `Comment` to record a name, email address or other identifying text.
+
+- **UserId (Integer or Numeric String):** Required. The positive whole-number SIS ID of the user these preferences apply to.
+- **Comment (String, Optional):** Free text to identify who the entry is for (a name, an email address, or whatever else is useful).
 - **ShowAs (String):** Overrides `EventDefaults.ShowAs` for this user. Same accepted values — one of the Graph [`freeBusyStatus`](https://learn.microsoft.com/en-us/graph/api/resources/event#properties) values ("Unknown", "Free", "Tentative", "Busy", "Oof", "WorkingElsewhere").
 - **IsReminderOn (Boolean):** Overrides `EventDefaults.IsReminderOn` for this user.
 - **ReminderMinutesBeforeStart (Integer):** Overrides `EventDefaults.ReminderMinutesBeforeStart` for this user.

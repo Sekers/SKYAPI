@@ -1,12 +1,14 @@
 [
     {
-        "UserEmail": "jane.dear@school.edu",
+        "Comment": "Jane Dear (jane.dear@school.edu)",
+        "UserId": 1757293,
         "ShowAs": "Free",
         "IsReminderOn": true,
         "ReminderMinutesBeforeStart": 10
     },
     {
-        "UserEmail": "john.doe@school.edu",
+        "Comment": "John Doe",
+        "UserId": 1757294,
         "IsReminderOn": false
     }
 ]

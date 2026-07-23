@@ -421,7 +421,8 @@ if ($EmailonError -or $EmailonWarning)
 
 # 'Import Meetings To Ignore' & 'User Preferences' Settings
 $MeetingsToIgnore = Get-Content -Path "$PSScriptRoot\Config\config_meetings_to_ignore.json" | ConvertFrom-Json
-$UserPreferences = Get-Content -Path "$PSScriptRoot\Config\config_user_preferences.json" | ConvertFrom-Json
+$UserPreferencesFromConfig = Get-Content -Path "$PSScriptRoot\Config\config_user_preferences.json" | ConvertFrom-Json
+[array]$UserPreferences = @($UserPreferencesFromConfig | Where-Object {$null -ne $_})
 
 # Create List of Custom Preferences to Compare
 $UserPreferencesToVerify = @('ShowAs','IsReminderOn','ReminderMinutesBeforeStart')
@@ -695,11 +696,40 @@ try
 
     # Verify the per-user preference overrides. These are handed to Microsoft Graph the same way the event
     # defaults above are, so checking them here keeps one bad entry from failing that user midway through the run.
-    foreach ($userPreference in @($UserPreferences))
+    foreach ($userPreference in $UserPreferences)
     {
+        # Normalize every accepted representation once so a JSON integer and quoted forms such as "01757293" all
+        # use the same Int64 value for duplicate detection, unmatched warnings and user matching.
+        $ConfiguredUserPreferenceUserId = $userPreference.UserId
+        $UserPreferenceUserIdHasSupportedType = (
+            ($ConfiguredUserPreferenceUserId -is [string]) -or
+            ($ConfiguredUserPreferenceUserId -is [sbyte]) -or
+            ($ConfiguredUserPreferenceUserId -is [byte]) -or
+            ($ConfiguredUserPreferenceUserId -is [int16]) -or
+            ($ConfiguredUserPreferenceUserId -is [uint16]) -or
+            ($ConfiguredUserPreferenceUserId -is [int32]) -or
+            ($ConfiguredUserPreferenceUserId -is [uint32]) -or
+            ($ConfiguredUserPreferenceUserId -is [int64]) -or
+            ($ConfiguredUserPreferenceUserId -is [uint64])
+        )
+        $UserPreferenceUserIdText = [Convert]::ToString($ConfiguredUserPreferenceUserId, [cultureinfo]::InvariantCulture)
+        $UserPreferenceUserId = [int64]0
+        if ((-not $UserPreferenceUserIdHasSupportedType) -or
+            (-not [int64]::TryParse($UserPreferenceUserIdText, [System.Globalization.NumberStyles]::Integer, [cultureinfo]::InvariantCulture, [ref]$UserPreferenceUserId)) -or
+            ($UserPreferenceUserId -le 0))
+        {
+            throw "'UserId' must be the SIS user ID as a whole number greater than 0 in the user preferences configuration file (currently '$ConfiguredUserPreferenceUserId'$(if (-not [string]::IsNullOrWhiteSpace($userPreference.Comment)) {" for $($userPreference.Comment)"}))."
+        }
+        $userPreference.UserId = $UserPreferenceUserId
+
+        # Nobody can identify a SIS user ID at a glance, so include the optional Comment in validation messages.
+        # Comment never takes part in matching a user.
+        $UserPreferenceLabel = "user id '$($userPreference.UserId)'"
+        if (-not [string]::IsNullOrWhiteSpace($userPreference.Comment)) { $UserPreferenceLabel += " ($($userPreference.Comment))" }
+
         if ((-not [string]::IsNullOrEmpty($userPreference.ShowAs)) -and ($userPreference.ShowAs -notin $ValidShowAsValues))
         {
-            throw "'ShowAs' for '$($userPreference.UserEmail)' must be one of [$($ValidShowAsValues -join ', ')] in the user preferences configuration file (currently '$($userPreference.ShowAs)')."
+            throw "'ShowAs' for $UserPreferenceLabel must be one of [$($ValidShowAsValues -join ', ')] in the user preferences configuration file (currently '$($userPreference.ShowAs)')."
         }
 
         # Confirm the type as well as the range: the override is read with a null check rather than a cast, so a
@@ -709,18 +739,19 @@ try
             $UserPreferenceReminderMinutes = 0
             if ((-not [int32]::TryParse([string]$userPreference.ReminderMinutesBeforeStart, [ref]$UserPreferenceReminderMinutes)) -or ($UserPreferenceReminderMinutes -lt 0))
             {
-                throw "'ReminderMinutesBeforeStart' for '$($userPreference.UserEmail)' must be a whole number of 0 or greater in the user preferences configuration file (currently '$($userPreference.ReminderMinutesBeforeStart)')."
+                throw "'ReminderMinutesBeforeStart' for $UserPreferenceLabel must be a whole number of 0 or greater in the user preferences configuration file (currently '$($userPreference.ReminderMinutesBeforeStart)')."
             }
         }
     }
 
-    # A repeated email makes the preference lookup later in the run return every matching entry instead of one,
-    # which then hands Microsoft Graph an array where it expects a single value. Warn rather than stop, since
-    # every other user is unaffected.
-    [string[]]$DuplicateUserPreferenceEmails = @($UserPreferences | Group-Object -Property UserEmail | Where-Object {$_.Count -gt 1}).Name
-    if ($DuplicateUserPreferenceEmails.Count -gt 0)
+    # A repeated user ID makes the preference lookup later in the run return every matching entry instead of one,
+    # which then hands Microsoft Graph an array where it expects a single value. The IDs were normalized above,
+    # so equivalent numeric and quoted forms are grouped together. Warn rather than stop, since every other user
+    # is unaffected.
+    [int64[]]$DuplicateUserPreferenceIds = @($UserPreferences | Group-Object -Property UserId | Where-Object {$_.Count -gt 1}).Name
+    if ($DuplicateUserPreferenceIds.Count -gt 0)
     {
-        $NewMessage = "WARNING: The user preferences configuration file has more than one entry for: $($DuplicateUserPreferenceEmails -join ', '). Only one entry per user is supported, so the duplicated entries will not be applied correctly."
+        $NewMessage = "WARNING: The user preferences configuration file has more than one entry for user id: $($DuplicateUserPreferenceIds -join ', '). Only one entry per user is supported, so the duplicated entries will not be applied correctly."
         if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
         if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
     }
@@ -1247,6 +1278,22 @@ try
     $UsersCount = $Users.Count
     if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Users to process: $UsersCount"}
 
+    # Report user preference entries that match nobody being synced. A user id cannot be eyeballed for
+    # correctness the way an email address can, so a mistyped one would otherwise apply to no one without any
+    # sign that it was meant to. Not an error: an entry kept for someone on leave is perfectly reasonable.
+    [int64[]]$SyncedUserIds = @($Users | Where-Object {$null -ne $_} | ForEach-Object {[int64]$_.id})
+    [array]$UnmatchedUserPreferences = @($UserPreferences | Where-Object {$_.UserId -notin $SyncedUserIds})
+    if ($UnmatchedUserPreferences.Count -gt 0)
+    {
+        $UnmatchedUserPreferenceLabels = foreach ($unmatchedUserPreference in $UnmatchedUserPreferences)
+        {
+            if (-not [string]::IsNullOrWhiteSpace($unmatchedUserPreference.Comment)) {"$($unmatchedUserPreference.UserId) ($($unmatchedUserPreference.Comment))"} else {[string]$unmatchedUserPreference.UserId}
+        }
+        $NewMessage = "WARNING: The user preferences configuration file has entries for user id(s) that are not being synchronized: $($UnmatchedUserPreferenceLabels -join ', '). These entries have no effect. Verify the user id is correct and that the user holds one of the configured roles."
+        if ($LoggingEnabled) {Write-PSFMessage -Level Warning -Message $NewMessage} else {Write-Warning $NewMessage}
+        if ($EmailonWarning) { $CustomWarningMessage += "`n$NewMessage" }
+    }
+
     # Collect All Directory Member Users
     # Used to make sure users exist before trying to access their calendar.
     # It does not check to see if they have an Exchange Online mailbox; it only verifies that an email address is set due to the extra Graph API calls that would be needed to verify an actual mailbox exists (one per user).
@@ -1313,7 +1360,8 @@ try
             if ($LoggingEnabled -and $LogDebugInfo) {Write-PSFMessage -Level Debug -Message "Desired SIS Meetings for $($user.email) [$UserMeetingsCount]: $(@($UserMeetings.group_name) -join '; ')"}
 
             # Gather User Custom Preferences
-            $UserPreference = $UserPreferences | Where-Object -Property UserEmail -EQ $user.email
+            # Configuration IDs were normalized during validation; normalize the SIS ID at the comparison boundary.
+            $UserPreference = $UserPreferences | Where-Object {$_.UserId -eq [int64]$user.id}
             # Null checks (not truthiness) so that overrides of 'false' or '0' are honored.
             $IsReminderOn = if ($null -ne $UserPreference.IsReminderOn) { $UserPreference.IsReminderOn } else { $DefaultIsReminderOn }
             $ReminderMinutesBeforeStart = if ($null -ne $UserPreference.ReminderMinutesBeforeStart) { $UserPreference.ReminderMinutesBeforeStart } else { $DefaultReminderMinutesBeforeStart }
