@@ -9,6 +9,7 @@
 - Fixed some built-in help examples.
 - Fixed [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) date handling for schools in positive-offset (non-US) time zones. The meeting start/end time parsing previously assumed a negative UTC offset.
 - Corrected the [Update-SchoolUser](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch) built-in help: fixed the required-roles list (Platform Manager / Contact Card Manager), pointed the type table references at Get-SchoolTypeTableValue, and fixed parameter typos/ordering.
+- Fixed the write functions leaking PowerShell common parameters into the request sent to the API. Because the request is built from `$PSBoundParameters`, explicitly passing `-Verbose`, `-ErrorAction`, etc. added bogus fields (e.g. `"ErrorAction": 1`) to the request body — or the query string for the DELETE endpoint. Now filtered out in Update-SchoolUser, Update-SchoolUserAddress, New-SchoolUserPhone, New-SchoolUserAddress, New-SchoolUserOccupation, New-SchoolEventCategory, Set-SchoolUserRelationship, and Remove-SchoolUserRelationship. Set-SchoolUserRelationship additionally no longer sends its `-ReturnRelationshipInfo` control switch as a request field.
 
 ### Features
 

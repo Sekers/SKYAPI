@@ -189,15 +189,22 @@ function Set-SchoolUserRelationship
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
         # Set the parameters
+        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
         $parameters = @{}
         foreach ($parameter in $PSBoundParameters.GetEnumerator())
         {
-            $parameters.Add($parameter.Key,$parameter.Value)
+            if ($parameter.Key -notin $commonParameters)
+            {
+                $parameters.Add($parameter.Key,$parameter.Value)
+            }
         }
 
         # Remove the $User_ID & $Left_User_ID parameters since we don't pass them on.
         $parameters.Remove('User_ID') | Out-Null
         $parameters.Remove('Left_User_ID') | Out-Null
+
+        # Remove the ReturnRelationshipInfo control switch; it directs this function's output, not the API request body.
+        $parameters.Remove('ReturnRelationshipInfo') | Out-Null
 
         # Save optional parameter original values.
         $give_parental_access_orig = $parameters.give_parental_access
