@@ -92,10 +92,14 @@ function Remove-SchoolUserRelationship
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
         # Set the parameters
+        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
         foreach ($parameter in $PSBoundParameters.GetEnumerator())
         {
-            $parameters.Add($parameter.Key,$parameter.Value)
+            if ($parameter.Key -notin $commonParameters)
+            {
+                $parameters.Add($parameter.Key,$parameter.Value)
+            }
         }
 
         # Remove the $User_ID & $Left_User_ID parameters since we don't pass them on.

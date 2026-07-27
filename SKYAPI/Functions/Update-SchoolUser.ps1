@@ -447,10 +447,14 @@ function Update-SchoolUser
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
         # Set the parameters
+        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
         $parameters = @{}
         foreach ($parameter in $PSBoundParameters.GetEnumerator())
         {
-            $parameters.Add($parameter.Key,$parameter.Value)
+            if ($parameter.Key -notin $commonParameters)
+            {
+                $parameters.Add($parameter.Key,$parameter.Value)
+            }
         }
 
         # Remove the $User_ID parameter since we don't pass that on (it's added per-user as 'id' in the request body below).

@@ -134,10 +134,14 @@ function New-SchoolEventCategory
     process
     {
         # Set the parameters
+        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
         $parameters = @{}
         foreach ($parameter in $PSBoundParameters.GetEnumerator())
         {
-            $parameters.Add($parameter.Key,$parameter.Value) 
+            if ($parameter.Key -notin $commonParameters)
+            {
+                $parameters.Add($parameter.Key,$parameter.Value)
+            }
         }
 
         # Grab the security tokens
