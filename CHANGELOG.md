@@ -8,6 +8,7 @@
   - This endpoint was previously in closed preview. Now that it's in public preview the function's endpoint code has been updated/corrected and validated.
 - Fixed some built-in help examples.
 - Fixed [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) date handling for schools in positive-offset (non-US) time zones. The meeting start/end time parsing previously assumed a negative UTC offset.
+- Corrected the [Update-SchoolUser](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch) built-in help: fixed the required-roles list (Platform Manager / Contact Card Manager), pointed the type table references at Get-SchoolTypeTableValue, and fixed parameter typos/ordering.
 
 ### Features
 
@@ -18,6 +19,9 @@
 - Added new 'include_dropped' parameter to the following functions: Get-SchoolActivityRoster, Get-SchoolAdvisoryRoster, Get-SchoolRoster (Academics).
 - Updated Endpoint: [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet)
   - Added a new `-IncludeRosters` switch. Each returned meeting gains a `roster` property containing the full section & roster object for that meeting's section.
+- Updated Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch)
+  - Added the newer request fields: the nested objects (`locker`, `mailbox`, `passport`, `visa`, `in_state`), the type table array fields (`home_languages`, `races`), the `fields_to_delete` array (the only way to clear/blank a field via this endpoint), and the remaining scalar/boolean fields (`ethnicity`, `religion`, `pronouns`, `primary_language`, `school_program`, `deceased_date`, `personal_bio`, `preferred_lastname`, `public_bio`, `state_id`, `student_id`, `summary_note`, `international`, `latino_hispanic`, `living_status`, `is_abroad`, `is_responsible_signer`).
+  - Note: the `profile_photos` field is intentionally not yet implemented; it depends on a future Attachment (Create) upload endpoint, which is still in preview.
 
 ### Other
 
@@ -28,6 +32,8 @@
 - Removed erroneous 'endUrl' parameter from functions/endpoints that don't use it.
 - Hardened SKY API date/time parsing to fail with a clear error if Blackbaud ever changes its date format (e.g. to UTC 'Z'), rather than silently returning incorrect times.
 - Minor formatting and link updates to the README file.
+- Refactored the write functions to a consistent begin/process/end structure so pipeline input is streamed correctly (previously, piping multiple users processed only the last one). This covers Update-SchoolUser, New-SchoolUserAddress, New-SchoolUserOccupation, New-SchoolUserPhone, Set-SchoolUserRelationship, and Remove-SchoolUserRelationship; New-SchoolEventCategory gained a begin block for consistency. No functional or endpoint changes to the existing functions.
+- Added an internal helper for reusable, cached type table value validation.
 - Minor code comment updates.
 
 Author: [**@Sekers**](https://github.com/Sekers)
