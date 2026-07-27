@@ -1,12 +1,12 @@
 function New-SchoolUserAddress
-{ 
+{
     <#
         .LINK
         https://github.com/Sekers/SKYAPI/wiki
-        
+
         .LINK
         Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesPost
-        
+
         .SYNOPSIS
         Education Management School API - Creates a new address record for the specified user IDs and returns the ID of the address created.
 
@@ -61,7 +61,7 @@ function New-SchoolUserAddress
         }
         New-SchoolUserAddress @params
     #>
-    
+
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -71,130 +71,126 @@ function New-SchoolUserAddress
         ValueFromPipelineByPropertyName=$true)]
         [int[]]$User_ID, # Array as we loop through submitted IDs
 
-        [Parameter( 
+        [Parameter(
         Position=1,
         Mandatory=$true,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$type_id,
 
-        [Parameter( 
+        [Parameter(
         Position=2,
         Mandatory=$true,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$country,
 
-        [Parameter( 
+        [Parameter(
         Position=3,
         Mandatory=$true,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$line_one,
 
-        [Parameter( 
+        [Parameter(
         Position=4,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$line_two,
 
-        [Parameter( 
+        [Parameter(
         Position=5,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$line_three,
 
-        [Parameter( 
+        [Parameter(
         Position=6,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$city,
 
-        [Parameter( 
+        [Parameter(
         Position=7,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$state,
 
-        [Parameter( 
+        [Parameter(
         Position=8,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$postal_code,
 
-        [Parameter( 
+        [Parameter(
         Position=9,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$province,
 
-        [Parameter( 
+        [Parameter(
         Position=10,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$region,
 
-        [Parameter( 
+        [Parameter(
         Position=11,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$mailing_address,
 
-        [Parameter( 
+        [Parameter(
         Position=12,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$primary
     )
 
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/'
-    $endUrl = '/addresses'
-
-    # Set the parameters
-    $parameters = @{}
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
+    begin
     {
-        $parameters.Add($parameter.Key,$parameter.Value) 
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/'
+        $endUrl = '/addresses'
+
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
     }
 
-    # Remove the $User_ID parameter since we don't pass that on
-    $parameters.Remove('User_ID') | Out-Null
-
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Verify the address type doesn't already exists for any of the users.
-    foreach ($uid in $User_ID)
+    process
     {
-        $UserAddresses = Get-SchoolUserAddress -User_ID $uid
-        if ($UserAddresses.type_id -contains $type_id)
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Set the parameters
+        $parameters = @{}
+        foreach ($parameter in $PSBoundParameters.GetEnumerator())
         {
-            throw "User $uid already has address of type id $type_id"
+            $parameters.Add($parameter.Key,$parameter.Value)
+        }
+
+        # Remove the $User_ID parameter since we don't pass that on
+        $parameters.Remove('User_ID') | Out-Null
+
+        # Verify the address type doesn't already exists for any of the users.
+        foreach ($uid in $User_ID)
+        {
+            $UserAddresses = Get-SchoolUserAddress -User_ID $uid
+            if ($UserAddresses.type_id -contains $type_id)
+            {
+                throw "User $uid already has address of type id $type_id"
+            }
+        }
+
+        # Set data for one or more IDs
+        foreach ($uid in $User_ID)
+        {
+            # Clear out old user_id parameter and add in new. NO IDEA WHY THEY NEED THIS IN THE REQUEST BODY AS IT'S PART OF THE ENDPOINT URL.
+            $parameters.Remove('user_id') | Out-Null
+            $parameters.Add('user_id',$uid)
+
+            $response = Submit-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+            $response
         }
     }
-    
-    # Set data for one or more IDs
-    foreach ($uid in $User_ID)
-    {
-        # Clear out old user_id parameter and add in new. NO IDEA WHY THEY NEED THIS IN THE REQUEST BODY AS IT'S PART OF THE ENDPOINT URL.
-        $parameters.Remove('user_id') | Out-Null
-        $parameters.Add('user_id',$uid) 
 
-        $response = Submit-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
-        $response
-    }
+    end {}
 }

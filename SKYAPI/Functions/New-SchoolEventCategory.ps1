@@ -121,21 +121,24 @@ function New-SchoolEventCategory
         return $ParameterDictionary
     }
     
-    process
+    begin
     {
         # Set the endpoints
         $endpoint = 'https://api.sky.blackbaud.com/school/v1/events/categories'
 
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+    }
+
+    process
+    {
         # Set the parameters
         $parameters = @{}
         foreach ($parameter in $PSBoundParameters.GetEnumerator())
         {
             $parameters.Add($parameter.Key,$parameter.Value) 
         }
-
-        # Get the SKY API subscription key
-        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-        $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile

@@ -371,9 +371,25 @@
 
 <#
     Update-SchoolUser
+    (Use Get-SchoolTypeTableValue to get valid descriptors/IDs for fields like citizenship, ethnicity, pronouns, religion, primary_language, home_languages, races, school_program & visa status/type)
 #>
 # Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
 # Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
+
+# Nested object parameters (locker, mailbox, passport, visa, in_state) accept either a single string that sets the object's primary field or a full hashtable/PSCustomObject.
+# Update-SchoolUser -User_ID 1757293 -locker '1234' -citizenship 'United States'
+
+# $params = @{
+#     'User_ID'          = 1757293
+#     'visa'             = @{ number = '12345678'; status = 'Current'; type = 'Student'; expire_date = '2025-09-28' }
+#     'in_state'         = @{ resident = 'Yes'; county = 'Merrimack'; from_date = '1987-02-14' }
+#     'home_languages'   = 'English','French'
+#     'races'            = 'American Indian or Alaska Native'
+# }
+# Update-SchoolUser @params
+
+# Clearing/blanking a field requires the fields_to_delete parameter (the only way to delete data via this endpoint). Use object.field notation for nested fields.
+# Update-SchoolUser -User_ID 1757293 -fields_to_delete 'middle_name','passport.number'
 
 <#
     Get-SchoolUserAddressType

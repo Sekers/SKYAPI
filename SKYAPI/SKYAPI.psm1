@@ -1160,6 +1160,60 @@ function Update-SKYAPIEntity
     }
 }
 
+# Validates a value against a SKY API Types table (via Get-SchoolTypeTableValue), accepting either the
+# table value's descriptor (name, case-insensitive) or its ID. Fetched tables are cached in the supplied
+# hashtable so each table is only retrieved once per command invocation (even across a piped batch of users).
+# If the table returns no values - typically because the calling user lacks permission to read it - client-side
+# validation is skipped and the value is passed through for the API to validate instead.
+function Confirm-SKYAPITypeTableValue
+{
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [string]$Value,
+
+        [Parameter(Mandatory=$true)]
+        [string]$TableName,
+
+        [Parameter(Mandatory=$true)]
+        [hashtable]$Cache,
+
+        [Parameter(Mandatory=$false)]
+        [string]$ParameterName = $TableName
+    )
+
+    # Nothing to validate for empty values (the field simply isn't being set here).
+    if ([string]::IsNullOrWhiteSpace($Value))
+    {
+        return
+    }
+
+    # Fetch the table once and cache it for the remainder of the command invocation.
+    if (-not $Cache.ContainsKey($TableName))
+    {
+        $Cache[$TableName] = @(Get-SchoolTypeTableValue -tableName $TableName -includeInactive $true)
+    }
+    $TableValues = $Cache[$TableName]
+
+    # If we couldn't read any values (e.g., insufficient permissions), skip client-side validation
+    # and let the API validate the value instead.
+    if ($null -eq $TableValues -or $TableValues.Count -eq 0)
+    {
+        return
+    }
+
+    # Accept a match on either the descriptor (name, case-insensitive) or the numeric ID.
+    $ValidNames = @($TableValues.name)
+    $ValidIds = @($TableValues.id | ForEach-Object { [string]$_ })
+
+    if (($Value -notin $ValidNames) -and ($Value -notin $ValidIds))
+    {
+        throw "Invalid '$ParameterName' value '$Value'. Use a descriptor or ID from the '$TableName' table (see Get-SchoolTypeTableValue -tableName '$TableName')."
+    }
+}
+
 # Check to See if Refresh Token or Access Token is Expired
 function Confirm-SKYAPITokenIsFresh
 {

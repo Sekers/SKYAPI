@@ -11,7 +11,7 @@ function Update-SchoolUserAddress
         Education Management School API - Updates the address record of a user. Returns the ID of the address just updated upon success.
 
         .DESCRIPTION
-        Education Management School API - pdates the address record of a user. Returns the ID of the address just updated upon success.
+        Education Management School API - Updates the address record of a user. Returns the ID of the address just updated upon success.
         Requires at least one of the following roles in the Education Management system:
           - SKY API Data Sync
 
@@ -51,9 +51,7 @@ function Update-SchoolUserAddress
 
 
         .EXAMPLE
-        Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
-        .EXAMPLE
-        Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
+        Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -line_one '129 Huntington Drive' -city 'Chicago' -state 'IL' -postal_code '60601'
     #>
     
     [cmdletbinding()]
