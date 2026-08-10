@@ -31,7 +31,12 @@ function Get-SchoolCycleBySection
           - Athletics (9)
         TODO For some reason this doesn't seem to filter. It will only take up to 13 (highest offering type ID) and will error if you go above that and it will take 0 as well.
         But no matter what we specify it always seems to return information (at least when providing an academic section ID, need to try advisory or something else.)
-        A support request has been subitted to Blackbaud and they are looking into it.
+        A support request has been submitted to Blackbaud and they are looking into it.
+        RETESTED 2026-07-28: NOT fixed. On an academic section (a free period), group_type 1, 2, 3, 4, 9 and
+        13 each returned exactly the same single cycle as passing no group_type at all. Values that should
+        clearly exclude an academic section, such as 4 (Dorms) and 9 (Athletics), still returned it, so the
+        parameter is being accepted and ignored. Caveat: the test section had only one cycle, so this shows
+        the filter does not EXCLUDE; it does not rule out some other partial behavior on richer sections.
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
@@ -74,14 +79,7 @@ function Get-SchoolCycleBySection
     $endUrl = '/cycles'
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value)
-    }
-
-    # Remove parameters since we don't pass them on to the API.
-    $parameters.Remove('Section_ID') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Section_ID','ReturnRaw'
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
