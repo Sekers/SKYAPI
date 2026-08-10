@@ -1,0 +1,52 @@
+# Line-ending and diff rules for this repository.
+#
+# Goal: the module must load and behave identically under Windows PowerShell 5.1 (Windows only) and
+# PowerShell 7.x+ on Windows, Linux, and macOS, no matter what each contributor's core.autocrlf is set to.
+#
+# Line endings do not affect how PowerShell parses a script (every supported host reads LF and CRLF
+# equally), so these rules exist to keep checkouts byte-identical and diffs clean rather than to make the
+# code work. Git stores text files with LF internally and applies the eol rules below on checkout.
+
+# Let Git detect text files and normalize them, unless overridden below.
+* text=auto
+
+# PowerShell sources. Pinned to CRLF because the module is authored on Windows and its primary target,
+# Windows PowerShell 5.1, is Windows-only. Pinning (rather than leaving it native) means a contributor on
+# Linux or macOS gets the same bytes as one on Windows, so edits show up as real changes instead of a
+# whole-file line-ending flip. PowerShell 7 on Linux and macOS reads CRLF without complaint.
+*.ps1    text eol=crlf
+*.psm1   text eol=crlf
+*.psd1   text eol=crlf
+*.ps1xml text eol=crlf
+*.psrc   text eol=crlf
+*.pssc   text eol=crlf
+
+# Docs, config, and data. Native line endings on checkout is fine for these.
+*.md     text
+*.txt    text
+*.json   text
+*.yml    text
+*.yaml   text
+*.url    text
+*.csv    text
+LICENSE  text
+
+# Binaries. These must never be line-ending converted or treated as text: the bundled Microsoft WebView2
+# assemblies under SKYAPI/Dependencies would be corrupted by any such conversion. Git's auto-detection
+# normally catches these, but stating it removes the guesswork.
+*.dll    binary
+*.exe    binary
+*.pdb    binary
+*.nupkg  binary
+*.zip    binary
+*.docx   binary
+*.xlsx   binary
+*.pdf    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.snk    binary
+*.pfx    binary
+*.cer    binary
