@@ -52,10 +52,15 @@ function Get-SchoolYear
         return $response
     }
 
-    # The API endpoint returns begin_date & end_date in datetime format.
-    # This wouldn't be a big issue except that there is a bug and the timezone provided is wrong (it doesn't match the Blackbaud School timezone).
-    # So we just end up returning the date as a string instead so whether it's fixed or not it's consistent and we only really care about the date not the time.
-    # Note that PS Core will automatically deserialize the [incorrect] datetime string so we need to use the 'ConvertFrom-JsonWithoutDateTimeDeserialization' function to prevent this.
+    # begin_date & end_date arrive in datetime format, carrying the school's own DST-aware offset (verified on
+    # the dev tenant 2026-07-28: 6 of 6 values matched the school's offset for their own date, e.g.
+    # "2003-09-01T00:00:00-04:00"). Confirm this on your tenant before depending on it, using
+    # Tests/TestDateTime_WireFormatSurvey.ps1.
+    #
+    # Only the calendar date matters here, so it is returned as a string: a string cannot be re-shifted by a
+    # client time zone later, and callers comparing these values as strings keep working.
+    # PS Core would otherwise deserialize the datetime string, so ConvertFrom-JsonWithoutDateTimeDeserialization
+    # is used to prevent that.
     if ($PSVersionTable.PSEdition -EQ 'Desktop')
     {
         $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
@@ -66,18 +71,13 @@ function Get-SchoolYear
         $response = (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw).$ResponseField
     }
 
-    # Massage dates in $response because PowerShell automatically converts API calls to date time...
+    # Keep the date portion and drop the time, which carries no information for these two fields. Splitting the
+    # string rather than parsing it is what makes the result independent of the client's time zone.
     $response = foreach ($schoolyear in $response)
     {
-        # Strip the incorrect time information from the dates.
-        $begin_date = ($schoolyear.begin_date -split "T")[0]
-        $end_date = ($schoolyear.end_date -split "T")[0]
-   
-        # Replace values in array
-        $schoolyear.begin_date = $begin_date
-        $schoolyear.end_date = $end_date
+        $schoolyear.begin_date = ($schoolyear.begin_date -split "T")[0]
+        $schoolyear.end_date = ($schoolyear.end_date -split "T")[0]
 
-        # Return the array
         $schoolyear
     }
 

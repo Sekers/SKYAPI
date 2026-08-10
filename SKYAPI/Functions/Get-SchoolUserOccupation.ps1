@@ -64,7 +64,13 @@ function Get-SchoolUserOccupation
             continue
         }
 
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+        # Occupation begin_date/end_date are date-only but do NOT arrive at midnight: the API stores school
+        # midnight converted to UTC ("1923-01-25T05:00:00+00:00"). Shape alone cannot tell, so they are named
+        # explicitly. This is the long-standing occupations date bug raised with Blackbaud; the encoding was
+        # still unchanged as of 2026-07-28. See Research_Notes/DateTime-Handling.md.
+        $response_raw = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        $response = Resolve-SKYAPIMemberChain -InputObject (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw) -MemberPath $ResponseField -Delimiter "."
+        $null = Repair-SKYAPIResponseDateTime -InputObject $response -DateOnlyFields @('begin_date','end_date')
         $response
     }
 }

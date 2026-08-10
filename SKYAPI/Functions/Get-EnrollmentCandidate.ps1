@@ -55,15 +55,7 @@ function Get-EnrollmentCandidate
     $endpoint = 'https://api.sky.blackbaud.com/afe-edems/v1/candidates/'
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
-
-    # Remove the parameters that we don't just pass on as-is.
-    $parameters.Remove('Candidate_ID') | Out-Null
-    $parameters.Remove('ReturnRaw') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Candidate_ID','ReturnRaw'
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -82,10 +74,11 @@ function Get-EnrollmentCandidate
             continue
         }
 
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters 
-
-        # Fix date-only fields since the API returns dates with improper time values.
-        if (-not [string]::IsNullOrEmpty($response.dob)){$response.dob = Repair-SkyApiDate -Date $response.dob}
+        # Parse with date/time values left as strings so the calendar date the API wrote stays readable, then
+        # normalize every date/time in the response. See Research_Notes/DateTime-Handling.md.
+        $response_raw = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        $response = ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw
+        $null = Repair-SKYAPIResponseDateTime -InputObject $response
 
         $response
     }
