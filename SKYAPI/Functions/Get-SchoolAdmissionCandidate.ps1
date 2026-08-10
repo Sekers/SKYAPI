@@ -67,14 +67,7 @@ function Get-SchoolAdmissionCandidate
     $ResponseField = "value"
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
-
-    # Remove parameters since we don't pass them on this way
-    $parameters.Remove('ReturnRaw') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ReturnRaw'
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -88,7 +81,7 @@ function Get-SchoolAdmissionCandidate
     {
         $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
         $response
-        continue
+        return
     }
 
     $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField

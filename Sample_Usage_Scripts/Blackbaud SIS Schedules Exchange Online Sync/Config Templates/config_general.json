@@ -1,0 +1,99 @@
+{
+    "General": {
+        "EmailonError": false,
+        "EmailonWarning": false,
+        "TeacherRoleIDs": [
+            15426,
+            15472
+        ],
+        "StudentRoleIDs": [
+            15425
+        ],
+        "MySchoolAppDomain": "school.myschoolapp.com",
+        "Meetings": {
+            "DateSelection": "Term",
+            "DaysToAppearBefore": 14,
+            "MaxPastDaysToSync": 30,
+            "StartDate": "",
+            "EndDate": "",
+            "OfferingTypes": [
+                "Academics",
+                "Advisory"
+            ]
+        },
+        "EventDefaults": {
+            "ShowAs": "Busy",
+            "IsReminderOn": false,
+            "ReminderMinutesBeforeStart": 15
+        },
+        "EventsAppIdentifier": {
+            "GUID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "Name": "EventsAppIdentifier",
+            "Value": "user_schedule_sync"
+        },
+        "DeleteSafety": {
+            "AllowEmptySourceSync": false,
+            "MaxDeletePercentPerUser": 50,
+            "MinDeletesBeforeCheck": 5
+        },
+        "UsersSyncHistory": {
+            "Path": "$PSScriptRoot\\Logging\\User Sync History-%date%.csv",
+            "RetentionTimeInDays": 30
+        }
+    },
+    "SKYAPI": {
+        "ConfigFilePath": "$PSScriptRoot\\Config\\config_sky_api.json",
+        "TokensFilePath": "$env:USERPROFILE\\API_Tokens\\SKYAPI_UserSchedules_sky_api_key.json"
+    },
+    "MSGraph": {
+        "MgDisconnectWhenDone": true,
+        "MgClientID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "MgTenantID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "MgApp_AuthenticationType": "CertificateThumbprint",
+        "MgApp_CertificatePath": "",
+        "MgApp_CertificateName": "",
+        "MgApp_CertificateThumbprint": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "MgApp_EncryptedCertificatePassword": "",
+        "MgApp_EncryptedSecret": ""
+    },
+    "Logging": {
+        "Name": "logfile",
+        "InstanceName": "<SIS User Schedules Sync Script>",
+        "FilePath": "$PSScriptRoot\\Logging\\SIS User Schedules Sync-%date%.csv",
+        "FileType": "CSV",
+        "LogRotatePath": "$PSScriptRoot\\Logging\\SIS User Schedules Sync-*.csv",
+        "LogRetentionTime": "30d",
+        "Wait": true,
+        "Enabled": true
+    },
+    "Messaging": {
+        "ConfigFilePath": "$PSScriptRoot\\Config\\config_scriptmessage.json",
+        "ServiceType": [
+            {
+                "Service": "MicrosoftGraph",
+                "Type": [
+                    "Mail"
+                ]
+            }
+        ],
+        "From": {
+            "Name": "SIS User Schedules Sync Script",
+            "Address": "userschedulessync@school.edu"
+        },
+        "ReplyTo": [
+            {
+                "Name": "School IT Support",
+                "Address": "it.support@school.edu"
+            }
+        ],
+        "To": [
+            "it.support@school.edu"
+        ],
+        "SaveToSentItems": true,
+        "SenderId": "userschedulessync@school.edu"
+    },
+    "Debugging": {
+        "VerbosePreference": "SilentlyContinue",
+        "LogDebugInfo": false
+    }
+}

@@ -16,6 +16,11 @@ function Get-SchoolUserBBIDStatus
         because they are in the "Admin Team" roll which has the same base_roll_id as Staff.
         Use Get-SchoolRole to get a list of base roles.
 
+        Possible 'status_id' values are:
+            0 = Unregistered
+            1 = Awaiting Response
+            2 = Registered
+
         .PARAMETER base_role_ids
         Required. comma-delimited list of base role IDs to get user BBID status for.
         Note: This parameter is passed on directly to the API endpoint and should be a string, not an array.
@@ -27,7 +32,7 @@ function Get-SchoolUserBBIDStatus
         .EXAMPLE
         Get-SchoolUserBBIDStatus -Base_Role_Ids "332,15,14"
         .EXAMPLE
-        Get-SchoolUserBBIDStatus -Base_Role_Ids "332,15,14" | Where-Object {@('0','0') -Contains $_.status_id} | Select-Object -Property id, name, username, email, status
+        Get-SchoolUserBBIDStatus -Base_Role_Ids "332,15,14" | Where-Object { $_.status_id -in '0','1' } | Select-Object -Property id, name, username, email, status
     #>
     
     [cmdletbinding()]
@@ -65,14 +70,7 @@ function Get-SchoolUserBBIDStatus
     $ResponseField = "value"
     
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
-
-    # Remove the ResponseLimit parameter since it is handled differently.
-    $parameters.Remove('ResponseLimit') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ResponseLimit'
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path

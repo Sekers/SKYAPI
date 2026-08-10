@@ -1,10 +1,77 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.5.0](https://github.com/Sekers/SKYAPI/tree/0.5.0) - (2026-08-10)
+
+### Fixes
+
+- **BREAKING CHANGE:** Fixed API errors being silently swallowed, which made failed calls look like successful ones: reads appeared to find no data and writes appeared to succeed. Errors now surface to the caller. This is breaking in that scripts which unknowingly relied on the silent behavior will start reporting failures, which is the intent.
+- **Consolidated date and time handling across the module.**
+  - Date-only fields were being returned a day early for anyone whose computer is west of the school's time zone, and some were not corrected at all. Values are now read as the calendar date the API actually wrote, which is correct in any time zone, including schools at a positive UTC offset. Affects `Get-SchoolUser`, `Get-SchoolUserExtended` (including the nested `visa`, `passport`, `in_state` and `occupations` values, which were never corrected before), `Get-SchoolUserExtendedByBaseRole` (which corrected nothing at all), `Get-SchoolUserOccupation`, `Get-SchoolUserEmployment`, `Get-EnrollmentCandidate`, `Get-SchoolTerm`, `Get-SchoolRoster`, `Get-SchoolActivityRoster`, `Get-SchoolAdvisoryRoster`. Genuine timestamps such as `audit_date`, `created_date` and `modified` keep their time as before, and `-ReturnRaw` output is untouched. Measured behavior is documented in `Research_Notes/DateTime-Handling.md`.
+  - Date fields now return `[DateTime]` on both Windows PowerShell 5.1 and PowerShell 7. Previously 5.1 returned `[String]` for any field the module did not explicitly correct.
+  - Timestamps that fall in the midnight hour keep their time, offset and milliseconds instead of being flattened to a plain date. The audit fields (`audit_date`, `created_date`, `last_modified_date`, `modified`, `created`, `last_modified`, `modified_date`) are now always treated as timestamps.
+  - Fixed [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) date handling for schools in positive-offset (non-US) time zones. The meeting start/end time parsing previously assumed a negative UTC offset.
+  - Fixed [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) running every meetings and roster request before failing when the school time zone could not be matched to a time zone on the local system, then reporting it only as `Value cannot be null. (Parameter 'sourceTimeZone')`. It now fails before the first request and names the unmatched value. The `-SchoolTimeZoneId` parameter also now accepts a `StandardName` or `DaylightName`. This mattered more than it sounds: the School time zone endpoint (Get-SchoolTimeZone) does not return a time zone `Id` at all. A developer tenant reports `Eastern Daylight Time`, which is a `DaylightName`, so overriding the parameter with the exact value the API itself reports used to be rejected.
+  - Fixed [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) failing or guessing badly on the two days a year when a wall-clock time is not a single instant. On the "spring forward" day a meeting scheduled in the skipped hour (02:00-03:00 in the US) is an impossible local time, and the whole request threw; it is now shifted forward by however much the clock jumped, so it lands just past the gap. On the "fall back" day a meeting in the repeated hour (01:00-02:00) has two equally valid instants, and the earlier (Daylight Time) one is now chosen deliberately instead of silently taking the later one; this matches the offset the API itself reports for that day. The amount the clock changes is read from the time zone rather than assumed to be an hour, so zones with a 30-minute change work too, and Windows PowerShell 5.1 and PowerShell 7.x produce identical results.
+  - Fixed [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) returning an end time earlier than its start time for a meeting that runs past midnight, since both times were anchored to the meeting date. Such an end time is now rolled to the following day.
+  - Fixed [Get-SchoolUserExtendedByBaseRole](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersExtendedGet) returning each user's occupation `begin_date`/`end_date` a day early, while [Get-SchoolUserExtended](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersExtendedByUser_idGet) returned the same record's dates correctly. Both now return the written date.
+- Fixed/Updated Endpoint: [Connect-SchoolUserBBID](https://developer.sky.blackbaud.com/api#api=afe-edcor&operation=V1UsersBbidConnectPatch)
+  - This endpoint was previously in closed preview. Now that it's in public preview the function's endpoint code has been updated/corrected and verified to work.
+- Fixed a corrupted tokens file returning nothing instead of the intended "Key JSON tokens file is missing, corrupted or invalid" message.
+- Fixed [New-SchoolEventCategory](https://developer.sky.blackbaud.com/api#api=school&operation=V1EventsCategoriesPost) sending the wrong values when records were piped to it.
+- Fixed `-ReturnRaw` on [Get-SchoolSession](https://developer.sky.blackbaud.com/api#api=school&operation=V1SessionsGet) and [Get-SchoolAdmissionCandidate](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdmissionsCandidatesGet) disrupting the calling script's own loop.
+- Fixed [Get-ReConstituentRatingSource](https://developer.sky.blackbaud.com/api#api=constituent&operation=ListRatingSources) never passing its `-include_inactive` value to the API, so the parameter had no effect.
+- Fixed [New-SchoolUserAddress](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesPost) requiring the wrong fields: it required `country` (which the endpoint treats as optional) and treated `city` (which is required) as optional, so it refused valid calls and allowed calls the API rejects. `country` is now optional and `city` is now mandatory.
+- Minor: Fixed a Windows PowerShell 5.1 failure that depended on call ordering. Any call that reached a request before the authentication process had run failed with `Unable to find type [System.Web.HttpUtility]`. The required assembly is now loaded when the module is imported. PowerShell Core was never affected.
+- Minor: Corrected the [Update-SchoolUser](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch) built-in help, which listed only the 'Platform Manager' role. The endpoint also accepts 'Contact Card Manager'.
+- Minor: Fixed paged reads (the `Get-School*` list functions) discarding their results and raising an error when the request succeeded on its final permitted retry attempt. The records were fetched successfully and then thrown away.
+- Minor: Fixed transient gateway failures (HTTP 502/503) not being retried when the response carried an HTML error page, or no body at all, rather than the API's usual JSON error object. Genuine transport errors such as timeouts and DNS failures still raise immediately.
+- Minor: Fixed functions leaking PowerShell common parameters into the request sent to the API. Explicitly passing `-Verbose`, `-ErrorAction`, etc. added bogus fields (e.g. `"ErrorAction": 1`) to the request body. The School API was already ignoring them so there is no functionality change.
+- Minor: Removed erroneous 'endUrl' parameter from functions/endpoints that don't use it.
+- Minor: Fixed some built-in help examples.
+
+### Features
+
+- Released the first non-beta version of the sample "Blackbaud SIS Schedules Exchange Online Sync" script.
+- Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.4078.44](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.4078.44).
+- Added retry handling for HTTP 502 (Bad Gateway). It previously failed immediately, unlike the neighboring 500, 503, and 504 responses, which retry with exponential backoff.
+- New Endpoint: [Get-SchoolUserAuditByRole](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersAuditGet)
+- New Endpoint: [Get-SchoolAthleticRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AthleticsRostersGet)
+- Implemented [Update-SchoolUserAddress](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesByAddress_idPatch), which had previously been an unavailable placeholder.
+- Added new 'include_dropped' parameter to the following functions: Get-SchoolActivityRoster, Get-SchoolAdvisoryRoster, Get-SchoolRoster (Academics).
+- Updated Endpoint: [Get-SchoolScheduleMeeting](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet)
+  - Added a new `-IncludeRosters` switch. Each returned meeting gains a `roster` property containing the full section & roster object for that meeting's section.
+- Updated Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch)
+  - Added the newer request fields: the nested objects (`locker`, `mailbox`, `passport`, `visa`, `in_state`), the type table array fields (`home_languages`, `races`), the `fields_to_delete` array (the only way to clear/blank a field via this endpoint), and the remaining scalar/boolean fields (`ethnicity`, `religion`, `pronouns`, `primary_language`, `school_program`, `deceased_date`, `personal_bio`, `preferred_lastname`, `public_bio`, `state_id`, `student_id`, `summary_note`, `international`, `latino_hispanic`, `living_status`, `is_abroad`, `is_responsible_signer`).
+  - Added a new `-Validate` switch. This endpoint returns success without validating the payload, so an unsupported value can report as updated while silently changing nothing. When `-Validate` is passed, each user is re-read after the update and every supplied field is compared against what came back, throwing if anything did not apply. It is off by default because it costs an extra API call per user, and it stops at the first user that fails so later users in the same call are not updated. When more than one user ID is supplied, the error names both groups so you can see exactly where the batch stopped: the users already updated before the failure (which are committed at the API and not rolled back) and the users never processed. Note the failure is terminating, so assigning the result discards the responses for the users that did succeed; stream the output if you need them. Most fields validate using Get-SchoolUser, which needs no role beyond what the update already requires; the extended-only fields (e.g. `races`, `visa`, `citizenship`, `student_id`) use Get-SchoolUserExtended instead, which may additionally require the 'SKY API Data Sync' role.
+  - Added `-IncludeUpdatedObject` to attach the basic or extended user read-back as an `UpdatedObject` property on the returned user ID. It can be used independently or share the same read-back request with `-Validate`.
+  - Added `Remarried` to the accepted `living_status` values. It is offered by the web GUI but is missing from the endpoint's published field description; testing against a developer tenant confirmed it is accepted and reads back correctly.
+  - Note: `-Validate` reports `summary_note` as unverifiable rather than comparing it. That field is returned by no read endpoint (testing confirmed a written value appears nowhere in either the basic or extended user read), so there is nothing to compare it against.
+  - Note: the `profile_photos` field is intentionally not yet implemented; it depends on a future Attachment (Create) upload endpoint, which is still in preview.
+- Updated Endpoint: [New-SchoolUserAddress](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesPost)
+  - Added the `salutations` field (`informal`, `formal`, `household`), which the AddressAdd model supports but the function was missing.
+
+### Other
+
+- Greatly improved the performance of Get-SchoolScheduleMeeting for PowerShell 7.3+.
+  - This was due to needing to work around Blackbaud's unreliable timezone offsets. Windows PowerShell 5.1 was unaffected by the slowdown and PowerShell 6.0-7.2 has to stay on the older, slower, method.
+  - To do this we modernized internal JSON date handling (used by Get-SchoolYear and Get-SchoolScheduleMeeting) to use PowerShell 7.3+'s native `ConvertFrom-Json -DateKind String` when available, falling back to the prior method on PowerShell 6.0-7.2 (Windows PowerShell 5.1 already leaves dates as strings).
+- Simplified some parts of the authentication process during API calls.
+- Hardened SKY API date/time parsing to fail with a clear error if Blackbaud ever changes its date format (e.g. to UTC 'Z'), rather than silently returning incorrect times.
+- Refactored the write functions to a consistent begin/process/end structure so pipeline input is streamed correctly (previously, piping multiple users processed only the last one). Each request is built only from the fields the current record actually supplied, so no record inherits a value from the one before it. This covers Update-SchoolUser, New-SchoolUserAddress, New-SchoolUserOccupation, New-SchoolUserPhone, Set-SchoolUserRelationship, and Remove-SchoolUserRelationship; New-SchoolEventCategory gained a begin block for consistency. No endpoint changes to the existing functions.
+- Added an internal helper for reusable, cached type table value validation.
+- Added an internal helper that builds every API request's parameters from the calling function's `$PSBoundParameters`, replacing the copy loop that had been repeated in all 35 functions that send parameters. Besides fixing the leaks above in one place, it removes the two ways those hand-written copies could go wrong: picking the wrong collection type for the request (which silently discarded every value) and forgetting to exclude a control parameter such as `-ReturnRaw`. No change to any function's parameters or output.
+- Minor code comment updates.
+- Minor formatting and link updates to the README file.
+
+Author: [**@Sekers**](https://github.com/Sekers)
+
+---
+
 ## [0.4.4](https://github.com/Sekers/SKYAPI/tree/0.4.4) - (2025-12-30)
 
 ### Fixes
 
-- IMPORTANT: Not exactly a fix, but the December 2025 updates to Windows made a change to Invoke-WebRequest on PowerShell Desktop 5.1 (this change has no effect on PS Core 6+) that causes the command to prompt for permission. If you are noticing the prompt or noticing automated scripts using this module hanging/pausing after installing the December update, this is why. The SKYAPI module has been updated to use basic parsing, which does not prompt. More information:
+- **IMPORTANT:** Not exactly a fix, but the December 2025 updates to Windows made a change to Invoke-WebRequest on PowerShell Desktop 5.1 (this change has no effect on PS Core 6+) that causes the command to prompt for permission. If you are noticing the prompt or noticing automated scripts using this module hanging/pausing after installing the December update, this is why. The SKYAPI module has been updated to use basic parsing, which does not prompt. More information:
   - [PowerShell 5.1: Invoke-WebRequest: Preventing script execution from web content](https://support.microsoft.com/en-us/topic/powershell-5-1-invoke-webrequest-preventing-script-execution-from-web-content-7cb95559-655e-43fd-a8bd-ceef2406b705)
   - [CVE-2025-54100 PowerShell Remote Code Execution Vulnerability](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-54100)
 - BREAKING CHANGE: Removed forcing of TLS 1.2 since all supported versions of Windows now support it or newer by default. While this should not affect most organizations, you can set TLS 1.2 or 1.3 in your scripts or Operating System if you need to adjust to a security protocol different from PowerShell's configured default.
@@ -27,7 +94,6 @@
 - New Endpoint: [Get-OrOrg](https://developer.sky.blackbaud.com/api#api=afe-rostr&operation=getAllOrgs)
 - New Endpoint: [Get-OrSchool](https://developer.sky.blackbaud.com/api#api=afe-rostr&operation=getAllSchools)
 
-
 ### Other
 
 - Reverted temporary workaround for Get-SchoolScheduleMeeting now that Blackbaud has fixed the API endpoint bug.
@@ -35,12 +101,13 @@
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.3](https://github.com/Sekers/SKYAPI/tree/0.4.3) - (2025-02-19)
 
 ### Fixes (UPDATE 2025-02-24)
 
- - Blackbaud has confirmed the issue with the API endpoint. It's not related to daylight saving time, but instead the call seems to be including an extra day in February (presumably February 29, the leap year date).  Leap year was last year 2024, so that may be why the bug wasn't noticed earlier.
- - The workaround implemented in the SKYAPI PowerShell module 0.4.3 looks to be working with no problems, however. Using the workaround will not cause problems once the endpoint issue is resolved, however we plan to revert the change once the endpoint is confirmed fixed.
+- Blackbaud has confirmed the issue with the API endpoint. It's not related to daylight saving time, but instead the call seems to be including an extra day in February (presumably February 29, the leap year date).  Leap year was last year 2024, so that may be why the bug wasn't noticed earlier.
+- The workaround implemented in the SKYAPI PowerShell module 0.4.3 looks to be working with no problems, however. Using the workaround will not cause problems once the endpoint issue is resolved, however we plan to revert the change once the endpoint is confirmed fixed.
 
 ### Fixes
 
@@ -49,6 +116,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.2](https://github.com/Sekers/SKYAPI/tree/0.4.2) - (2025-02-19)
 
 ### Fixes
@@ -58,6 +126,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.1](https://github.com/Sekers/SKYAPI/tree/0.4.1) - (2025-02-04)
 
 ### Fixes
@@ -71,6 +140,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.4.0](https://github.com/Sekers/SKYAPI/tree/0.4.0) - (2025-01-22)
 
 ### Fixes
@@ -84,7 +154,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
     | Failure Count | Wait Time Before Next Retry | Total Wait Time |
     | --- | --- | --- |
-    | 1  | 5 | 5 |
+    | 1 | 5 | 5 |
     | 2 | 10 | 15 |
     | 3 | 20 | 35 |
     | 4 | 40 | 75 |
@@ -94,13 +164,14 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Other
 
-- Disabled progress bar in function scope when calling Invoke-WebRequest or Invoke-RestMethod. This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop. More Information: https://github.com/PowerShell/PowerShell/pull/2640
+- Disabled progress bar in function scope when calling Invoke-WebRequest or Invoke-RestMethod. This improves performance due to a bug in some versions of PowerShell. It was eventually fixed in Core (v6.0.0-alpha.13) but still is around in Desktop. More Information: <https://github.com/PowerShell/PowerShell/pull/2640>
 - Removed the unimplemented 'MiniHTTPServer' alternate method of capturing authentication as this would be overkill and is unnecessary.
 - Removed the 'LegacyIEControl' alternate method of capturing authentication as it is no longer supported by Blackbaud.
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.11](https://github.com/Sekers/SKYAPI/tree/0.3.11) - (2024-10-14)
 
 ### Features
@@ -117,7 +188,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Other
 
-- Updated links for built-in help to new endpoint documentation URLs. 
+- Updated links for built-in help to new endpoint documentation URLs.
 - Updated authorize URI in various places due to updates on the API end (the old URI still works since it is forwarded to the new one).
 - Minor example and built-in help updates, clarifications, and typo fixes.
 - Removed references to resolved Blackbaud API DATETIME bug.
@@ -126,6 +197,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.10](https://github.com/Sekers/SKYAPI/tree/0.3.10) - (2023-03-21)
 
 ### Fixes
@@ -147,6 +219,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.9](https://github.com/Sekers/SKYAPI/tree/0.3.9) - (2023-03-06)
 
 ### Features
@@ -163,6 +236,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.8](https://github.com/Sekers/SKYAPI/tree/0.3.8) - (2023-02-13)
 
 ### Fixes
@@ -172,6 +246,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.7](https://github.com/Sekers/SKYAPI/tree/0.3.7) - (2023-02-02)
 
 ### Breaking Changes
@@ -196,6 +271,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.6](https://github.com/Sekers/SKYAPI/tree/0.3.6) - (2023-01-19)
 
 ### Fixes
@@ -205,6 +281,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.5](https://github.com/Sekers/SKYAPI/tree/0.3.5) - (2023-01-19)
 
 ### Fixes
@@ -228,6 +305,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.4](https://github.com/Sekers/SKYAPI/tree/0.3.4) - (2022-12-05)
 
 ### Fixes
@@ -257,11 +335,12 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.3](https://github.com/Sekers/SKYAPI/tree/0.3.3) - (2022-11-26)
 
 ### Features
 
-- Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
+- Module now works with POST & PATCH endpoints, thus allowing for NEW-\* & UPDATE-\* PowerShell functions against the SKY API.
 - New Endpoint (Beta): [Get-SchoolUserMe](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersMeGet)
 - New Endpoint: [Get-SchoolUserOccupation](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet)
 - New Endpoint: [Get-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsGet)
@@ -277,6 +356,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.1](https://github.com/Sekers/SKYAPI/tree/0.3.1) - (2022-11-24)
 
 ### Fixes
@@ -286,6 +366,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.3.0](https://github.com/Sekers/SKYAPI/tree/0.3.0) - (2022-11-24)
 
 ### Fixes
@@ -296,7 +377,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Features
 
-- Module now works with POST & PATCH endpoints, thus allowing for NEW-* & UPDATE-* PowerShell functions against the SKY API.
+- Module now works with POST & PATCH endpoints, thus allowing for NEW-\* & UPDATE-\* PowerShell functions against the SKY API.
 - New Endpoint: [Get-SchoolUserPhoneList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesGet)
 - New Endpoint: [Get-SchoolUserPhoneTypeList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet)
 - New Endpoint (Beta): [Get-SchoolScheduleMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
@@ -314,6 +395,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.2.6b](https://github.com/Sekers/SKYAPI/tree/0.2.6b) - (2022-08-11)
 
 ### Fixes
@@ -323,6 +405,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.2.6](https://github.com/Sekers/SKYAPI/tree/0.2.6) - (2022-08-11)
 
 ### Features
@@ -334,6 +417,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 Author: [**@Sekers**](https://github.com/Sekers)
 
 ---
+
 ## [0.2.5](https://github.com/Sekers/SKYAPI/tree/0.2.5) - (2022-07-28)
 
 ### Fixes
@@ -362,11 +446,11 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 - Replaced the soon to be deprecated WebBrowser Class (IE popup window for authentication & authorization) with the Microsoft Edge WebView2 control. See [Issue #7](https://github.com/Sekers/SKYAPI/issues/7).
 - Added the "AuthenticationMethod" parameter to the "Connect-SKYAPI" cmdlet which let's you specify how you want to authenticate if authentication is necessary:
-    - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
-                              Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
-    - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
-    - MiniHTTPServer (coming soon as a beta feature): Alternate method of capturing the authentication using your user account's default web browser
-                      and listening for the authentication response using a temporary HTTP server hosted by the module.
+  - EdgeWebView2 (default): Opens a web browser window using Microsoft Edge WebView2 for authentication.
+    Requires the WebView2 Runtime to be installed. If not installed, will prompt for automatic installation.
+  - LegacyIEControl: Opens a web browser window using the old Internet Explorer control. This is no longer supported by Blackbaud.
+  - MiniHTTPServer (coming soon as a beta feature): Alternate method of capturing the authentication using your user account's default web browser
+    and listening for the authentication response using a temporary HTTP server hosted by the module.
 
 Author: [**@Sekers**](https://github.com/Sekers)
 

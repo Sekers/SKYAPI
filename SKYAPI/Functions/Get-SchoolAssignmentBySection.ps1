@@ -100,11 +100,7 @@ function Get-SchoolAssignmentBySection
     $ResponseField = "value"
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value)
-    }
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Section_ID','ReturnRaw'
 
     # Remove spaces from 'types' string if included in a comma-separated list, as the endpoint doesn't allow spaces.
     if ($parameters -contains 'types')
@@ -112,10 +108,6 @@ function Get-SchoolAssignmentBySection
         $parameters.Remove('types') | Out-Null
         $parameters.Add('types',$($types.Replace(' ','')))
     }
-
-    # Remove parameters since we don't pass them on to the API.
-    $parameters.Remove('Section_ID') | Out-Null
-    $parameters.Remove('ReturnRaw') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path

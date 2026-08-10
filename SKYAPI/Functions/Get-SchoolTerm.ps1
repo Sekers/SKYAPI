@@ -58,14 +58,7 @@ function Get-SchoolTerm
     $ResponseField = "value"
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
-
-    # Remove the $ReturnRaw parameter since we don't pass it on to the API.
-    $parameters.Remove('ReturnRaw') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ReturnRaw'
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -76,10 +69,15 @@ function Get-SchoolTerm
 
     if ($ReturnRaw)
     {
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
         return $response
     }
 
-    $response = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+    # Parse with date/time values left as strings so the calendar date the API wrote stays readable, then
+    # normalize. begin_date/end_date here are date-only in the school's zone, and unset ones arrive as
+    # 0001-01-01. See Research_Notes/DateTime-Handling.md.
+    $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+    $response = Resolve-SKYAPIMemberChain -InputObject (ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw) -MemberPath $ResponseField -Delimiter "."
+    $null = Repair-SKYAPIResponseDateTime -InputObject $response
     $response
 }

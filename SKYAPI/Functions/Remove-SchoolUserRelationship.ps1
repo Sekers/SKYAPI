@@ -6,7 +6,7 @@ function Remove-SchoolUserRelationship
 
         .LINK
         Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsDelete
-        
+
         .SYNOPSIS
         Education Management School API - Removes relationship records from one or more user IDs.
 
@@ -31,7 +31,7 @@ function Remove-SchoolUserRelationship
         .EXAMPLE
         Remove-SchoolUserRelationship -User_ID 1574497, 1574374 -Left_User_ID 3294373,3294382 -relationship_type Parent_Child
     #>
-    
+
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -44,14 +44,12 @@ function Remove-SchoolUserRelationship
         [Parameter(
         Position=1,
         Mandatory=$true,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int[]]$Left_User_ID, # Array as we loop through submitted IDs
 
         [Parameter(
         Position=2,
         Mandatory=$true,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         # [ValidateSet(
         #     'Associate_Associate',
@@ -76,39 +74,47 @@ function Remove-SchoolUserRelationship
         # )]
         [string]$relationship_type
     )
-    
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/'
-    $endUrl = '/relationships'
-
-    # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
+    begin
     {
-        $parameters.Add($parameter.Key,$parameter.Value) 
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/'
+        $endUrl = '/relationships'
+
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
-    # Remove the $User_ID & $Left_User_ID parameters since we don't pass them on.
-    $parameters.Remove('User_ID') | Out-Null
-    $parameters.Remove('Left_User_ID') | Out-Null
-
-    # Remove relationship(s) for one or more IDs
-    foreach ($uid in $User_ID)
+    process
     {
-        foreach ($left_user in $Left_User_ID)
-        {
-            # Clear out old left_user parameter and add in new.
-            $parameters.Remove('left_user') | Out-Null
-            $parameters.Add('left_user',$left_user)
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-            $null = Remove-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+        # Set the parameters. This endpoint is a DELETE, so the values travel in the query string rather than a
+        # JSON body. User_ID & Left_User_ID are excluded since we don't pass them on. -SuppliedNames keeps
+        # fields from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
+                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID','Left_User_ID' `
+                      -SuppliedNames $SuppliedParameter
+
+        # Remove relationship(s) for one or more IDs
+        foreach ($uid in $User_ID)
+        {
+            foreach ($left_user in $Left_User_ID)
+            {
+                # Clear out old left_user parameter and add in new.
+                $parameters.Remove('left_user') | Out-Null
+                $parameters.Add('left_user',$left_user)
+
+                $null = Remove-SKYAPIEntity -uid $uid -url $endpoint -end $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+            }
         }
     }
+
+    end {}
 }

@@ -36,6 +36,12 @@ function New-SchoolEventCategory
  
     #>
     
+    # Only 'description' takes ValueFromPipeline (by VALUE), so that a bare list of strings can be piped in.
+    # The others are ValueFromPipelineByPropertyName only, deliberately. When several parameters accept by
+    # value, the binder tries them all against the same incoming object: piping
+    # [pscustomobject]@{description='X'} used to bind description by property name and then hand the WHOLE
+    # record to calendar_url by value, stringified as '@{description=X}', which was sent to the API as the
+    # category's calendar URL. The bool parameters were worse, since almost any object coerces to a bool.
     [cmdletbinding()]
     Param(
         [parameter(
@@ -47,7 +53,6 @@ function New-SchoolEventCategory
 
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$calendar_url,
 
@@ -55,7 +60,6 @@ function New-SchoolEventCategory
         Position=2,
         ParameterSetName = 'EventSecurity',
         Mandatory=$true,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$public
     )
@@ -69,10 +73,10 @@ function New-SchoolEventCategory
         # DynamicParameter1: roles
         if ($public -eq $false)
         { 
+            # ValueFromPipelineByPropertyName only - see the note on the static parameters above.
             $ParameterAttributes = [System.Management.Automation.ParameterAttribute]@{
                 ParameterSetName = "EventSecurity"
                 Mandatory = $true
-                ValueFromPipeline = $true
                 ValueFromPipelineByPropertyName = $true
             }
 
@@ -90,8 +94,9 @@ function New-SchoolEventCategory
         if ([string]::IsNullOrEmpty($calendar_url))
         {
             # include_brief_description parameter
+            # ValueFromPipelineByPropertyName only - see the note on the static parameters above. This one
+            # matters most: [bool] accepts almost any object by value, so a piped record bound here as $true.
             $ParameterAttributes = [System.Management.Automation.ParameterAttribute]@{
-                ValueFromPipeline = $true
                 ValueFromPipelineByPropertyName = $true
             }
 
@@ -104,8 +109,8 @@ function New-SchoolEventCategory
             $ParameterDictionary.Add('include_brief_description', $DynamicParameter2)
 
             # include_long_description parameter
+            # ValueFromPipelineByPropertyName only - see the note on the static parameters above.
             $ParameterAttributes = [System.Management.Automation.ParameterAttribute]@{
-                ValueFromPipeline = $true
                 ValueFromPipelineByPropertyName = $true
             }
 
@@ -121,21 +126,26 @@ function New-SchoolEventCategory
         return $ParameterDictionary
     }
     
-    process
+    begin
     {
         # Set the endpoints
         $endpoint = 'https://api.sky.blackbaud.com/school/v1/events/categories'
 
-        # Set the parameters
-        $parameters = @{}
-        foreach ($parameter in $PSBoundParameters.GetEnumerator())
-        {
-            $parameters.Add($parameter.Key,$parameter.Value) 
-        }
-
         # Get the SKY API subscription key
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
+    }
+
+    process
+    {
+        # Set the parameters. -SuppliedNames keeps fields from one pipeline record out of the next; see
+        # Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
+                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -SuppliedNames $SuppliedParameter -As Body
 
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile

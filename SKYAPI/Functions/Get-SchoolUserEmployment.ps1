@@ -62,7 +62,11 @@ function Get-SchoolUserEmployment
             continue
         }
 
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
+        # Parse with date/time values left as strings so the calendar date the API wrote stays readable, then
+        # normalize (date_appointed is date-only). See Research_Notes/DateTime-Handling.md.
+        $response_raw = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        $response = ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw
+        $null = Repair-SKYAPIResponseDateTime -InputObject $response
         $response
     }
 }

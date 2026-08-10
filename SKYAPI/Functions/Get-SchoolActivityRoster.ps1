@@ -28,15 +28,18 @@ function Get-SchoolActivityRoster
         .PARAMETER last_modified
         Limits rosters returned to sections that were modified on or after the date provided. Use ISO-8601 date format (e.g., 2022-04-01).
 
+        .PARAMETER include_dropped
+        Set to True to include dropped students in the rosters. Defaults to false, if omitted.
+
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolRoster
+        Get-SchoolActivityRoster
         .EXAMPLE
-        Get-SchoolRoster -school_year '2022-2023'
+        Get-SchoolActivityRoster -school_year '2022-2023'
         .EXAMPLE
-        Get-SchoolRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01'
+        Get-SchoolActivityRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
     #>
     
     [cmdletbinding()]
@@ -69,6 +72,12 @@ function Get-SchoolActivityRoster
         Position=4,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
+        [bool]$include_dropped,
+
+        [Parameter(
+        Position=5,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )
     
@@ -79,14 +88,7 @@ function Get-SchoolActivityRoster
     $ResponseField = $null
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
-
-    # Remove the $ReturnRaw parameter since we don't pass it on to the API.
-    $parameters.Remove('ReturnRaw') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ReturnRaw'
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -97,10 +99,19 @@ function Get-SchoolActivityRoster
 
     if ($ReturnRaw)
     {
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
         return $response
     }
 
-    $response = Get-SKYAPIUnpagedEntity -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+    # Parse with date/time values left as strings so the calendar date the API wrote stays readable, then
+    # normalize. Taking the written date is what keeps these correct for a client in any time zone.
+    # enroll_date is left to shape on purpose: it appears both as a date-only value and as a real timestamp
+    # within the same payload, so its name proves nothing and is deliberately absent from the reader's
+    # date-only and timestamp lists alike.
+    # See Research_Notes/DateTime-Handling.md.
+    $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+    $response_parsed = ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw
+    $response = if ([string]::IsNullOrEmpty($ResponseField)) {$response_parsed} else {Resolve-SKYAPIMemberChain -InputObject $response_parsed -MemberPath $ResponseField -Delimiter "."}
+    $null = Repair-SKYAPIResponseDateTime -InputObject $response
     $response
 }

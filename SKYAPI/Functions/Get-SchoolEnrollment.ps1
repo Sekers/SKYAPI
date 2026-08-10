@@ -92,11 +92,8 @@ function Get-SchoolEnrollment
     $ResponseField = "value"
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
+    # School_Year is passed on in the URL and ResponseLimit is adjusted later, so neither goes to the API as-is.
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'School_Year','ResponseLimit'
 
     # If not null, add in the limit parameter since this endpoint actually uses it.
     if ($ResponseLimit)
@@ -119,11 +116,8 @@ function Get-SchoolEnrollment
         $parameters.Add('offset',$offset)
     }
 
-    # Remove the $School_Year, offset, & ResponseLimit parameters since they are passed on in the URL or adjusted later
     $SchoolYears = $School_Year
     $OriginalOffset = $offset # We do this because if you have multiple items in $SchoolYears then the offset doesn't reset on subsequent loops.
-    $parameters.Remove('School_Year') | Out-Null
-    $parameters.Remove('ResponseLimit') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
