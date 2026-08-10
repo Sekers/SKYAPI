@@ -330,9 +330,15 @@
     Get-SchoolScheduleMeeting
     Note 1: offering_types defaults to 1 (Academics) if not specified.
             Use Get-SchoolOfferingType to get a list of offering types
-    Note 2: The School Time Zone as indicated at https://[school_domain_here].myschoolapp.com/app/core#demographics must be specified.
-            This is required because Blackbaud does not return accurate time zone information from this endpoint.
-            Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
+    Note 2: The School Time Zone is looked up automatically (via Get-SchoolTimeZone) and normally does not need to be specified.
+            Pass -SchoolTimeZoneId only to override it, or if the lookup fails to match a time zone on your system.
+            A time zone Id, StandardName or DaylightName is accepted (e.g., 'Eastern Standard Time' or 'Eastern Daylight Time').
+            Note that the API may report a DaylightName rather than an Id, which is why all three are matched.
+            Use 'Get-TimeZone -ListAvailable' to get a list of valid time zones.
+            The School Time Zone is set at https://[school_domain_here].myschoolapp.com/app/core#demographics.
+            A time zone is needed because Blackbaud does not return accurate time zone information from this endpoint.
+    Note 3: Use -IncludeRosters to attach each meeting's section roster. This adds API calls and a large amount
+            of data, so only use it if you need it. Dropped members are not included.
 #>
 # Get-SchoolScheduleMeeting -start_date '2022-11-01'
 # Get-SchoolScheduleMeeting -start_date '2022-11-01' -end_date '2022-11-30' -offering_types '1,3'
@@ -346,6 +352,16 @@
 #     last_modified = '2023-12-09'
 # }
 # Get-SchoolScheduleMeeting @HashArguments
+
+# Attach each meeting's section roster. Every returned meeting gains a 'roster' property containing the
+# full section & roster object for that meeting's section: 'roster.section' is the section, and
+# 'roster.roster' is an array of members, each with 'user', 'leader' and 'photo'.
+# $MeetingsWithRosters = Get-SchoolScheduleMeeting -start_date '2022-11-01' -end_date '2022-11-30' -IncludeRosters
+# foreach ($meeting in $MeetingsWithRosters)
+# {
+#     "$($meeting.group_name) [$($meeting.meeting_date)] - $(@($meeting.roster.roster).Count) members"
+#     $meeting.roster.roster | ForEach-Object { "    $($_.user.first_name) $($_.user.last_name) [$($_.user.id)]$(if ($_.leader) {' (leader)'})" }
+# }
 
 # $Meetings = Get-SchoolScheduleMeeting -start_date '2022-11-01'
 # foreach ($meeting in $Meetings)
@@ -391,6 +407,16 @@
 # Clearing/blanking a field requires the fields_to_delete parameter (the only way to delete data via this endpoint). Use object.field notation for nested fields.
 # Update-SchoolUser -User_ID 1757293 -fields_to_delete 'middle_name','passport.number'
 
+# This endpoint returns success without validating the payload, so an unsupported value can report as updated while silently changing nothing.
+# The 'Validate' switch re-reads each user and confirms every supplied field actually took effect, throwing if it did not.
+# It costs one extra API call per user and stops at the first user that fails, so later users in the same call are not updated.
+# Update-SchoolUser -User_ID 1757293 -middle_name 'Alpha' -Validate
+
+# Use 'IncludeUpdatedObject' to attach the read-back user record to the returned ID as an 'UpdatedObject' property.
+# It works with or without 'Validate'; together they share the same read-back call, so you still only pay for one extra API call.
+# Update-SchoolUser -User_ID 1757293 -middle_name 'Alpha' -IncludeUpdatedObject
+# (Update-SchoolUser -User_ID 1757293 -middle_name 'Alpha' -Validate -IncludeUpdatedObject).UpdatedObject
+
 <#
     Get-SchoolUserAddressType
 #>
@@ -404,12 +430,14 @@
 <#
     New-SchoolUserAddress
     (Use Get-SchoolUserAddressType to get a list of address types)
+    Note: the endpoint requires user_id, type_id, line_one & city.
 #>
-# New-SchoolUserAddress -User_ID 3156271 -type_id 1005 -country 'United States' -line_one '129 Huntington Drive'
+# New-SchoolUserAddress -User_ID 3156271 -type_id 1005 -line_one '129 Huntington Drive' -city 'Chicago'
 
 # $params = @{
 #     'User_ID'             = 3156271
 #     'type_id'             = 1005
+#     'salutations'         = @{informal = "The Smiths"; formal = "Mr. & Mrs. Smith"; household = "The Smith Family"}
 #     'country'             = "United States"
 #     'line_one'            = "129 Huntington Drive"
 #     'line_two'            = "Unit 406"
@@ -423,6 +451,41 @@
 #     'primary'             = $true
 # }
 # New-SchoolUserAddress @params
+
+<#
+    Update-SchoolUserAddress
+    (Use Get-SchoolUserAddress to get a user's addresses and their IDs)
+    (Use Get-SchoolUserAddressType to get a list of address types)
+    Notes: The endpoint requires user_id, address_id, type_id & line_one in every request.
+           This endpoint merges rather than replaces: fields you do not supply keep their current values.
+#>
+# Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 -line_one '129 Huntington Drive' -city 'Chicago' -state 'IL' -postal_code '60601'
+
+# Clearing/blanking a field requires the fields_to_delete parameter. A cleared field overrides a value supplied for the same field in the same request.
+# Note that salutations can be set but NOT cleared through this API; the API accepts the request and returns success without changing anything.
+# Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 -line_one '129 Huntington Drive' -fields_to_delete 'line_two','line_three'
+
+# The 'Validate' switch re-reads the address and confirms every supplied field (including clears) actually took effect, throwing if it did not.
+# 'IncludeUpdatedObject' attaches the read-back address to the returned ID as an 'UpdatedObject' property. Together they share a single extra API call.
+# Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 -line_one '129 Huntington Drive' -city 'Chicago' -Validate -IncludeUpdatedObject
+
+# $params = @{
+#     'user_id'             = 3156271
+#     'address_id'          = 4708014
+#     'type_id'             = 1005
+#     'salutations'         = @{informal = "The Smiths"}
+#     'links'               = @(@{type_id = 1005; primary = $true})
+#     'country'             = "United States"
+#     'line_one'            = "129 Huntington Drive"
+#     'line_two'            = "Unit 406"
+#     'city'                = "Chicago"
+#     'state'               = "IL"
+#     'postal_code'         = "60601"
+#     'mailing_address'     = $true
+#     'primary'             = $true
+#     'Validate'            = $true
+# }
+# Update-SchoolUserAddress @params
 
 <#
     Get-SchoolUserPhoneType
@@ -516,6 +579,15 @@
 # Set-SchoolUserRelationship -User_ID 1574497,1574461 -Left_User_ID 1574374,1574389 -relationship_type Grandparent_Grandchild -give_parental_access $true
 
 <#
+    Remove-SchoolUserRelationship
+    Notes: Removes relationship records from one or more user IDs.
+           'User_ID' holds the "right" users and 'Left_User_ID' the other individuals in the relationship.
+           If the related individual is also a user, that user's profile is preserved.
+#>
+# Remove-SchoolUserRelationship -User_ID 1574497 -Left_User_ID 1574374 -relationship_type Sibling_Sibling
+# Remove-SchoolUserRelationship -User_ID 1574497,1574374 -Left_User_ID 3294373,3294382 -relationship_type Parent_Child
+
+<#
     Get-SchoolSession
 #>
 # Get-SchoolSession
@@ -552,6 +624,12 @@
     Get-SchoolUserCustomFieldsByBaseRole
 #>
 # Get-SchoolUserCustomFieldsByBaseRole -base_role_ids "332,15,14"
+
+<#
+    Get-SchoolTimeZone
+    Note: Returns the current time zone set for the school.
+#>
+# Get-SchoolTimeZone
 
 <#
     Get-SchoolTypeTable
