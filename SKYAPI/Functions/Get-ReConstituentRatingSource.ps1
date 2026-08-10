@@ -46,14 +46,7 @@ function Get-ReConstituentRatingSource
     $ResponseField = "value"
     
     # Set the parameters
-    $parameters = @{}
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
-
-    # Remove the $ReturnRaw parameter since we don't pass it on to the API.
-    $parameters.Remove('ReturnRaw') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ReturnRaw'
     
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path

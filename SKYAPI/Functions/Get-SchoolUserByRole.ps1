@@ -111,11 +111,8 @@ function Get-SchoolUserByRole
     $ResponseField = "value"
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
+    # ResponseLimit is excluded because it is handled differently, not passed to the API.
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ResponseLimit'
 
     # Set/Replace Marker parameter to 1 if not set or 0. That way it can do pagination properly.
     if ($null -eq $marker -or $marker -eq '' -or $marker -eq 0)
@@ -124,9 +121,6 @@ function Get-SchoolUserByRole
         $marker = 1
         $parameters.Add('marker',$marker)
     }
-
-    # Remove the ResponseLimit parameter since it is handled differently.
-    $parameters.Remove('ResponseLimit') | Out-Null
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
