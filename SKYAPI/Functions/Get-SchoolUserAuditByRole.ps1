@@ -94,7 +94,14 @@ function Get-SchoolUserAuditByRole
 
     process
     {
-        # Set the parameters (don't use $PSBoundParameters when working with pipeline input)
+        # Built by hand from the parameter variables rather than from $PSBoundParameters, because
+        # $PSBoundParameters is not reset between pipeline records: it keeps the previous record's entry for a
+        # field the current record omitted, while the variables are correctly rebound. Reading the variables
+        # therefore stays per-record and is safe.
+        #
+        # Get-SKYAPIRequestParameter -SuppliedNames now does the same job for the other 36 call sites, so this
+        # could be consolidated onto it; the hand-rolled version is left alone only because it is already
+        # correct and the query string it builds is trivial.
         $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
         if (-not [string]::IsNullOrWhiteSpace($start_date)) { $parameters['start_date'] = $start_date }
         if (-not [string]::IsNullOrWhiteSpace($end_date))   { $parameters['end_date']   = $end_date }
@@ -102,6 +109,13 @@ function Get-SchoolUserAuditByRole
         
         #TODO: PART 1 of 2 > Temporary fix for "end_date" not actually defaulting to "start_date + 7 days" if not specified.
         # I wonder if they really mean + 6 days since including the start_date +6 days is 7 days and that's how start_date works?
+        #
+        # RETESTED 2026-07-28: still NOT fixed, and the evidence is unusually clear. Calling the endpoint with
+        # only start_date (365 days ago) and no end_date returns a 400: "end_date can be no later than 1 year
+        # after start_date". So the API is defaulting end_date to something more than a year past start_date
+        # (today, or unbounded) and then rejecting its own default. It is certainly not defaulting to
+        # start_date + 7 days. The same call with an explicit end_date of today succeeded and returned 13
+        # records. This workaround stays.
         if ((-not [string]::IsNullOrWhiteSpace($start_date)) -and ([string]::IsNullOrWhiteSpace($end_date)))
         {
             $end_date = (Get-Date -Date $start_date).AddDays(7).ToString('yyyy-MM-dd') 
@@ -123,7 +137,8 @@ function Get-SchoolUserAuditByRole
             if ($ReturnRaw)
             {
                 $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
-                return $response # TODO: Make this continue to not break the pipeline?
+                $response
+                continue
             }
 
             $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
