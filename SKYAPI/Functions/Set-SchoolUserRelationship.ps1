@@ -316,7 +316,7 @@ function Set-SchoolUserRelationship
                 {
                     if ($null -eq $CurrentRelationshipOfSameType)
                     {
-                        $parameters.Add('comments',$false)
+                        $parameters.Add('comments','')
                     }
                 }
                 else

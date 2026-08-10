@@ -1,5 +1,11 @@
 # Changelog for SKYAPI PowerShell Module
 
+## [0.5.1](https://github.com/Sekers/SKYAPI/tree/0.5.1) - (XXXX-XX-XX)
+
+### Fixes
+
+- Fixed [Set-SchoolUserRelationship](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsPost) writing the literal text `false` into the Notes/Comments field of every relationship it created when `-comments` was not supplied. `comments` is a string field, but it was defaulting to the boolean `$false` along with the neighboring true/false options; the API accepts the boolean, converts it to text and stores it. New relationships now get an empty comment. Only newly created relationships were affected, since these defaults are not applied when an existing relationship is updated. Measured behavior is documented in `Research_Notes/Write-Field-Behavior.md`.
+
 ## [0.5.0](https://github.com/Sekers/SKYAPI/tree/0.5.0) - (2026-08-10)
 
 ### Fixes
