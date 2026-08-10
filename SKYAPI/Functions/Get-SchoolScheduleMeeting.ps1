@@ -18,7 +18,12 @@ function Get-SchoolScheduleMeeting
         Additional Notes:
           - Returned meeting start & end times are in UTC DateTime format.
           - Returned meeting date is the date of the meeting in the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
-          - Does not support the "show_time_for_current_date" request parameter because it just completely gives incorrect timezone information. If you need to convert timezones or DST, use PowerShell.
+          - Does not support the "show_time_for_current_date" request parameter. Setting it does not recalculate anything useful: it keeps the meeting's wall-clock time and stamps the CURRENT day's UTC offset on it, so a meeting in the other half of the year is reported an hour off (e.g., a January 08:30 EST class comes back as 08:30-04:00 when requested during EDT). Measured 2026-08-06; see Research_Notes/DateTime-Handling.md section 3i. If you need to convert time zones or DST, use PowerShell.
+          - The API sends the correct School-local wall-clock time but an unreliable UTC offset, so the offset is discarded and the time is re-anchored to the meeting date in the School Time Zone. That offset is applied per day rather than per meeting, making it wrong for part of every DST transition day, which is why it cannot be trusted (see Research_Notes/DateTime-Handling.md section 3h). Re-anchoring handles DST correctly for normal school hours. On the two days a year when a wall-clock reading is not a single instant, a best guess is made rather than failing, and the same guess is made on Windows PowerShell 5.1 and PowerShell 7.x:
+              * DST "spring forward" skipped hour: a meeting starting in the hour that never occurs (02:00-03:00 in the US) is shifted forward by the amount the clock jumped, so it lands just past the gap (02:30 becomes 03:30). Its end time is shifted by the same amount, so the meeting keeps its scheduled length rather than the start overtaking an end that was already a valid time. The jump is read from the time zone, so zones with a 30-minute change are handled too.
+              * DST "fall back" repeated hour: a meeting in the hour that occurs twice (01:00-02:00 in the US) maps to two equally valid instants, and nothing in the response says which. The earlier (Daylight Time) one is used, which matches the offset the API itself reports for that day.
+            Both are rare: a full school year of 16,000 meetings on a test tenant contained no meeting in either window.
+          - Meetings that cross midnight are handled. Both times are anchored to the meeting date, so an end time earlier than its start time is taken to mean the following day and is rolled forward accordingly.
 
         .PARAMETER start_date
         Required. Start date of events you want returned. Use ISO-8601 date format (e.g., 2022-04-01).
@@ -39,9 +44,10 @@ function Get-SchoolScheduleMeeting
         .PARAMETER SchoolTimeZoneId
         Indicates the School Time Zone as specified at https://[school_domain_here].myschoolapp.com/app/core#demographics.
         Get-SchoolScheduleMeeting will try to automatically pull the value from your school environment,
-        but if you receive an error, you may have to manually override it with a valid time zone ID.
+        but if you receive an error, you may have to manually override it with a valid time zone.
         This is required because Blackbaud does not return accurate time zone information from this endpoint.
-        Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs.
+        A time zone Id, StandardName or DaylightName is accepted (e.g., 'Eastern Standard Time' or 'Eastern Daylight Time').
+        Use 'Get-TimeZone -ListAvailable' to get a list of valid time zones.
         .PARAMETER IncludeRosters
         Adds the roster information for each meeting. This is a large amount of data, and adds additional API calls, so only use it if you need it.
         Each returned meeting gains a 'roster' property containing the full section & roster object for that meeting's section.
@@ -122,16 +128,6 @@ function Get-SchoolScheduleMeeting
         Position=5,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [ValidateScript({
-            if ((Get-TimeZone -ListAvailable).Id -contains $_)
-            {
-                $true
-            }
-            else
-            {
-                throw "$_ is invalid. Use 'Get-TimeZone -ListAvailable' to get a list of valid time zone IDs."
-            }
-        })]
         [string]$SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name),
 
         [Parameter(
@@ -148,11 +144,8 @@ function Get-SchoolScheduleMeeting
     $ResponseField = "value"
 
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
+    # SchoolTimeZoneId and IncludeRosters drive local behavior and are not API fields.
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'SchoolTimeZoneId','IncludeRosters'
 
     # IMPORTANT NOTE: NO SPACES ALLOWED BETWEEN VALUES FOR 'offering_types' STRING!!!! (e.g., "1,3" is the correct way, NOT "1, 3")
     # It will still process the query if there is a string, but only return results for the first value.
@@ -162,21 +155,27 @@ function Get-SchoolScheduleMeeting
         $parameters.Remove('offering_types') | Out-Null
         $parameters.Add('offering_types',$($offering_types.Replace(' ','')))
     }
-    
-    # Remove the 'School Time Zone' and 'IncludeRosters' parameters since we don't pass them on to the API.
-    $parameters.Remove('SchoolTimeZoneId') | Out-Null
-    $parameters.Remove('IncludeRosters') | Out-Null
 
-    # Convert SchoolTimeZone to TimeZoneInfo object. Check match for ID, then StandardName, then DaylightName.
-    $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property Id -EQ $SchoolTimeZoneId
+    # Convert SchoolTimeZoneId to a TimeZoneInfo object. Check for a match on Id, then StandardName, then
+    # DaylightName. This is the only validation the value gets: a ValidateScript attribute would not run on
+    # the Get-SchoolTimeZone default, since PowerShell validates only values that are actually bound, so
+    # doing it here is what gives an explicitly passed value and the looked-up default the same treatment
+    # and the same error. It also runs before any API request below, so an unmatched zone costs nothing.
+    $SystemTimeZones = Get-TimeZone -ListAvailable
+    $SchoolTimeZone = $SystemTimeZones | Where-Object -Property Id -EQ $SchoolTimeZoneId
     if ([string]::IsNullOrEmpty($SchoolTimeZone))
     {
-        $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property StandardName -EQ $SchoolTimeZoneId
+        $SchoolTimeZone = $SystemTimeZones | Where-Object -Property StandardName -EQ $SchoolTimeZoneId
     }
     if ([string]::IsNullOrEmpty($SchoolTimeZone))
     {
-        $SchoolTimeZone = Get-TimeZone -ListAvailable | Where-Object -Property DaylightName -EQ $SchoolTimeZoneId
+        $SchoolTimeZone = $SystemTimeZones | Where-Object -Property DaylightName -EQ $SchoolTimeZoneId
     }
+    if ([string]::IsNullOrEmpty($SchoolTimeZone))
+    {
+        throw "Unable to match the school time zone `"$SchoolTimeZoneId`" to a time zone on this system (checked Id, StandardName & DaylightName). Use 'Get-TimeZone -ListAvailable' to get a list of valid time zones."
+    }
+    $SchoolTimeZone = @($SchoolTimeZone)[0] # A StandardName/DaylightName match can return more than one zone; use the first.
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -237,11 +236,9 @@ function Get-SchoolScheduleMeeting
         $parameters.Add('start_date',$DateIterationStart.ToString('yyyy-MM-dd'))
         $parameters.Add('end_date',$DateIterationEnd.ToString('yyyy-MM-dd'))
 
-        # Get the Data.
-        # Note: Since PowerShell v6, ConvertTo-Json automatically deserializes strings that contain
-        # an "o"-formatted (roundtrip format) date/time string (e.g., "2023-06-15T13:45:00.123Z")
-        # or a prefix of it that includes at least everything up to the seconds part as [datetime] instances.
-        # So, with PS Core, we need to get the raw JSON and create a CustomPSObject without deserialization.
+        # Get the data. On PS Core, ConvertFrom-Json turns any "o"-formatted (roundtrip) date/time string, or a
+        # prefix of one down to the seconds part, into a [datetime]. The offset this endpoint sends is
+        # unreliable (see the re-anchoring below), so the raw JSON is parsed with those values left as strings.
 
         if ($PSVersionTable.PSEdition -EQ 'Desktop')
         {
@@ -343,7 +340,6 @@ function Get-SchoolScheduleMeeting
         }
     }
 
-    # Massage dates in $response because PowerShell automatically converts API calls to date time...
     # Extracts the wall-clock time-of-day (HH:mm:ss[.fff]) from an API start/end value. Blackbaud returns
     # the correct School-local time-of-day but with an unreliable UTC offset, so we keep the time and
     # re-anchor it to meeting_date in the School time zone (below), which also gets DST right. This accepts
@@ -361,20 +357,46 @@ function Get-SchoolScheduleMeeting
 
     $response = foreach ($meeting in $response)
     {
-        # Strip the time information from the date.
+        # Keep the date portion only; the time that comes with meeting_date carries no information.
         $meeting_date = ($meeting.meeting_date -split "T")[0]
 
-        # Pull the time and combine with the correct date so that daylight saving time is calculated correctly.
-        $start_time = [System.String]::Concat($meeting_date, "T", (& $ExtractSchoolLocalTime $meeting.start_time 'start_time'))
-        $start_time = ([System.TimeZoneInfo]::ConvertTimeToUtc($start_time, $SchoolTimeZone)) # Convert to UTC, specifying the time zone.
+        # Pair each School-local time-of-day with that date. Parsed with the invariant culture so the result
+        # does not depend on the host's regional settings.
+        $StartLocal = [datetime]::Parse(
+            [System.String]::Concat($meeting_date, "T", (& $ExtractSchoolLocalTime $meeting.start_time 'start_time')),
+            [System.Globalization.CultureInfo]::InvariantCulture)
+        $EndLocal = [datetime]::Parse(
+            [System.String]::Concat($meeting_date, "T", (& $ExtractSchoolLocalTime $meeting.end_time 'end_time')),
+            [System.Globalization.CultureInfo]::InvariantCulture)
 
-        $end_time = [System.String]::Concat($meeting_date, "T", (& $ExtractSchoolLocalTime $meeting.end_time 'end_time'))
-        $end_time = ([System.TimeZoneInfo]::ConvertTimeToUtc($end_time, $SchoolTimeZone)) # Convert to UTC, specifying the time zone.
+        # Both times are anchored to meeting_date, so a meeting running past midnight would otherwise end
+        # before it starts. An end earlier than its start only makes sense as the following day.
+        if ($EndLocal -lt $StartLocal)
+        {
+            $EndLocal = $EndLocal.AddDays(1)
+        }
 
-        # Replace values in array
+        # If the start never happened (the spring-forward gap), the whole meeting moves forward with the
+        # clock, so the end has to move by the same amount and the meeting keeps its nominal length. Shifting
+        # only the start would let it overtake an end that was already valid: a 02:30-03:00 meeting on a
+        # transition day came back as 07:30Z to 07:00Z, a negative duration. Both ends are moved here rather
+        # than left to the per-value conversion below, which cannot see that the two belong together.
+        if ($SchoolTimeZone.IsInvalidTime($StartLocal))
+        {
+            $DaylightJump = Get-SKYAPIDaylightJump -OnDate $StartLocal -TimeZone $SchoolTimeZone
+            $StartLocal = $StartLocal.Add($DaylightJump)
+            $EndLocal = $EndLocal.Add($DaylightJump)
+        }
+
+        # Convert as School time, so the UTC result lands on the right side of a daylight saving boundary.
+        # The helper also makes a best guess on the two readings a year that are not a single instant, rather
+        # than throwing (spring forward) or silently taking the later one (fall back).
+        $start_time = ConvertTo-SKYAPIUtcFromSchoolLocal -SchoolLocalDateTime $StartLocal -SchoolTimeZone $SchoolTimeZone
+        $end_time = ConvertTo-SKYAPIUtcFromSchoolLocal -SchoolLocalDateTime $EndLocal -SchoolTimeZone $SchoolTimeZone
+
         $meeting.start_time = Get-Date $start_time
         $meeting.end_time = Get-Date $end_time
-        $meeting.meeting_date = $meeting_date # Don't convert to DateTime
+        $meeting.meeting_date = $meeting_date # Left as a string so a client time zone cannot shift the date.
 
         # Attach the roster (full section & roster object) for this meeting's section, if collected.
         if ($IncludeRosters)
@@ -382,7 +404,6 @@ function Get-SchoolScheduleMeeting
             $meeting | Add-Member -NotePropertyName 'roster' -NotePropertyValue $RosterLookup[[string]$meeting.section_id] -Force
         }
 
-        # Return the array
         $meeting
     }
 
