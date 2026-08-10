@@ -66,14 +66,7 @@ function Get-SchoolUserExtendedByBaseRole
     $ResponseField = "value"
     
     # Set the parameters
-    $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-    foreach ($parameter in $PSBoundParameters.GetEnumerator())
-    {
-        $parameters.Add($parameter.Key,$parameter.Value) 
-    }
-
-    # Remove the ResponseLimit parameter since it is handled differently.
-    $parameters.Remove('ResponseLimit') | Out-Null
+    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ResponseLimit'
 
     # Get the SKY API subscription key
     $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
@@ -82,6 +75,12 @@ function Get-SchoolUserExtendedByBaseRole
     # Grab the security tokens
     $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-    $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
+    # The occupation begin_date/end_date values are date-only, but the API expresses them as the school's
+    # midnight converted to UTC (e.g. 2010-05-05T04:00:00+00:00), so their time component is not zero and
+    # they cannot be recognized as date-only by shape alone. Naming them here keeps the written calendar
+    # date, matching what Get-SchoolUserExtended returns for the same record.
+    $DateOnlyFields = @('begin_date','end_date')
+
+    $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType -date_only_fields $DateOnlyFields
     $response
 }

@@ -58,10 +58,13 @@ function Get-SchoolUser
             continue
         }
 
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile
-
-        # Fix date-only fields since the API returns dates with improper time values.
-        if (-not [string]::IsNullOrEmpty($response.dob)){$response.dob = Repair-SkyApiDate -Date $response.dob}
+        # Parse with date/time values left as strings so the calendar date the API wrote stays readable, then
+        # normalize. Note this endpoint returns dob as UTC midnight ("2005-03-17T00:00:00+00:00") while
+        # Get-SchoolUserExtended returns the same value in the school's zone; taking the written date is
+        # correct for both. See Research_Notes/DateTime-Handling.md.
+        $response_raw = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+        $response = ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw
+        $null = Repair-SKYAPIResponseDateTime -InputObject $response
 
         $response
     }
