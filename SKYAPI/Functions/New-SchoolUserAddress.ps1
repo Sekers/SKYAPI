@@ -18,8 +18,10 @@ function New-SchoolUserAddress
         .PARAMETER type_id
         Required. The type ID of the specified address. The type ID corresponds with the type of address (ex. Business/College, Home, Summer).
         Use Get-SchoolUserAddressType to get a list of address types.
+        .PARAMETER salutations
+        Address salutations. Provide a hashtable or PSCustomObject containing informal, formal, or household.
         .PARAMETER country
-        Required. Country full name (e.g., United States). Must be a full country name from the school's list of countries.
+        Country full name (e.g., United States). Must be a full country name from the school's list of countries.
         .PARAMETER line_one
         Required. Address Line 1 (e.g., 123 Main Street).
         .PARAMETER line_two
@@ -27,9 +29,9 @@ function New-SchoolUserAddress
         .PARAMETER line_three
         Address Line 3.
         .PARAMETER city
-        City (e.g., Charelston).
+        Required. City (e.g., Charleston).
         .PARAMETER state
-        State 2-letter abbreviation (e.g., SC) or full name. Available only with country choices that use states.
+        State 2-letter abbreviation (e.g., SC) or full name. Required only if the country is United States.
         .PARAMETER postal_code
         Postal code.
         .PARAMETER province
@@ -42,11 +44,12 @@ function New-SchoolUserAddress
         Set to true to make this the primary address. A user can have only one primary address.
 
         .EXAMPLE
-        New-SchoolUserAddress -User_ID 3156271 -type_id 1005 -country 'United States' -line_one '129 Huntington Drive'
+        New-SchoolUserAddress -User_ID 3156271 -type_id 1005 -line_one '129 Huntington Drive' -city 'Chicago'
         .EXAMPLE
         $params = @{
             'User_ID'             = 3156271
             'type_id'             = 1005
+            'salutations'         = @{informal = "The Smiths"}
             'country'             = "United States"
             'line_one'            = "129 Huntington Drive"
             'line_two'            = "Unit 406"
@@ -79,66 +82,72 @@ function New-SchoolUserAddress
 
         [Parameter(
         Position=2,
-        Mandatory=$true,
+        Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true)]
+        [object]$salutations,
+
+        [Parameter(
+        Position=3,
+        Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
         [string]$country,
 
         [Parameter(
-        Position=3,
+        Position=4,
         Mandatory=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$line_one,
 
         [Parameter(
-        Position=4,
+        Position=5,
         Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
         [string]$line_two,
 
         [Parameter(
-        Position=5,
+        Position=6,
         Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
         [string]$line_three,
 
         [Parameter(
-        Position=6,
-        Mandatory=$false,
+        Position=7,
+        Mandatory=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$city,
-
-        [Parameter(
-        Position=7,
-        Mandatory=$false,
-        ValueFromPipelineByPropertyName=$true)]
-        [string]$state,
 
         [Parameter(
         Position=8,
         Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$postal_code,
+        [string]$state,
 
         [Parameter(
         Position=9,
         Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$province,
+        [string]$postal_code,
 
         [Parameter(
         Position=10,
         Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$region,
+        [string]$province,
 
         [Parameter(
         Position=11,
         Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
-        [bool]$mailing_address,
+        [string]$region,
 
         [Parameter(
         Position=12,
+        Mandatory=$false,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$mailing_address,
+
+        [Parameter(
+        Position=13,
         Mandatory=$false,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$primary
@@ -153,6 +162,9 @@ function New-SchoolUserAddress
         # Get the SKY API subscription key
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
     process
@@ -160,19 +172,12 @@ function New-SchoolUserAddress
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-        # Set the parameters
-        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
-        $parameters = @{}
-        foreach ($parameter in $PSBoundParameters.GetEnumerator())
-        {
-            if ($parameter.Key -notin $commonParameters)
-            {
-                $parameters.Add($parameter.Key,$parameter.Value)
-            }
-        }
-
-        # Remove the $User_ID parameter since we don't pass that on
-        $parameters.Remove('User_ID') | Out-Null
+        # Set the parameters. User_ID is excluded since we don't pass that on. -SuppliedNames keeps fields
+        # from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
+                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID' `
+                      -SuppliedNames $SuppliedParameter -As Body
 
         # Verify the address type doesn't already exists for any of the users.
         foreach ($uid in $User_ID)

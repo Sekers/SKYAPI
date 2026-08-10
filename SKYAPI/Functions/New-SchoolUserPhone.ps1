@@ -56,6 +56,9 @@ function New-SchoolUserPhone
         # Get the SKY API subscription key
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
     process
@@ -63,19 +66,12 @@ function New-SchoolUserPhone
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-        # Set the parameters
-        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
-        $parameters = @{}
-        foreach ($parameter in $PSBoundParameters.GetEnumerator())
-        {
-            if ($parameter.Key -notin $commonParameters)
-            {
-                $parameters.Add($parameter.Key,$parameter.Value)
-            }
-        }
-
-        # Remove the $User_ID parameter since we don't pass that on
-        $parameters.Remove('User_ID') | Out-Null
+        # Set the parameters. User_ID is excluded since we don't pass that on. -SuppliedNames keeps fields
+        # from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
+                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID' `
+                      -SuppliedNames $SuppliedParameter -As Body
 
         # Verify the phone number type doesn't already exists for any of the users.
         foreach ($uid in $User_ID)
