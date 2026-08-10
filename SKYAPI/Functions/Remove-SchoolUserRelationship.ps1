@@ -84,6 +84,9 @@ function Remove-SchoolUserRelationship
         # Get the SKY API subscription key
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
     process
@@ -91,20 +94,13 @@ function Remove-SchoolUserRelationship
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-        # Set the parameters
-        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
-        $parameters = [System.Web.HttpUtility]::ParseQueryString([String]::Empty)
-        foreach ($parameter in $PSBoundParameters.GetEnumerator())
-        {
-            if ($parameter.Key -notin $commonParameters)
-            {
-                $parameters.Add($parameter.Key,$parameter.Value)
-            }
-        }
-
-        # Remove the $User_ID & $Left_User_ID parameters since we don't pass them on.
-        $parameters.Remove('User_ID') | Out-Null
-        $parameters.Remove('Left_User_ID') | Out-Null
+        # Set the parameters. This endpoint is a DELETE, so the values travel in the query string rather than a
+        # JSON body. User_ID & Left_User_ID are excluded since we don't pass them on. -SuppliedNames keeps
+        # fields from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
+                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID','Left_User_ID' `
+                      -SuppliedNames $SuppliedParameter
 
         # Remove relationship(s) for one or more IDs
         foreach ($uid in $User_ID)

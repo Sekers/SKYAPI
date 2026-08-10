@@ -1,5 +1,14 @@
 # TODO - There is a bug with the dates not appearing correctly on the website when submitting occupations on this endpoint. I have a support request open with Blackbaud
 #        They were able to replicate the issue and have passed it on to the product development team for further review.
+#
+#        RETESTED 2026-07-28: NOT fixed. Occupation dates still come back in an encoding used by no other
+#        endpoint - school midnight converted to UTC, so the time component is 04:00 or 05:00 rather than
+#        00:00, e.g. "1923-01-25T05:00:00+00:00" (midnight EST) and "2022-03-15T04:00:00+00:00" (midnight
+#        EDT). Every other date-only field on the user endpoints arrives at midnight with the school's own
+#        offset. Because the shape alone cannot be told apart from a real timestamp, Get-SchoolUserOccupation
+#        and Get-SchoolUserExtended name begin_date/end_date explicitly when normalizing (see
+#        Research_Notes/DateTime-Handling.md), so reads now return the correct calendar date regardless.
+#        What was NOT retested is how the website renders them, which is what the support request was about.
 
 function New-SchoolUserOccupation
 {
@@ -159,6 +168,9 @@ function New-SchoolUserOccupation
         # Get the SKY API subscription key
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
     process
@@ -166,19 +178,12 @@ function New-SchoolUserOccupation
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-        # Set the parameters
-        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
-        $parameters = @{}
-        foreach ($parameter in $PSBoundParameters.GetEnumerator())
-        {
-            if ($parameter.Key -notin $commonParameters)
-            {
-                $parameters.Add($parameter.Key,$parameter.Value)
-            }
-        }
-
-        # Remove the $User_ID parameter since we don't pass that on
-        $parameters.Remove('User_ID') | Out-Null
+        # Set the parameters. User_ID is excluded since we don't pass that on. -SuppliedNames keeps fields
+        # from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
+                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID' `
+                      -SuppliedNames $SuppliedParameter -As Body
 
         # Set data for one or more IDs
         foreach ($uid in $User_ID)

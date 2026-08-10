@@ -181,6 +181,9 @@ function Set-SchoolUserRelationship
         # Get the SKY API subscription key
         $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
         $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
     process
@@ -188,23 +191,13 @@ function Set-SchoolUserRelationship
         # Grab the security tokens
         $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
 
-        # Set the parameters
-        $commonParameters = [System.Management.Automation.PSCmdlet]::CommonParameters
-        $parameters = @{}
-        foreach ($parameter in $PSBoundParameters.GetEnumerator())
-        {
-            if ($parameter.Key -notin $commonParameters)
-            {
-                $parameters.Add($parameter.Key,$parameter.Value)
-            }
-        }
-
-        # Remove the $User_ID & $Left_User_ID parameters since we don't pass them on.
-        $parameters.Remove('User_ID') | Out-Null
-        $parameters.Remove('Left_User_ID') | Out-Null
-
-        # Remove the ReturnRelationshipInfo control switch; it directs this function's output, not the API request body.
-        $parameters.Remove('ReturnRelationshipInfo') | Out-Null
+        # Set the parameters. User_ID & Left_User_ID aren't passed on, and ReturnRelationshipInfo is a control
+        # switch that directs this function's output rather than the API request body. -SuppliedNames keeps
+        # fields from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
+                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters `
+                      -Exclude 'User_ID','Left_User_ID','ReturnRelationshipInfo' -SuppliedNames $SuppliedParameter -As Body
 
         # Save optional parameter original values.
         $give_parental_access_orig = $parameters.give_parental_access
