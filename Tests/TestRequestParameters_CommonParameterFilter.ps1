@@ -106,6 +106,26 @@ $Result = & (Get-Module SKYAPI) {
                                         -Exclude 'Section_ID','ReturnRaw'
     Assert-Equal 'Get-SchoolCycleBySection does not send ReturnRaw' 'duration_id=2' $Cycle.ToString()
 
+    "--- the roster and course inactive filters"
+    # These endpoints changed their server-side default: rosters now return only active sections unless asked,
+    # so a supplied value has to reach the wire. A [bool] serializes as the literal 'True', which the API takes.
+    $Roster = Get-SKYAPIRequestParameter -BoundParameters @{ include_inactive = $true; ReturnRaw = $true } -Exclude 'ReturnRaw'
+    Assert-Equal 'roster include_inactive reaches the query' 'include_inactive=True' $Roster.ToString()
+
+    # Sorted, because a hashtable does not guarantee enumeration order and the helper preserves whatever it gets.
+    $Course = Get-SKYAPIRequestParameter -BoundParameters @{ level_id = 229; exclude_inactive = $true } -Exclude 'ReturnRaw'
+    Assert-Equal 'Get-SchoolCourse exclude_inactive reaches the query' 'exclude_inactive=True,level_id=229' `
+        ((($Course.ToString() -split '&') | Sort-Object) -join ',')
+
+    # An omitted optional [bool] is never in $PSBoundParameters, so it must not appear at all. Sending
+    # 'include_inactive=False' would be harmless today but would pin a default the API is free to change.
+    $Omitted = Get-SKYAPIRequestParameter -BoundParameters @{ school_year = '2022-2023' } -Exclude 'ReturnRaw'
+    Assert-Equal 'an omitted include_inactive sends nothing' 'school_year=2022-2023' $Omitted.ToString()
+
+    # $false is a supplied value and must survive, so a caller can pin the default explicitly.
+    $Explicit = Get-SKYAPIRequestParameter -BoundParameters @{ include_inactive = $false } -Exclude 'ReturnRaw'
+    Assert-Equal 'an explicit $false is still sent' 'include_inactive=False' $Explicit.ToString()
+
     [pscustomobject]@{ Output = $Stats; Pass = $Stats.Pass; Fail = $Stats.Fail }
 }
 

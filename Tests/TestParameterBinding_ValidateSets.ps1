@@ -89,6 +89,26 @@ $Result = & (Get-Module SKYAPI) {
     catch { $Rejected = $true }
     Assert-Equal "a misspelled living_status is rejected by the binder" $true $Rejected
 
+    "--- the roster and course inactive filters are declared as API fields, not control switches"
+    # [bool] rather than [switch] is the repo convention for a real query field: Get-SKYAPIRequestParameter
+    # sends whatever is bound, and a [switch] would put 'True'/'False' on the wire for the shorthand -Name form
+    # while reading as a client-side control everywhere else in the module. A caller writes -include_inactive $true.
+    foreach ($Function in 'Get-SchoolAcademicRoster','Get-SchoolActivityRoster','Get-SchoolAdvisoryRoster','Get-SchoolAthleticRoster')
+    {
+        $Parameter = (Get-Command $Function).Parameters['include_inactive']
+        Assert-Equal "$Function declares include_inactive"     $true             ($null -ne $Parameter)
+        Assert-Equal "$Function types include_inactive [bool]" 'System.Boolean'  $Parameter.ParameterType.FullName
+    }
+
+    $ExcludeInactive = (Get-Command Get-SchoolCourse).Parameters['exclude_inactive']
+    Assert-Equal 'Get-SchoolCourse declares exclude_inactive'     $true             ($null -ne $ExcludeInactive)
+    Assert-Equal 'Get-SchoolCourse types exclude_inactive [bool]' 'System.Boolean'  $ExcludeInactive.ParameterType.FullName
+
+    # The rosters filter sections in; courses filter them out. Getting these backwards silently inverts the
+    # result, so pin that each function has only the one the API actually accepts.
+    Assert-Equal 'Get-SchoolCourse has no include_inactive' $true ($null -eq (Get-Command Get-SchoolCourse).Parameters['include_inactive'])
+    Assert-Equal 'Get-SchoolAcademicRoster has no exclude_inactive' $true ($null -eq (Get-Command Get-SchoolAcademicRoster).Parameters['exclude_inactive'])
+
     [pscustomobject]@{ Pass = $Stats.Pass; Fail = $Stats.Fail }
 }
 

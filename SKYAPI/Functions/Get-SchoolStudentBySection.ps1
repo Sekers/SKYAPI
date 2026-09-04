@@ -15,7 +15,7 @@ function Get-SchoolStudentBySection
 
         .PARAMETER Section_ID
         Required. Array of section IDs to get students of.
-        Use Get-SchoolSectionBySchoolLevel to get a list of section IDs for a school level.
+        Use Get-SchoolAcademicSectionBySchoolLevel to get a list of section IDs for a school level.
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 

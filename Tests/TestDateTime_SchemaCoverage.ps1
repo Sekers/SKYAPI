@@ -223,7 +223,7 @@ $CalFail = 0
 
 # Section 3a measured date fields on all four rosters. The schema reports none. If one ever shows up under
 # NO DATES DECLARED, this script is actively lying about a known date-bearing endpoint.
-foreach ($n in 'Get-SchoolAthleticRoster','Get-SchoolActivityRoster','Get-SchoolAdvisoryRoster','Get-SchoolRoster')
+foreach ($n in 'Get-SchoolAthleticRoster','Get-SchoolActivityRoster','Get-SchoolAdvisoryRoster','Get-SchoolAcademicRoster')
 {
     $r = $Rows | Where-Object Function -eq $n
     if (-not $r)                        { 'FAIL  {0,-38} not found at all' -f $n; $CalFail++ }

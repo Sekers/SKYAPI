@@ -118,7 +118,7 @@ Set-Ctx Role_ID    { if ($StudentRoleId) { $StudentRoleId } else { ($Roles | Sel
 Set-Ctx Teacher_ID { if (-not $TeacherRoleId) { throw 'no role named Teacher' }
                      (@(Get-SchoolUserByRole -roles "$TeacherRoleId" -ResponseLimit 5) | Select-Object -First 1).id }
 Set-Ctx Level_ID   { (@(Get-SchoolLevel) | Select-Object -First 1).id }
-Set-Ctx Section_ID { (@(Get-SchoolSectionBySchoolLevel -Level_Number (Get-Ctx Level_ID)) | Select-Object -First 1).id }
+Set-Ctx Section_ID { (@(Get-SchoolAcademicSectionBySchoolLevel -Level_Number (Get-Ctx Level_ID)) | Select-Object -First 1).id }
 
 # A window recent enough to hold data and short enough to stay cheap. Get-SchoolUserAuditByRole rejects a range
 # wider than a year (notes section 8), so this stays well inside it.
@@ -168,7 +168,7 @@ $Calls = [ordered]@{
     'Get-SchoolAthleticRoster'       = { Get-SchoolAthleticRoster -ReturnRaw }
     'Get-SchoolActivityRoster'       = { Get-SchoolActivityRoster -ReturnRaw }
     'Get-SchoolAdvisoryRoster'       = { Get-SchoolAdvisoryRoster -ReturnRaw }
-    'Get-SchoolRoster'               = { Get-SchoolRoster -ReturnRaw }
+    'Get-SchoolAcademicRoster'               = { Get-SchoolAcademicRoster -ReturnRaw }
     'Get-SchoolUser'                 = { Get-SchoolUser -User_ID (Get-Ctx User_ID) -ReturnRaw }
     'Get-SchoolUserExtended'         = { Get-SchoolUserExtended -User_ID (Get-Ctx User_ID) -ReturnRaw }
     'Get-SchoolUserEducation'        = { Get-SchoolUserEducation -User_ID (Get-Ctx User_ID) -ReturnRaw }
@@ -180,9 +180,9 @@ $Calls = [ordered]@{
     'Get-SchoolStudentEnrollment'    = { Get-SchoolStudentEnrollment -User_ID (Get-Ctx User_ID) -ReturnRaw }
     'Get-SchoolSectionByStudent'     = { Get-SchoolSectionByStudent -Student_ID (Get-Ctx User_ID) -ReturnRaw }
     'Get-SchoolAssignmentByStudent'  = { Get-SchoolAssignmentByStudent -Student_ID (Get-Ctx User_ID) -start_date $Ctx.Start_Date -end_date $Ctx.End_Date -ReturnRaw }
-    'Get-SchoolSectionBySchoolLevel' = { Get-SchoolSectionBySchoolLevel -Level_Number (Get-Ctx Level_ID) -ReturnRaw }
-    'Get-SchoolActivityBySchoolLevel'= { Get-SchoolActivityBySchoolLevel -Level_Number (Get-Ctx Level_ID) -ReturnRaw }
-    'Get-SchoolAdvisoryBySchoolLevel'= { Get-SchoolAdvisoryBySchoolLevel -Level_Number (Get-Ctx Level_ID) -ReturnRaw }
+    'Get-SchoolAcademicSectionBySchoolLevel' = { Get-SchoolAcademicSectionBySchoolLevel -Level_Number (Get-Ctx Level_ID) -ReturnRaw }
+    'Get-SchoolActivitySectionBySchoolLevel'= { Get-SchoolActivitySectionBySchoolLevel -Level_Number (Get-Ctx Level_ID) -ReturnRaw }
+    'Get-SchoolAdvisorySectionBySchoolLevel'= { Get-SchoolAdvisorySectionBySchoolLevel -Level_Number (Get-Ctx Level_ID) -ReturnRaw }
     'Get-SchoolSectionByTeacher'     = { Get-SchoolSectionByTeacher -Teacher_ID (Get-Ctx Teacher_ID) -ReturnRaw }
     'Get-SchoolAssignmentBySection'  = { Get-SchoolAssignmentBySection -Section_ID (Get-Ctx Section_ID) -ReturnRaw }
     'Get-SchoolStudentBySection'     = { Get-SchoolStudentBySection -Section_ID (Get-Ctx Section_ID) -ReturnRaw }

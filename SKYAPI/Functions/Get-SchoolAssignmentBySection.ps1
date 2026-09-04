@@ -20,7 +20,7 @@ function Get-SchoolAssignmentBySection
 
         .PARAMETER Section_ID
         Required. Array of section IDs to get assignments for.
-        Use Get-SchoolSectionBySchoolLevel to get a list of section IDs for a school level.
+        Use Get-SchoolAcademicSectionBySchoolLevel to get a list of section IDs for a school level.
         .PARAMETER types
         Returns results that match a comma separated list of assignment type IDs.
         To get a list of assignment type IDs, create an Advanced List from the web app using Academic Group > Assignment Type.

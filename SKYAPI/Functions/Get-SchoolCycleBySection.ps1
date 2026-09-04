@@ -17,7 +17,7 @@ function Get-SchoolCycleBySection
 
         .PARAMETER Section_ID
         Required. Array of section IDs to get cycles for.
-        Use Get-SchoolSectionBySchoolLevel to get a list of section IDs for a school level.
+        Use Get-SchoolAcademicSectionBySchoolLevel to get a list of section IDs for a school level.
         .PARAMETER duration_id
         The ID of the term for which you want to return cycles. Defaults to the current term for the section provided.
         Use Get-SchoolTerm to get a list of term/duration IDs.

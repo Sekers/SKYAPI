@@ -194,14 +194,14 @@
 # Get-SchoolStudentEnrollment -User_ID 3294459 -school_year "2021-2022"
 
 <#
-    Get-SchoolActivityBySchoolLevel
+    Get-SchoolActivitySectionBySchoolLevel
     (Use Get-SchoolLevel to get a list of levels to filter by)
 #>
-#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityBySchoolLevel -Level_Number 228,229
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivitySectionBySchoolLevel -Level_Number 228,229
 #  $SchoolActivityListBySchoolLevel.Count
 #  $SchoolActivityListBySchoolLevel[0]
 #  $SchoolActivityListBySchoolLevel[1]
-#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivityBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+#  [array]$SchoolActivityListBySchoolLevel = Get-SchoolActivitySectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
     Get-SchoolActivityRoster
@@ -209,16 +209,17 @@
 # Get-SchoolActivityRoster
 # Get-SchoolActivityRoster -school_year '2022-2023'
 # Get-SchoolActivityRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+# Get-SchoolActivityRoster -school_year '2022-2023' -include_inactive $true
 
 <#
-    Get-SchoolAdvisoryBySchoolLevel
+    Get-SchoolAdvisorySectionBySchoolLevel
     (Use Get-SchoolLevel to get a list of school level IDs to specify)
 #>
-#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryBySchoolLevel -Level_Number 228,229
+#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisorySectionBySchoolLevel -Level_Number 228,229
 #  $SchoolAdvisoryListBySchoolLevel.Count
 #  $SchoolAdvisoryListBySchoolLevel[0]
 #  $SchoolAdvisoryListBySchoolLevel[1]
-#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisoryBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+#  [array]$SchoolAdvisoryListBySchoolLevel = Get-SchoolAdvisorySectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
     Get-SchoolAdvisoryRoster
@@ -226,6 +227,7 @@
 # Get-SchoolAdvisoryRoster
 # Get-SchoolAdvisoryRoster -school_year '2022-2023'
 # Get-SchoolAdvisoryRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+# Get-SchoolAdvisoryRoster -school_year '2022-2023' -include_inactive $true
 
 <#
     Get-SchoolAthleticRoster
@@ -233,17 +235,18 @@
 # Get-SchoolAthleticRoster
 # Get-SchoolAthleticRoster -school_year '2022-2023'
 # Get-SchoolAthleticRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+# Get-SchoolAthleticRoster -school_year '2022-2023' -include_inactive $true
 
 
 <#
-    Get-SchoolSectionBySchoolLevel
+    Get-SchoolAcademicSectionBySchoolLevel
     (Use Get-SchoolLevel to get a list of school levels)
 #>
-#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionBySchoolLevel -Level_Number 228,229
+#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolAcademicSectionBySchoolLevel -Level_Number 228,229
 #  $SchoolSectionListBySchoolLevel.Count
 #  $SchoolSectionListBySchoolLevel[0]
 #  $SchoolSectionListBySchoolLevel[1]
-#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolSectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+#  [array]$SchoolSectionListBySchoolLevel = Get-SchoolAcademicSectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
 
 <#
     Get-SchoolSectionByStudent
@@ -264,14 +267,15 @@
 #>
 # Get-SchoolCourse
 # Get-SchoolCourse -department_id 8706 -level_id 453
-# Get-SchoolCourse -level_id 229 | Where-Object -Property "inactive" -Match "false"
+# Get-SchoolCourse -level_id 229 -exclude_inactive $true
 
 <#
-    Get-SchoolRoster
+    Get-SchoolAcademicRoster
 #>
-# Get-SchoolRoster
-# Get-SchoolRoster -school_year '2022-2023'
-# Get-SchoolRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+# Get-SchoolAcademicRoster
+# Get-SchoolAcademicRoster -school_year '2022-2023'
+# Get-SchoolAcademicRoster -school_year '11843' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+# Get-SchoolAcademicRoster -school_year '2022-2023' -include_inactive $true
 
 <#
     Get-SchoolUserEducation
@@ -280,7 +284,7 @@
 
 <#
     Get-SchoolStudentBySection
-    (Use Get-SchoolSectionBySchoolLevel to get a list of section IDs for a school level)
+    (Use Get-SchoolAcademicSectionBySchoolLevel to get a list of section IDs for a school level)
 #>
 # Get-SchoolStudentBySection -Section_ID 93054528,92486528
 

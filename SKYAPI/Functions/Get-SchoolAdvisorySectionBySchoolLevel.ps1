@@ -1,4 +1,4 @@
-function Get-SchoolAdvisoryBySchoolLevel
+function Get-SchoolAdvisorySectionBySchoolLevel
 {
     <#
         .LINK
@@ -24,9 +24,9 @@ function Get-SchoolAdvisoryBySchoolLevel
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolAdvisoryBySchoolLevel -Level_Number 228,229
+        Get-SchoolAdvisorySectionBySchoolLevel -Level_Number 228,229
         .EXAMPLE
-        Get-SchoolAdvisoryBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+        Get-SchoolAdvisorySectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
     #>
     
     [cmdletbinding()]

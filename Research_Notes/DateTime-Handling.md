@@ -139,7 +139,7 @@ end_date      2026-07-31T00:00:00-04:00     depart_date   2025-12-31T00:00:00-05
 ```
 
 Endpoints: `Get-SchoolUserExtended`, `Get-SchoolYear`, `Get-SchoolTerm`, `Get-SchoolAthleticRoster`,
-`Get-SchoolActivityRoster`, `Get-SchoolAdvisoryRoster`, `Get-SchoolRoster`.
+`Get-SchoolActivityRoster`, `Get-SchoolAdvisoryRoster`, `Get-SchoolAcademicRoster`.
 
 That list is the 2026-07-28 sweep and is **not** exhaustive. `Get-SchoolStudentEnrollment` was added to it on
 2026-08-19 (§12a), carrying four fields in exactly this shape. A related variant, midnight stamped `+00:00`
@@ -445,7 +445,7 @@ date-only value in the school's zone is now expressible and previously threw.
 | `Get-SchoolAthleticRoster` | **not repaired** | n/a |
 | `Get-SchoolActivityRoster` | **not repaired** | n/a |
 | `Get-SchoolAdvisoryRoster` | **not repaired** | n/a |
-| `Get-SchoolRoster` | **not repaired** | n/a |
+| `Get-SchoolAcademicRoster` | **not repaired** | n/a |
 | `Get-SchoolTerm` | **not repaired** | n/a |
 
 Confirmed for `Get-SchoolUserExtendedByBaseRole` on 3 of 3 sampled users. Example, user 1574462:
@@ -707,7 +707,7 @@ and `Get-SchoolStudentBySection` all returned empty. `Get-SchoolAssignmentByStud
 which is a missing role rather than an absence of dates. None of these carry evidence either way, which is
 precisely what the old survey output could not express.
 
-**Weak evidence, easily misread.** `Get-SchoolCourse`, `Get-SchoolSectionBySchoolLevel` and
+**Weak evidence, easily misread.** `Get-SchoolCourse`, `Get-SchoolAcademicSectionBySchoolLevel` and
 `Get-SchoolSectionByTeacher` all reported `NO DATES`, and that reading should **not** be treated as clearing
 them. The only date fields their contracts declare live inside `custom_fields` (`date_value` and
 `last_modified_date`), so `NO DATES` here means this tenant has no date-valued custom field populated on those

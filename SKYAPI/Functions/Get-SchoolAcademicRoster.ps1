@@ -1,4 +1,4 @@
-function Get-SchoolRoster
+function Get-SchoolAcademicRoster
 {
     <#
         .LINK
@@ -31,15 +31,20 @@ function Get-SchoolRoster
         .PARAMETER include_dropped
         Set to True to include dropped students in the rosters. Defaults to false, if omitted.
 
+        .PARAMETER include_inactive
+        Set to True to include inactive sections in the rosters. Defaults to false, if omitted, so only active sections are returned.
+
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolRoster
+        Get-SchoolAcademicRoster
         .EXAMPLE
-        Get-SchoolRoster -school_year '2022-2023'
+        Get-SchoolAcademicRoster -school_year '2022-2023'
         .EXAMPLE
-        Get-SchoolRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+        Get-SchoolAcademicRoster -school_year '2197' -school_level 228 -section_ids '97835764, 97835765, 97835766' -last_modified '2024-08-01' -include_dropped $true
+        .EXAMPLE
+        Get-SchoolAcademicRoster -school_year '2022-2023' -include_inactive $true
     #>
     
     [cmdletbinding()]
@@ -76,6 +81,12 @@ function Get-SchoolRoster
 
         [Parameter(
         Position=5,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$include_inactive,
+
+        [Parameter(
+        Position=6,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw

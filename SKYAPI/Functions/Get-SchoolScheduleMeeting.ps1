@@ -276,7 +276,7 @@ function Get-SchoolScheduleMeeting
 
         # Map each supported offering type to the function that retrieves its rosters.
         $RosterFunctionByOfferingType = @{
-            '1' = 'Get-SchoolRoster'          # Academics
+            '1' = 'Get-SchoolAcademicRoster'  # Academics
             '2' = 'Get-SchoolActivityRoster'  # Activities
             '3' = 'Get-SchoolAdvisoryRoster'  # Advisory
             '9' = 'Get-SchoolAthleticRoster'  # Athletics
@@ -323,7 +323,10 @@ function Get-SchoolScheduleMeeting
                 foreach ($SectionIdBatch in $SectionIdBatches)
                 {
                     # Call the appropriate roster function for this offering type and school year, passing the batched section IDs.
-                    $SectionRosters = & $RosterFunction -school_year $SchoolYear.id -section_ids $SectionIdBatch
+                    # Inactive sections are asked for explicitly because the roster endpoints leave them out by default,
+                    # while the meetings endpoint still returns their meetings. The section IDs come from those meetings,
+                    # so this widens nothing: it only keeps a meeting that was returned from arriving without its roster.
+                    $SectionRosters = & $RosterFunction -school_year $SchoolYear.id -section_ids $SectionIdBatch -include_inactive $true
 
                     # Add the roster objects to the lookup keyed by section ID.
                     foreach ($SectionRoster in $SectionRosters)

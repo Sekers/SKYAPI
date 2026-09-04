@@ -1,32 +1,30 @@
-function Get-SchoolActivityBySchoolLevel
+function Get-SchoolAcademicSectionBySchoolLevel
 {
     <#
         .LINK
         https://github.com/Sekers/SKYAPI/wiki
 
         .LINK
-        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesSectionsGet
+        Endpoint: https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsSectionsGet
         
         .SYNOPSIS
-        Education Management School API - Returns a collection of activity sections based on school level.
+        Education Management School API - Returns a collection of academic sections based on school level.
 
         .DESCRIPTION
-        Education Management School API - Returns a collection of activity sections based on school level.
-        Requires the following role in the Education Management system:
-          - Activity Group Manager
+        Education Management School API - Returns a collection of academic sections based on school level.
 
         .PARAMETER Level_Number
-        Required. Array of school level IDs to get activity sections for.
-        Use Get-SchoolLevel to get a list of school level IDs to specify.
+        Required. Array of school level IDs for each school level you want sections for returned.
+        Use Get-SchoolLevel to get a list of school levels.
         .PARAMETER school_year
-        The school year to get activity sections for. Defaults to the current school year if not specified.
+        The school year to get sections for. Corresponds to school_year_label in the Year list (Get-SchoolYear). Defaults to the current school year if not specified.
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
         .EXAMPLE
-        Get-SchoolActivityBySchoolLevel -Level_Number 228,229
+        Get-SchoolAcademicSectionBySchoolLevel -Level_Number 228,229
         .EXAMPLE
-        Get-SchoolAdvisoryBySchoolLevel -Level_Number 229 -school_year "2019-2020"
+        Get-SchoolAcademicSectionBySchoolLevel -Level_Number 229 -school_year "2019-2020"
     #>
     
     [cmdletbinding()]
@@ -52,7 +50,7 @@ function Get-SchoolActivityBySchoolLevel
     )
     
     # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/activities/sections'
+    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/sections'
 
     # Set the response field
     $ResponseField = "value"
@@ -72,15 +70,15 @@ function Get-SchoolActivityBySchoolLevel
     {
         # Clear out old school level parameter and add in new
         $parameters.Remove('level_num') | Out-Null
-        $parameters.Add('level_num',$level_num)
-
+        $parameters.Add('level_num',$level_num) 
+        
         if ($ReturnRaw)
         {
             $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
             $response
             continue
         }
-        
+
         $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
         $response
     }

@@ -22,6 +22,8 @@ function Get-SchoolCourse
         .PARAMETER level_id
         Identifier for a specific school level to optionally filter by.
         Use Get-SchoolLevel to get a list of school levels.
+        .PARAMETER exclude_inactive
+        Set to True to exclude inactive courses. Defaults to false, if omitted.
         .PARAMETER ReturnRaw
         Returns the raw JSON content of the API call.
 
@@ -30,7 +32,7 @@ function Get-SchoolCourse
         .EXAMPLE
         Get-SchoolCourse -department_id 8706 -level_id 453
         .EXAMPLE
-        Get-SchoolCourse -level_id 229 | Where-Object -Property "inactive" -Match "false"
+        Get-SchoolCourse -level_id 229 -exclude_inactive $true
     #>
     
     [cmdletbinding()]
@@ -49,6 +51,12 @@ function Get-SchoolCourse
 
         [Parameter(
         Position=2,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [bool]$exclude_inactive,
+
+        [Parameter(
+        Position=3,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
@@ -72,10 +80,10 @@ function Get-SchoolCourse
 
     if ($ReturnRaw)
     {
-        $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
         return $response
     }
 
-    $response = Get-SKYAPIUnpagedEntity -uid $teacher_id -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+    $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
     $response
 }

@@ -1,11 +1,13 @@
-﻿# Set Global User Data Path Variable
+# Set Global User Data Path Variable
 New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell" -Scope Global -Force
 
 # Aliases
 Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
 Set-Alias -Name Get-SchoolSchedulesMeetings -Value Get-SchoolScheduleMeeting
-Set-Alias -Name Get-SchoolActivityListBySchoolLevel -Value Get-SchoolActivityBySchoolLevel
-Set-Alias -Name Get-SchoolAdvisoryListBySchoolLevel -Value Get-SchoolAdvisoryBySchoolLevel
+Set-Alias -Name Get-SchoolActivityBySchoolLevel -Value Get-SchoolActivitySectionBySchoolLevel
+Set-Alias -Name Get-SchoolActivityListBySchoolLevel -Value Get-SchoolActivitySectionBySchoolLevel
+Set-Alias -Name Get-SchoolAdvisoryBySchoolLevel -Value Get-SchoolAdvisorySectionBySchoolLevel
+Set-Alias -Name Get-SchoolAdvisoryListBySchoolLevel -Value Get-SchoolAdvisorySectionBySchoolLevel
 Set-Alias -Name Get-SchoolCourseList -Value Get-SchoolCourse
 Set-Alias -Name Get-SchoolDepartmentList -Value Get-SchoolDepartment
 Set-Alias -Name Get-SchoolEducationList -Value Get-SchoolUserEducation
@@ -15,7 +17,9 @@ Set-Alias -Name Get-SchoolNewsCategories -Value Get-SchoolNewsCategory
 Set-Alias -Name Get-SchoolNewsItems -Value Get-SchoolNewsItem
 Set-Alias -Name Get-SchoolOfferingTypeList -Value Get-SchoolOfferingType
 Set-Alias -Name Get-SchoolRoleList  -Value Get-SchoolRole
-Set-Alias -Name Get-SchoolSectionListBySchoolLevel -Value Get-SchoolSectionBySchoolLevel
+Set-Alias -Name Get-SchoolRoster -Value Get-SchoolAcademicRoster
+Set-Alias -Name Get-SchoolSectionBySchoolLevel -Value Get-SchoolAcademicSectionBySchoolLevel
+Set-Alias -Name Get-SchoolSectionListBySchoolLevel -Value Get-SchoolAcademicSectionBySchoolLevel
 Set-Alias -Name Get-SchoolSectionListByStudent -Value Get-SchoolSectionByStudent
 Set-Alias -Name Get-SchoolSectionListByTeacher -Value Get-SchoolSectionByTeacher
 Set-Alias -Name Get-SchoolStudentEnrollmentList -Value Get-SchoolStudentEnrollment
