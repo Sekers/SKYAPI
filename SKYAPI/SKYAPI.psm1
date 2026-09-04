@@ -2183,7 +2183,10 @@ function Confirm-SKYAPITokenIsFresh
         Access  {$MaxTokenTimespan = $maxAccessTokenTimespan}
     }
 
-    if (((get-date) - $TokenCreation) -lt $MaxTokenTimespan)
+    # Token creation stamps are recorded in UTC (see Get-SKYAPIAccessToken), so the age is measured in UTC.
+    # ToUniversalTime() is a no-op on a value that is already UTC, converts a local one, and treats an
+    # unspecified kind as local, which is what a bare local reading parses to.
+    if ((([datetime]::UtcNow) - $TokenCreation.ToUniversalTime()) -lt $MaxTokenTimespan)
     {
         $true
     }
@@ -2209,6 +2212,33 @@ function Get-SKYAPIAuthTokensFromFile
         $apiTokens = Get-Content $sky_api_tokens_file_path -ErrorAction Stop
         $SecureString = $apiTokens | ConvertTo-SecureString -ErrorAction Stop
         $AuthTokensFromFile = ((New-Object PSCredential "user",$SecureString).GetNetworkCredential().Password) | ConvertFrom-Json -ErrorAction Stop
+
+        # Token creation stamps are recorded in UTC round-trip format (see Get-SKYAPIAccessToken). Windows
+        # PowerShell 5.1 hands them back as strings while PowerShell 7 deserializes them, so normalize both
+        # editions to a UTC [datetime]. The trailing conversion matters for a stamp carrying a numeric offset,
+        # which RoundtripKind parses to a local value rather than a UTC one.
+        foreach ($CreationField in @('refresh_token_creation','access_token_creation'))
+        {
+            $CreationValue = $AuthTokensFromFile.$CreationField
+            if ($null -eq $CreationValue)
+            {
+                continue
+            }
+
+            if ($CreationValue -is [datetime])
+            {
+                $AuthTokensFromFile.$CreationField = $CreationValue.ToUniversalTime()
+            }
+            else
+            {
+                $ParsedCreationValue = [datetime]::Parse(
+                    $CreationValue,
+                    [System.Globalization.CultureInfo]::InvariantCulture,
+                    [System.Globalization.DateTimeStyles]::RoundtripKind)
+
+                $AuthTokensFromFile.$CreationField = $ParsedCreationValue.ToUniversalTime()
+            }
+        }
     }
     catch
     {

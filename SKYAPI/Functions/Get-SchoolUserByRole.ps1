@@ -28,9 +28,10 @@ function Get-SchoolUserByRole
         .PARAMETER maiden_name
         Filter results by maiden name.
         .PARAMETER grad_year
-        The beginning date in a school year (ex. 2017).
+        Filter results by graduation year, not by date (ex. 2031). On its own it matches that single year exactly.
+        With end_grad_year it is the start of an inclusive range.
         .PARAMETER end_grad_year
-        The end date in a school year (ex. 2018). Enter a grad_year and end_grad_year to find matching results in the date range.
+        The end of an inclusive graduation year range (ex. 2033). Has no effect unless grad_year is also supplied.
         .PARAMETER marker
         Use the record number as the marker value to start the data results at a specific spot. For example: marker=101 will return results beginning at that record.
         .PARAMETER ResponseLimit

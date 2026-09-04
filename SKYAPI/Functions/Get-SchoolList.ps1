@@ -1,5 +1,3 @@
-# This function has an alias for the deprecated 'Get-SchoolLegacyList' endpoint and is backwards compatible (https://developer.sky.blackbaud.com/api#api=school&operation=V1LegacyListsByList_idGet).
-
 function Get-SchoolList
 {
     <#

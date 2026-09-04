@@ -10,10 +10,11 @@ to this file, so Claude Code and Codex both pick up the same rules. Edit this fi
 An entry describes what changed for someone **upgrading from the last released version**. Before writing any
 "Fixed ..." entry, verify the bug actually existed in that release.
 
-- Latest release: **0.4.4**, tag `0.4.4`, commit `d60e585dc879e10ffe115927ba4610727ad73e65`. This is also
+- Latest release: **0.5.0**, tag `0.5.0`, commit `22b64462440ba3411a02a5a40d831513331e2bc6`. This is also
   `origin/master`.
 - Releases are listed at <https://github.com/Sekers/SKYAPI/releases>. Check there for the current one rather
-  than assuming 0.4.4 is still latest.
+  than assuming 0.5.0 is still latest. The releases page has been seen serving a stale "Latest" label, so
+  confirm against `git ls-remote origin master` and the tag list when it matters.
 - The **local `master` branch is stale**; the online repo is newer. Compare against the tag or
   `origin/master`, never local `master`, and never against `HEAD` or `develop`.
 

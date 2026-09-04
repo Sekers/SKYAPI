@@ -4,7 +4,9 @@
 
 ### Fixes
 
+- **BREAKING CHANGE (Windows PowerShell 5.1 only):** Fixed access tokens not being refreshed when they expire. Token creation times are recorded in UTC but were compared against the local clock, so the calculated age of a token was wrong by the computer's UTC offset. On PowerShell 7 west of UTC (all of the Americas) an access token was treated as valid for roughly an hour plus the offset, about six to seven hours in US Central, instead of its real 60 minutes; calls then failed with `401` and were rescued only by the automatic retry, which hid the problem. East of UTC the reverse happened: every call looked expired on arrival and triggered an unnecessary token refresh first. Windows PowerShell 5.1 was unaffected, because it happened to convert the stored value to local time on its way in. `Get-SKYAPIAuthTokensFromFile`, `Get-SKYAPIContext` and `Connect-SKYAPI -ReturnConnectionInfo` now return `access_token_creation` and `refresh_token_creation` as a UTC `[DateTime]` on both editions; this is the breaking part, since 5.1 previously returned them as a `[String]`. PowerShell 7 output is unchanged.
 - Fixed [Set-SchoolUserRelationship](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsPost) writing the literal text `false` into the Notes/Comments field of every relationship it created when `-comments` was not supplied. `comments` is a string field, but it was defaulting to the boolean `$false` along with the neighboring true/false options; the API accepts the boolean, converts it to text and stores it. New relationships now get an empty comment. Only newly created relationships were affected, since these defaults are not applied when an existing relationship is updated. Measured behavior is documented in `Research_Notes/Write-Field-Behavior.md`.
+- Minor: Corrected the [Get-SchoolUserByRole](https://developer.sky.blackbaud.com/api#api=school&operation=v1usersget) built-in help, which described `grad_year` and `end_grad_year` as dates in a school year. They are graduation years: `grad_year` on its own matches that single year exactly, and `end_grad_year` turns it into an inclusive range and has no effect unless `grad_year` is also supplied.
 
 ## [0.5.0](https://github.com/Sekers/SKYAPI/tree/0.5.0) - (2026-08-10)
 
@@ -25,7 +27,7 @@
 - Fixed a corrupted tokens file returning nothing instead of the intended "Key JSON tokens file is missing, corrupted or invalid" message.
 - Fixed [New-SchoolEventCategory](https://developer.sky.blackbaud.com/api#api=school&operation=V1EventsCategoriesPost) sending the wrong values when records were piped to it.
 - Fixed `-ReturnRaw` on [Get-SchoolSession](https://developer.sky.blackbaud.com/api#api=school&operation=V1SessionsGet) and [Get-SchoolAdmissionCandidate](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdmissionsCandidatesGet) disrupting the calling script's own loop.
-- Fixed [Get-ReConstituentRatingSource](https://developer.sky.blackbaud.com/api#api=constituent&operation=ListRatingSources) never passing its `-include_inactive` value to the API, so the parameter had no effect.
+- Fixed [Get-ReConstituentRatingSource](https://developer.sky.blackbaud.com/api#api=56b76470069a0509c8f1c5b3&operation=ListRatingSources) never passing its `-include_inactive` value to the API, so the parameter had no effect.
 - Fixed [New-SchoolUserAddress](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesPost) requiring the wrong fields: it required `country` (which the endpoint treats as optional) and treated `city` (which is required) as optional, so it refused valid calls and allowed calls the API rejects. `country` is now optional and `city` is now mandatory.
 - Minor: Fixed a Windows PowerShell 5.1 failure that depended on call ordering. Any call that reached a request before the authentication process had run failed with `Unable to find type [System.Web.HttpUtility]`. The required assembly is now loaded when the module is imported. PowerShell Core was never affected.
 - Minor: Corrected the [Update-SchoolUser](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch) built-in help, which listed only the 'Platform Manager' role. The endpoint also accepts 'Contact Card Manager'.
@@ -183,8 +185,8 @@ Author: [**@Sekers**](https://github.com/Sekers)
 ### Features
 
 - BREAKING CHANGE: Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.2792.45](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.2792.45). Note that the minimum .NET Framework version requirement for .NET WebView2 has been updated from .NET Framework 4.5 to .NET Framework 4.6.2 (this affects Windows PowerShell Desktop only, not PowerShell Core).
-- New Endpoint: [Get-SchoolAdmissionCandidate](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsCandidatesGet)
-- New Endpoint: [Get-SchoolAdmissionStatus](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdmissionsStatusGet)
+- New Endpoint: [Get-SchoolAdmissionCandidate](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdmissionsCandidatesGet)
+- New Endpoint: [Get-SchoolAdmissionStatus](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdmissionsStatusGet)
 - New Endpoint (Currently Beta): [Get-SchoolActivityRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesRostersGet)
 - New Endpoint (Currently Beta): [Get-SchoolAdvisoryRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdvisoriesRostersGet)
 - New Endpoint (Currently Beta): [Get-SchoolRoster](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsRostersGet)
@@ -212,9 +214,9 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Features
 
-- New Endpoint: [Get-SchoolUserAddressType](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersAddresstypesGet)
-- New Endpoint: [Get-SchoolUserAddress](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesGet)
-- New Endpoint: [New-SchoolUserAddress](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idAddressesPost)
+- New Endpoint: [Get-SchoolUserAddressType](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersAddresstypesGet)
+- New Endpoint: [Get-SchoolUserAddress](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesGet)
+- New Endpoint: [New-SchoolUserAddress](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idAddressesPost)
 
 ### Other
 
@@ -230,8 +232,8 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Features
 
-- New Endpoint: [Get-SchoolSession](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SessionsGet)
-- New Endpoint: [Get-SchoolResourceBoard](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentResourcesGet)
+- New Endpoint: [Get-SchoolSession](https://developer.sky.blackbaud.com/api#api=school&operation=V1SessionsGet)
+- New Endpoint: [Get-SchoolResourceBoard](https://developer.sky.blackbaud.com/api#api=school&operation=V1ContentResourcesGet)
 - 'Get-SchoolAssignmentBySection' & 'Get-SchoolScheduleMeeting' now allow spaces in the types/offering_types parameters.
 - New Example Script: [Blackbaud SIS Teacher Schedules to Google Calendar CSVs](https://github.com/Sekers/SKYAPI/tree/master/Sample_Usage_Scripts/Blackbaud%20SIS%20Teacher%20Schedules%20to%20Google%20Calendar%20CSVs). Creates importable Google Calendar schedules for faculty from the Blackbaud School Environment.
 
@@ -261,11 +263,11 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Fixes
 
-- Worked around a time zone bug in the [beta API endpoint](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet) used by Get-SchoolScheduleMeeting so that the cmdlet/function always correctly handles Daylight Saving Time adjustments.
+- Worked around a time zone bug in the [beta API endpoint](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet) used by Get-SchoolScheduleMeeting so that the cmdlet/function always correctly handles Daylight Saving Time adjustments.
 
 ### Features
 
-- New Endpoint: [Get-SchoolTimeZone](https://developer.sky.blackbaud.com/docs/services/school/operations/V1TimezoneGet)
+- New Endpoint: [Get-SchoolTimeZone](https://developer.sky.blackbaud.com/api#api=school&operation=V1TimezoneGet)
 - Get-SchoolScheduleMeeting now accepts the following new option parameter values: section_ids & last_modified.
 - Updated the included [Microsoft Edge WebView2 control](https://www.nuget.org/packages/Microsoft.Web.WebView2) to version [1.0.1518.46](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.1518.46).
 - With this new version of the WebView2 control, we can now use the control to natively clear the browser cache. If the version of the [Edge WebView2 runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) installed on the computer (this is different than the WebView2 control included with the module) is too old, the SKYAPI PowerShell module will use the old method of deleteing the entire WebView2 control's profile for the user account used by the process.
@@ -299,10 +301,10 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 - Most endpoints now support the optional 'ReturnRaw' switch parameter to return the original JSON response from the Blackbaud SKY API. Otherwise, they will usually return the data in a custom PSObject or Hashtable object that has a property for each field in the JSON string.
 - New optional 'ConvertTo' parameter for Get-SchoolList that tells the function to instead return the list collection results as an Array of PowerShell objects rather than the wonky, hard-to-work-with, way the API returns list results collections.
-- New Endpoint: [Get-SchoolAssignmentBySection](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idAssignmentsGet)
-- New Endpoint: [Get-SchoolAssignmentByStudent](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsByStudent_idAssignmentsGet)
-- New Endpoint: [Get-SchoolCycleBySection](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsSectionsBySection_idCyclesGet)
-- New Endpoint: [New-SchoolUserOccupation](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsPost)
+- New Endpoint: [Get-SchoolAssignmentBySection](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsSectionsBySection_idAssignmentsGet)
+- New Endpoint: [Get-SchoolAssignmentByStudent](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsByStudent_idAssignmentsGet)
+- New Endpoint: [Get-SchoolCycleBySection](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsSectionsBySection_idCyclesGet)
+- New Endpoint: [New-SchoolUserOccupation](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idOccupationsPost)
 
 ### Other
 
@@ -324,15 +326,15 @@ Author: [**@Sekers**](https://github.com/Sekers)
 - Module now works with DELETE endpoints, thus allowing for REMOVE-* PowerShell functions against the SKY API.
 - All functions/cmdlets have [comment-based help](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comment_based_help) (i.e., Get-Help [FunctionName]).
 - All functions/cmdlets now have consistent [positional parameter values](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/types-of-cmdlet-parameters#positional-and-named-parameters) for all non-dynamic parameters.
-- New Endpoint: [Get-ReConstituentRatingSource](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListRatingSources)
-- New Endpoint: [Get-ReConstituentRelationshipType](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListRelationshipTypes)
-- New Endpoint: [Get-ReConstituentSuffix](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListSuffixes)
-- New Endpoint: [Get-ReConstituentTitle](https://developer.sky.blackbaud.com/docs/services/56b76470069a0509c8f1c5b3/operations/ListTitles)
-- New Endpoint: [Get-SchoolEnrollment](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersEnrollmentsGet)
-- New Endpoint: [Get-SchoolUserEmployment](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idEmploymentGet)
-- New Endpoint: [Get-SchoolUserGenderType](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersGendertypesGet)
-- New Endpoint: [Remove-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsDelete)
-- New Endpoint: [Set-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsPost)
+- New Endpoint: [Get-ReConstituentRatingSource](https://developer.sky.blackbaud.com/api#api=56b76470069a0509c8f1c5b3&operation=ListRatingSources)
+- New Endpoint: [Get-ReConstituentRelationshipType](https://developer.sky.blackbaud.com/api#api=56b76470069a0509c8f1c5b3&operation=ListRelationshipTypes)
+- New Endpoint: [Get-ReConstituentSuffix](https://developer.sky.blackbaud.com/api#api=56b76470069a0509c8f1c5b3&operation=ListSuffixes)
+- New Endpoint: [Get-ReConstituentTitle](https://developer.sky.blackbaud.com/api#api=56b76470069a0509c8f1c5b3&operation=ListTitles)
+- New Endpoint: [Get-SchoolEnrollment](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersEnrollmentsGet)
+- New Endpoint: [Get-SchoolUserEmployment](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idEmploymentGet)
+- New Endpoint: [Get-SchoolUserGenderType](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersGendertypesGet)
+- New Endpoint: [Remove-SchoolUserRelationship](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsDelete)
+- New Endpoint: [Set-SchoolUserRelationship](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsPost)
 
 ### Other
 
@@ -347,10 +349,10 @@ Author: [**@Sekers**](https://github.com/Sekers)
 ### Features
 
 - Module now works with POST & PATCH endpoints, thus allowing for NEW-\* & UPDATE-\* PowerShell functions against the SKY API.
-- New Endpoint (Beta): [Get-SchoolUserMe](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersMeGet)
-- New Endpoint: [Get-SchoolUserOccupation](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idOccupationsGet)
-- New Endpoint: [Get-SchoolUserRelationship](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idRelationshipsGet)
-- New Endpoint: [Get-SchoolVenueBuilding](https://developer.sky.blackbaud.com/docs/services/school/operations/V1VenuesBuildingsGet)
+- New Endpoint (Beta): [Get-SchoolUserMe](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersMeGet)
+- New Endpoint: [Get-SchoolUserOccupation](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idOccupationsGet)
+- New Endpoint: [Get-SchoolUserRelationship](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idRelationshipsGet)
+- New Endpoint: [Get-SchoolVenueBuilding](https://developer.sky.blackbaud.com/api#api=school&operation=V1VenuesBuildingsGet)
 - New Endpoint: Get-SKYAPIContext > Returns cached information about the current connection to the Blackbaud SKY API.
 - New Connect-SKYAPI Parameter: ReturnConnectionInfo. Returns values when verifying the cached SKY API connection information.
 
@@ -384,12 +386,12 @@ Author: [**@Sekers**](https://github.com/Sekers)
 ### Features
 
 - Module now works with POST & PATCH endpoints, thus allowing for NEW-\* & UPDATE-\* PowerShell functions against the SKY API.
-- New Endpoint: [Get-SchoolUserPhoneList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesGet)
-- New Endpoint: [Get-SchoolUserPhoneTypeList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPhonetypesGet)
-- New Endpoint (Beta): [Get-SchoolScheduleMeetings](https://developer.sky.blackbaud.com/docs/services/school/operations/V1SchedulesMeetingsGet)
-- New Endpoint: [New-SchoolEventsCategory](https://developer.sky.blackbaud.com/docs/services/school/operations/V1EventsCategoriesPost)
-- New Endpoint: [New-SchoolUserPhone](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersByUser_idPhonesPost)
-- New Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersPatch)
+- New Endpoint: [Get-SchoolUserPhoneList](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idPhonesGet)
+- New Endpoint: [Get-SchoolUserPhoneTypeList](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPhonetypesGet)
+- New Endpoint (Beta): [Get-SchoolScheduleMeetings](https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet)
+- New Endpoint: [New-SchoolEventsCategory](https://developer.sky.blackbaud.com/api#api=school&operation=V1EventsCategoriesPost)
+- New Endpoint: [New-SchoolUserPhone](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersByUser_idPhonesPost)
+- New Endpoint: [Update-SchoolUser](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersPatch)
 
 ### Other
 
@@ -417,8 +419,8 @@ Author: [**@Sekers**](https://github.com/Sekers)
 ### Features
 
 - First Release Published to the PowerShell Gallery
-- New Endpoint (Beta): [Get-SchoolNewsCategories](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsCategoriesGet)
-- New Endpoint (Beta): [Get-SchoolNewsItems](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ContentNewsItemsGet)
+- New Endpoint (Beta): [Get-SchoolNewsCategories](https://developer.sky.blackbaud.com/api#api=school&operation=V1ContentNewsCategoriesGet)
+- New Endpoint (Beta): [Get-SchoolNewsItems](https://developer.sky.blackbaud.com/api#api=school&operation=V1ContentNewsItemsGet)
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
@@ -433,10 +435,10 @@ Author: [**@Sekers**](https://github.com/Sekers)
 ### Features
 
 - Added ClearBrowserControlCache switch parameter to "Connect-SKYAPI"
-- New Endpoint: [Get-SchoolDepartmentList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsDepartmentsGet)
-- New Endpoint (Beta): [Get-SchoolSectionListByStudent](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AcademicsStudentByStudent_idSectionsGet)
-- New Endpoint: [Get-SchoolAdvisoryListBySchoolLevel](https://developer.sky.blackbaud.com/docs/services/school/operations/V1AdvisoriesSectionsGet)
-- New Endpoint: [Get-SchoolActivityListBySchoolLevel](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ActivitiesSectionsGet)
+- New Endpoint: [Get-SchoolDepartmentList](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsDepartmentsGet)
+- New Endpoint (Beta): [Get-SchoolSectionListByStudent](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsStudentByStudent_idSectionsGet)
+- New Endpoint: [Get-SchoolAdvisoryListBySchoolLevel](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdvisoriesSectionsGet)
+- New Endpoint: [Get-SchoolActivityListBySchoolLevel](https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesSectionsGet)
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
@@ -470,9 +472,9 @@ Author: [**@Sekers**](https://github.com/Sekers)
 
 ### Features
 
-- New Endpoint: [Get-SchoolUserExtended](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersExtendedByUser_idGet)
-- New Endpoint: [Get-SchoolListOfLists](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsGet)
-- New Endpoint: [Get-SchoolUserBBIDStatus](https://developer.sky.blackbaud.com/docs/services/school/operations/V1UsersBbidstatusGet)
+- New Endpoint: [Get-SchoolUserExtended](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersExtendedByUser_idGet)
+- New Endpoint: [Get-SchoolListOfLists](https://developer.sky.blackbaud.com/api#api=school&operation=V1ListsGet)
+- New Endpoint: [Get-SchoolUserBBIDStatus](https://developer.sky.blackbaud.com/api#api=school&operation=V1UsersBbidstatusGet)
 
 Author: [**@Sekers**](https://github.com/Sekers)
 
@@ -497,7 +499,7 @@ Author: [**@Sekers**](https://github.com/Sekers)
 ### Features
 
 - Improved Invoke Error Handling
-- New Endpoint: [Get-SchoolList](https://developer.sky.blackbaud.com/docs/services/school/operations/V1ListsAdvancedByList_idGet) - Replaces the soon to be deprecated [Legacy List](https://developer.sky.blackbaud.com/docs/services/school/operations/V1LegacyListsByList_idGet) endpoint. The 'Get-SchoolLegacyList" cmdlet will continue to work as expected using this new endpoint.
+- New Endpoint: [Get-SchoolList](https://developer.sky.blackbaud.com/api#api=school&operation=V1ListsAdvancedByList_idGet) - Replaces the soon to be deprecated [Legacy List](https://developer.sky.blackbaud.com/api#api=school&operation=V1LegacyListsByList_idGet) endpoint. The 'Get-SchoolLegacyList" cmdlet will continue to work as expected using this new endpoint.
 
 ### Other
 
