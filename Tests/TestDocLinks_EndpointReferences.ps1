@@ -15,12 +15,15 @@
 # URL: the operation id lives in the fragment, which never reaches the server, so every well-formed link
 # returns HTTP 200 whether or not the operation exists. The portal's management API is what actually knows.
 #
-# Case matters and is checked. Most operation ids are PascalCase (V1UsersPatch) but a handful are genuinely
-# lowercase on the portal (v1yearsget, v1rolesget, v1termsget, v1levelsget, v1gradelevelsget,
-# v1offeringtypesget, v1usersget). Those are correct as written and must not be "fixed" to PascalCase.
+# Casing is NOT checked. The comparison below is PowerShell's -contains, which is case-insensitive, and the
+# portal's management API resolves an operation under either casing, so neither side would notice. Most
+# operation ids are PascalCase (V1UsersPatch) while exactly seven are lowercase on the portal (v1yearsget,
+# v1rolesget, v1termsget, v1levelsget, v1gradelevelsget, v1offeringtypesget, v1usersget). Those seven are
+# correct as written and must not be "fixed" to PascalCase, but this script will not stop anyone doing so.
 #
-# Scans the files Git tracks, not the working directory, which keeps ignored scratch folders such as
-# '@Local Only' out of the results. Pass -Path to add another checkout, for example the wiki:
+# Scans the files Git tracks plus the ones it does not track yet, honoring .gitignore. That keeps ignored
+# scratch folders such as '@Local Only' out of the results while still checking a file that has been written
+# but not yet committed. Pass -Path to add another checkout, for example the wiki:
 #
 #     .\TestDocLinks_EndpointReferences.ps1 -Path 'c:\Programming\Wikis\SKYAPI.wiki'
 #
@@ -109,10 +112,14 @@ function Get-CandidateFile
 
     if (Get-Command git -ErrorAction SilentlyContinue)
     {
-        $Listed = & git -C $Root ls-files 2>$null
+        # --cached is the tracked files and --others adds the ones Git does not track yet, so links in a file
+        # that has not been committed are still checked. --exclude-standard applies .gitignore, which is what
+        # keeps the ignored scratch folder out of the scan.
+        $Listed = & git -C $Root ls-files --cached --others --exclude-standard 2>$null
         if ($LASTEXITCODE -eq 0 -and $Listed)
         {
-            $Files = $Listed | ForEach-Object { [System.IO.Path]::Combine($Root, ($_ -replace '/', [System.IO.Path]::DirectorySeparatorChar)) }
+            $Files = $Listed | Select-Object -Unique |
+                         ForEach-Object { [System.IO.Path]::Combine($Root, ($_ -replace '/', [System.IO.Path]::DirectorySeparatorChar)) }
         }
     }
 
