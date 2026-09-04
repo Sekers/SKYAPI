@@ -33,7 +33,6 @@ function Get-SchoolUser
 
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )

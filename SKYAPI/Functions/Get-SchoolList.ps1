@@ -74,19 +74,16 @@ function Get-SchoolList
        
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$page,
 
         [parameter(
         Position=2,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$ResponseLimit,
 
         [parameter(
         Position=3,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateSet("Array")]
         [string]$ConvertTo

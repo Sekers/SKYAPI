@@ -47,50 +47,42 @@ function Set-SKYAPIConfig
     Param(
         [Parameter(
         Position=0,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
         [string]$ConfigPath = $sky_api_config_file_path, # If not entered will try to pull path from this variable.
 
         [Parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$Silent, # Only update configuration values passed to the function. Do not prompt for manual entry.
 
         [Parameter(
         Position=2,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$api_subscription_key,
 
         [Parameter(
         Position=3,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$client_id,
 
         [Parameter(
         Position=4,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$client_secret,
 
         [Parameter(
         Position=5,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$redirect_uri,
 
         [Parameter(
         Position=6,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$authorize_uri,
 
         [Parameter(
         Position=7,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$token_uri
     )

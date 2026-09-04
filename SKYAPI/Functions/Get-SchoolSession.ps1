@@ -32,19 +32,16 @@ function Get-SchoolSession
     Param(
         [Parameter(
         Position=0,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$level_num,
 
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year,
 
         [Parameter(
         Position=2,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )

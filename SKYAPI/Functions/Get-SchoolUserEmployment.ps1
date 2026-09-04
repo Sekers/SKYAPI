@@ -36,7 +36,6 @@ function Get-SchoolUserEmployment
 
         [Parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )

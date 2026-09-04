@@ -28,13 +28,11 @@ function Get-ReConstituentRatingSource
     Param(
         [Parameter(
         Position=0,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$include_inactive,
 
         [Parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )

@@ -52,49 +52,41 @@ function Get-SchoolUserByRole
         
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$first_name,
         
         [parameter(
         Position=2,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$last_name,
        
         [parameter(
         Position=3,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$email,
         
         [parameter(
         Position=4,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$maiden_name,
         
         [parameter(
         Position=5,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$grad_year,
         
         [parameter(
         Position=6,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$end_grad_year,
        
         [parameter(
         Position=7,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$marker,
 
         [parameter(
         Position=8,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$ResponseLimit
     )

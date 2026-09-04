@@ -38,13 +38,11 @@ Function Disconnect-SKYAPI
     Param(
         [parameter(
         Position=0,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [Switch]$ReturnConnectionInfo,
 
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [Switch]$RemoveConfig
     )

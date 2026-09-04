@@ -32,13 +32,11 @@ function Get-SchoolNewsItem
         [parameter(
         Position=0,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$categories, # This doesn't need to be an array since the parameter takes comma-separated values by default.
 
         [Parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )

@@ -97,37 +97,31 @@ function Get-SchoolScheduleMeeting
 
         [Parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$end_date,
 
         [Parameter(
         Position=2,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$offering_types,
 
         [Parameter(
         Position=3,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$section_ids,
 
         [Parameter(
         Position=4,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$last_modified,
 
         [Parameter(
         Position=5,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$SchoolTimeZoneId = ((Get-SchoolTimeZone).timezone_name),
 
         [Parameter(
         Position=6,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$IncludeRosters
     )

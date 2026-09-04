@@ -47,28 +47,24 @@ Function Connect-SKYAPI
         [parameter(
         Position=0,
         ParameterSetName = 'ForceReauthentication',
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [Switch]$ForceReauthentication,
 
         [parameter(
         Position=1,
         ParameterSetName = 'ForceRefresh',
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [Switch]$ForceRefresh,
 
         [parameter(
         Position=2,
         Mandatory=$false,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateSet('EdgeWebView2')]
         [string]$AuthenticationMethod,
 
         [parameter(
         Position=3,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [Switch]$ReturnConnectionInfo
     )

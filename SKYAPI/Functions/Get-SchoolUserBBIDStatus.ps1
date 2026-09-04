@@ -46,13 +46,11 @@ function Get-SchoolUserBBIDStatus
        
         [parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$marker,
 
         [parameter(
         Position=2,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$ResponseLimit
     )

@@ -1,7 +1,7 @@
 # Offline tests for parameter binding and function control flow. No API calls are made; the HTTP helper is
 # stubbed inside the module scope.
 #
-# Two unrelated classes of bug, both about a function doing something the caller cannot see:
+# Unrelated classes of bug, each about a function doing something the caller cannot see:
 #
 #   1. -ReturnRaw ending its branch with 'continue' in a function that owns no loop. PowerShell resolves an
 #      unmatched loop-control keyword against the CALLER's loop, so the raw branch skipped the rest of the
@@ -11,6 +11,13 @@
 #   2. living_status accepting only a subset of the real values. 'Remarried' is offered by the web GUI but is
 #      missing from the endpoint's published field description, so the accepted list is worth pinning down in
 #      a test rather than left to whichever source someone reads next.
+#
+#   3. A filter declared as the wrong kind of parameter. The rosters take include_inactive and courses take
+#      exclude_inactive; each is a [bool] API field rather than a [switch], and having the wrong one of the
+#      pair would silently invert the result.
+#
+#   4. More than one parameter per set taking pipeline input by value, which lets a piped record land in the
+#      parameters it has no property for. See the cases at the bottom for what that put on the wire.
 
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot,'..','SKYAPI','SKYAPI.psd1')) -Force -ErrorAction Stop
 if (-not (Get-Module SKYAPI)) { throw 'SKYAPI module failed to import; aborting so this does not report a false pass.' }
@@ -108,6 +115,44 @@ $Result = & (Get-Module SKYAPI) {
     # result, so pin that each function has only the one the API actually accepts.
     Assert-Equal 'Get-SchoolCourse has no include_inactive' $true ($null -eq (Get-Command Get-SchoolCourse).Parameters['include_inactive'])
     Assert-Equal 'Get-SchoolAcademicRoster has no exclude_inactive' $true ($null -eq (Get-Command Get-SchoolAcademicRoster).Parameters['exclude_inactive'])
+
+    "--- at most one parameter per set may take pipeline input by value"
+    # PowerShell offers a piped record to EVERY ValueFromPipeline parameter, and one that is not bound some
+    # other way takes the WHOLE record, string-coerced. With several of them, piping
+    # [pscustomobject]@{school_year='2022-2023'} into a roster function also sent last_modified and
+    # section_ids as the literal text '@{school_year=2022-2023}', and piping a plain string set all three at
+    # once. Get-SchoolUserAuditByRole states the rule in a comment on its own parameter; this pins it for
+    # every function, because the way it spread in the first place was a copied parameter block.
+    $ByValueOffenders = foreach ($Command in (Get-Module SKYAPI).ExportedFunctions.Values)
+    {
+        foreach ($Set in $Command.ParameterSets)
+        {
+            $ByValue = @($Set.Parameters | Where-Object { $_.ValueFromPipeline })
+            if ($ByValue.Count -gt 1) { "$($Command.Name)[$($Set.Name)]: $($ByValue.Name -join '+')" }
+        }
+    }
+    Assert-Equal 'no function takes pipeline input by value on more than one parameter per set' '' ($ByValueOffenders -join ' | ')
+
+    # The other direction: the identity parameter must KEEP it, or '3294459 | Get-SchoolUser' stops working.
+    foreach ($Keeper in @(
+        @{ Function = 'Get-SchoolUser';                Parameter = 'User_ID' }
+        @{ Function = 'Get-SchoolAssignmentByStudent'; Parameter = 'Student_ID' }
+        @{ Function = 'Get-SchoolUserByRole';          Parameter = 'roles' }
+        @{ Function = 'Get-SchoolTypeTableValue';      Parameter = 'tableName' }   # one per set, so both sets keep one
+    ))
+    {
+        $Attribute = (Get-Command $Keeper.Function).Parameters[$Keeper.Parameter].Attributes |
+                         Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] -and $_.ValueFromPipeline }
+        Assert-Equal "$($Keeper.Function) still binds $($Keeper.Parameter) by value" $true ($null -ne $Attribute)
+    }
+
+    # A filter-only function has no identity parameter, so nothing should bind by value at all.
+    foreach ($FilterOnly in 'Get-SchoolAcademicRoster','Get-SchoolActivityRoster','Get-SchoolAdvisoryRoster','Get-SchoolAthleticRoster','Get-SchoolCourse')
+    {
+        $ByValue = @((Get-Command $FilterOnly).Parameters.Values | Where-Object {
+                         $_.Attributes | Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] -and $_.ValueFromPipeline } })
+        Assert-Equal "$FilterOnly binds nothing by value" 0 $ByValue.Count
+    }
 
     [pscustomobject]@{ Pass = $Stats.Pass; Fail = $Stats.Fail }
 }

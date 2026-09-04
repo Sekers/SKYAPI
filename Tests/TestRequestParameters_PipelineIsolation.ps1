@@ -16,7 +16,10 @@
 # Also covered here, because it produces the same visible symptom by a different mechanism: a function that
 # declares ValueFromPipeline on more than one parameter. The binder offers the record to every one of them,
 # so a parameter the record has no property for can be bound to the WHOLE record instead. See the
-# New-SchoolEventCategory cases below.
+# New-SchoolEventCategory cases for the write side and the Get-School* cases for the read side, where it
+# put a stringified record on the wire as a section_ids filter. TestParameterBinding_ValidateSets.ps1 holds
+# the blanket rule (at most one by-value parameter per set); the cases here are what it looks like in a
+# request.
 
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot,'..','SKYAPI','SKYAPI.psd1')) -Force -ErrorAction Stop
 if (-not (Get-Module SKYAPI)) { throw 'SKYAPI module failed to import; aborting so this does not report a false pass.' }
@@ -33,6 +36,7 @@ $Result = & (Get-Module SKYAPI) {
     # --- stubs (child scope shadows the real module functions) ---
     # Every request body/query is recorded so each record's request can be inspected separately.
     $script:Sent = New-Object System.Collections.ArrayList
+    $script:SentUid = New-Object System.Collections.ArrayList
 
     function Add-Sent { param($params)
         $Copy = @{}
@@ -44,13 +48,22 @@ $Result = & (Get-Module SKYAPI) {
     function Update-SKYAPIEntity { param($url,$api_key,$authorisation,$params,$uid,$end,$endUrl) Add-Sent $params; return $params['id'] }
     function Submit-SKYAPIEntity { param($url,$api_key,$authorisation,$params,$uid,$end) Add-Sent $params; return $params }
     function Remove-SKYAPIEntity { param($url,$api_key,$authorisation,$params,$uid,$end) Add-Sent $params; return $null }
+    # The read side. $uid is recorded separately because the by-value identity parameter of a Get-School*
+    # function travels in the URL rather than the query string.
+    function Get-SKYAPIUnpagedEntity { param($uid,$url,$endUrl,$api_key,$authorisation,$params,$response_field,[switch]$ReturnRaw)
+        Add-Sent $params
+        [void]$script:SentUid.Add("$uid")
+        if ($ReturnRaw) { return '[]' }
+        return @() }
     # Type table lookups must never veto a value in these tests; an empty table means "unreadable", which
     # Confirm-SKYAPITypeTableValue treats as "skip validation".
     function Get-SchoolTypeTableValue { param($tableName,$includeInactive) return @() }
     function Get-SchoolUserAddress { param($User_ID) return @() }
     function Get-SchoolUserPhone { param($User_ID) return @() }
 
-    function Reset-Sent { $script:Sent = New-Object System.Collections.ArrayList }
+    function Reset-Sent {
+        $script:Sent = New-Object System.Collections.ArrayList
+        $script:SentUid = New-Object System.Collections.ArrayList }
     # Field as sent for record $Index, or '<absent>'. Distinguishing absent from empty is the whole point.
     function Get-SentField { param([int]$Index,[string]$Field)
         if ($Index -ge $script:Sent.Count) { return '<no such request>' }
@@ -162,6 +175,51 @@ $Result = & (Get-Module SKYAPI) {
     # stringified as '@{description=Category D}' and sent to the API as the calendar URL. Only description
     # takes ValueFromPipeline now, so an absent property stays absent.
     Assert-Equal 'record 2 does not get the whole record as calendar_url' '<absent>' (Get-SentField 1 'calendar_url')
+
+    "--- Get-School* reads: a piped record must not land in the filters it has no property for"
+    # The same defect as New-SchoolEventCategory above, on the read side, where it reached every function
+    # that declared ValueFromPipeline on more than one parameter. Piping this one record used to send
+    # last_modified and section_ids as the literal text '@{school_year=2022-2023}' next to the correct
+    # school_year, and a section_ids that matches no section makes the call come back empty rather than fail.
+    #
+    # These cases pipe ONE record on purpose. A read function has no process block, so a piped COLLECTION is
+    # a separate, still-open defect: it makes one request from the last record, carrying whatever earlier
+    # records left behind. That is not asserted here, because a passing test may only state what should be
+    # true. It is measured in Research_Notes/Pipeline-Binding-Behavior.md, and cases belong here once the
+    # read functions stream per record the way the write functions have since 0.5.0.
+    Reset-Sent
+    $null = [pscustomobject]@{ school_year = '2022-2023' } | Get-SchoolAcademicRoster
+    Assert-Equal 'one roster request was sent' 1 $script:Sent.Count
+    Assert-Equal 'school_year bound by property name' '2022-2023' (Get-SentField 0 'school_year')
+    Assert-Equal 'last_modified did not take the whole record' '<absent>' (Get-SentField 0 'last_modified')
+    Assert-Equal 'section_ids did not take the whole record'   '<absent>' (Get-SentField 0 'section_ids')
+    Assert-Equal 'school_level did not take the whole record'  '<absent>' (Get-SentField 0 'school_level')
+
+    # Again where the filters are typed [int] and [bool] rather than [string], since almost anything coerces
+    # to a string but the object would have had to survive an [int] cast here.
+    Reset-Sent
+    $null = [pscustomobject]@{ level_id = 229 } | Get-SchoolCourse
+    Assert-Equal 'level_id bound by property name' '229'      (Get-SentField 0 'level_id')
+    Assert-Equal 'department_id stayed absent'     '<absent>' (Get-SentField 0 'department_id')
+    Assert-Equal 'exclude_inactive stayed absent'  '<absent>' (Get-SentField 0 'exclude_inactive')
+
+    # A filter-only function has no identity parameter, so nothing accepts a bare value any more. PowerShell
+    # reports InputObjectNotBound rather than binding it to every text filter at once. Pinned because it is a
+    # deliberate behavior change: the caller has to pass the value by name instead.
+    Reset-Sent
+    $Bound = '2022-2023' | Get-SchoolAcademicRoster 2>&1
+    $ErrorRecord = @($Bound | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
+    Assert-Equal 'a bare value into a filter-only function is reported, not guessed at' 'InputObjectNotBound' `
+        ($ErrorRecord[0].FullyQualifiedErrorId -split ',')[0]
+    Assert-Equal 'and it sets no filter of its own' '<absent>' (Get-SentField 0 'section_ids')
+
+    "--- a function that kept by-value binding still takes a bare value"
+    # Get-SchoolCycleBySection keeps ValueFromPipeline on Section_ID, its mandatory identity parameter, so
+    # the ID still arrives by value. It travels in the URL, which is why $uid is checked rather than a field.
+    Reset-Sent
+    $null = 93054528 | Get-SchoolCycleBySection
+    Assert-Equal 'the section ID still binds by value' '93054528' $script:SentUid[0]
+    Assert-Equal 'the optional duration_id stayed absent' '<absent>' (Get-SentField 0 'duration_id')
 
     "--- New-SchoolUserPhone: the same isolation on a POST body"
     Reset-Sent

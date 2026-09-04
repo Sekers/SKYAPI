@@ -51,43 +51,36 @@ function Get-SchoolAcademicRoster
     Param(
         [Parameter(
         Position=0,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$school_year,
 
         [Parameter(
         Position=1,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [int]$school_level,
 
         [Parameter(
         Position=2,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$section_ids,
 
         [Parameter(
         Position=3,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [string]$last_modified,
 
         [Parameter(
         Position=4,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$include_dropped,
 
         [Parameter(
         Position=5,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [bool]$include_inactive,
 
         [Parameter(
         Position=6,
-        ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [switch]$ReturnRaw
     )

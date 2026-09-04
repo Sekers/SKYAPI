@@ -101,8 +101,8 @@ function Get-OperationName
     $Names
 }
 
-# Tracked files only, so ignored scratch folders stay out. Falls back to a filesystem walk when a root is not
-# a Git checkout or Git is unavailable.
+# Tracked files plus the ones Git does not track yet, with .gitignore honored so ignored scratch folders stay
+# out. Falls back to a filesystem walk when a root is not a Git checkout or Git is unavailable.
 function Get-CandidateFile
 {
     param([string]$Root)
