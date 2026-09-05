@@ -13,6 +13,7 @@
 - Minor: Corrected a built-in help example for [Get-SchoolActivitySectionBySchoolLevel](https://developer.sky.blackbaud.com/api#api=school&operation=V1ActivitiesSectionsGet), which showed a call to the advisory function instead of the activity one.
 - Minor: Corrected the [Get-SchoolUserByRole](https://developer.sky.blackbaud.com/api#api=school&operation=v1usersget) built-in help, which described `grad_year` and `end_grad_year` as dates in a school year. They are graduation years, and `end_grad_year` has no effect unless `grad_year` is also supplied.
 - Minor: Fixed [Get-SchoolCourse](https://developer.sky.blackbaud.com/api#api=school&operation=V1AcademicsCoursesGet) appending a stray global `$teacher_id` variable to the request URL. No such variable normally exists, so in practice the URL was correct and results were unaffected. The exception was a caller who happened to have a global `$teacher_id` set, whose calls returned a `404` instead of the course list.
+- Minor: Fixed positional arguments to [Get-SchoolAdmissionCandidate](https://developer.sky.blackbaud.com/api#api=school&operation=V1AdmissionsCandidatesGet). Passing two or more values without naming them failed, and `modified_date` could not be supplied positionally at all.
 
 ### Features
 

@@ -46,7 +46,7 @@ function Get-SchoolAdmissionCandidate
         [string]$status_ids,
 
         [parameter(
-        Position=1,
+        Position=2,
         ValueFromPipelineByPropertyName=$true)]
         [string]$modified_date,
 
