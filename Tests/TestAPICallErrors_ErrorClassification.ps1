@@ -15,6 +15,10 @@ $Result = & (Get-Module SKYAPI) {
         if ($Condition) { $Stats.Pass++; "  PASS  $Name" }
         else { [void]$Stats.Fail.Add($Name); "  FAIL  $Name -- $Detail" } }
 
+    # Every transient case below reaches a retry branch, and those back off for real: 5 seconds each at
+    # InvokeCount 1, which is over a minute of wall clock for a suite that asserts nothing about sleeping.
+    function Start-Sleep { param($Seconds) }   # keep backoff instant
+
     # Build an ErrorRecord whose ErrorDetails.Message is whatever we want (or absent entirely), optionally
     # carrying an HTTP response so the status-code fallback has something to read.
     #
@@ -125,6 +129,24 @@ $Result = & (Get-Module SKYAPI) {
         try { SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $Err -InvokeCount 7 -MaxInvokeCount 7 | Out-Null } catch { $Threw = $true }
         Assert-True "$Transient throws once the retry budget is exhausted" $Threw 'kept retrying past MaxInvokeCount'
     }
+
+    "--- the nested errors/error_code body shape"
+    # Every case above uses the statusCode body. Blackbaud also reports failures with the code nested at
+    # errors.error_code and no statusCode anywhere, so that shape has to classify the same way. The body here
+    # is a real one, returned when a write sends a value the API cannot coerce to the target type.
+    $NestedErrors = @'
+{"errors":{"Message":"Error converting value \"panda\" to type 'FuzzyDate'. Path 'birthdate' line 7, position 26.","error_code":500,"RawMessage":"Error converting value \"panda\" to type 'FuzzyDate'. Path 'birthdate' line 7, position 26."}}
+'@
+    $r = Invoke-Catcher (New-FakeError -Body $NestedErrors)
+    Assert-True 'errors.error_code 500 retries' ((-not $r.Threw) -and $r.Value -eq 'retry') "threw=$($r.Threw) value='$($r.Value)'"
+
+    $r = Invoke-Catcher (New-FakeError -Body '{"errors":{"Message":"Bad Request","error_code":400}}')
+    Assert-True 'errors.error_code 400 throws' $r.Threw "returned '$($r.Value)'"
+
+    # With no error_code the whole errors object is what reaches the Switch, where it matches no case. The
+    # default must throw, otherwise a failed call returns nothing and reads as a success.
+    $r = Invoke-Catcher (New-FakeError -Body '{"errors":{"Message":"no code here"}}')
+    Assert-True 'errors with no error_code throws' $r.Threw "returned '$($r.Value)'"
 
     "--- entity functions must throw rather than return nothing"
     # Stub the HTTP call so it fails with an opaque error (no ErrorDetails), the case that used to go silent.
