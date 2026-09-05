@@ -131,27 +131,27 @@ immediately.
 `.gitattributes` is the authority and explains its own reasoning; this section exists so you know the answer
 without going to look.
 
+- **LF everywhere.** Every text type is pinned `eol=lf`, which is what Git stores anyway, so a checked-out
+  file is byte for byte the repository's copy on any platform and under any `core.autocrlf`.
 - **No byte order mark, ever.** Every text file in the repo is BOM-free, and all of them are pure ASCII.
-- **PowerShell sources are CRLF**: `.ps1`, `.psm1`, `.psd1`, `.ps1xml`, `.psrc`, `.pssc` are pinned
-  `eol=crlf`, so every contributor gets the same bytes regardless of platform or `core.autocrlf`.
-- **Everything else (`.md`, `.txt`, `.json`, `.yml`, `.csv`) is plain `text`**: Git stores LF and the checkout
-  decides. Either ending is correct in the working tree, so **leave these alone**. Converting one is pure
-  churn: it produces no diff, because Git normalized it away before the comparison.
+- **One file is exempt and must never be rewritten**: `Sample_Usage_Scripts/@SKYAPI Module/Config/`
+  `sky_api_config.json` is UTF-16, so Git reports it as `-text` and no line-ending rule applies. A bulk
+  "read text, write text" pass re-encodes it to UTF-8 and halves its size. Skip anything containing a NUL
+  byte, which is Git's own binary test.
 
-The trap that keeps catching people: **most editors and tools create a new file with LF**, so a newly written
-`.ps1` violates the pin the moment it exists, and nothing complains until much later. After creating any new
-PowerShell file, convert it:
+Git will not show you a line-ending mistake: it normalizes before diffing, so a wrong file produces no diff
+and leaves `git status` clean. Use this instead, which wants `w/lf` on every row:
+
+```powershell
+git ls-files --eol -- '*.ps1' '*.psm1' '*.psd1' '*.md'
+```
+
+Most editors and tools create new files with LF, so writing a new file is normally correct here and needs no
+follow-up. Never change the line endings of a file you are not otherwise editing. To fix one that is wrong:
 
 ```powershell
 $Text = [System.IO.File]::ReadAllText($Path)
-[System.IO.File]::WriteAllText($Path, (($Text -replace "`r`n","`n") -replace "`n","`r`n"))
-```
-
-Never change the line endings of a file you are not otherwise editing. To see the real state, `git status`
-will not tell you (Git normalizes before diffing) but this will:
-
-```powershell
-git ls-files --eol -- '*.ps1' '*.psm1' '*.psd1'   # want w/crlf on every row
+[System.IO.File]::WriteAllText($Path, ($Text -replace "`r`n","`n"))
 ```
 
 `Tests/TestRepoHygiene_FileEncoding.ps1` enforces all of the above and is part of the offline suite, so a

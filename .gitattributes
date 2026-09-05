@@ -6,30 +6,36 @@
 # Line endings do not affect how PowerShell parses a script (every supported host reads LF and CRLF
 # equally), so these rules exist to keep checkouts byte-identical and diffs clean rather than to make the
 # code work. Git stores text files with LF internally and applies the eol rules below on checkout.
+#
+# Every text type is pinned to LF, which is what Git already stores, so a checked-out file is byte for byte
+# the repository's copy on every platform and whatever a contributor's core.autocrlf says. That leaves no
+# conversion layer to reason about, which matters because Git hides line-ending differences: it normalizes
+# before diffing, so a file whose endings are wrong shows no diff and leaves "git status" clean.
+#
+# CRLF would keep checkouts equally consistent and Windows PowerShell 5.1 reads either, but it reintroduces
+# that conversion layer, and every tool here that is not PowerShell (grep, sed, diff, CI, the GitHub web
+# view) prefers LF.
 
 # Let Git detect text files and normalize them, unless overridden below.
-* text=auto
+* text=auto eol=lf
 
-# PowerShell sources. Pinned to CRLF because the module is authored on Windows and its primary target,
-# Windows PowerShell 5.1, is Windows-only. Pinning (rather than leaving it native) means a contributor on
-# Linux or macOS gets the same bytes as one on Windows, so edits show up as real changes instead of a
-# whole-file line-ending flip. PowerShell 7 on Linux and macOS reads CRLF without complaint.
-*.ps1    text eol=crlf
-*.psm1   text eol=crlf
-*.psd1   text eol=crlf
-*.ps1xml text eol=crlf
-*.psrc   text eol=crlf
-*.pssc   text eol=crlf
+# PowerShell sources.
+*.ps1    text eol=lf
+*.psm1   text eol=lf
+*.psd1   text eol=lf
+*.ps1xml text eol=lf
+*.psrc   text eol=lf
+*.pssc   text eol=lf
 
-# Docs, config, and data. Native line endings on checkout is fine for these.
-*.md     text
-*.txt    text
-*.json   text
-*.yml    text
-*.yaml   text
-*.url    text
-*.csv    text
-LICENSE  text
+# Docs, config, and data. Pinned too, so no text file in the tree depends on core.autocrlf.
+*.md     text eol=lf
+*.txt    text eol=lf
+*.json   text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.url    text eol=lf
+*.csv    text eol=lf
+LICENSE  text eol=lf
 
 # Binaries. These must never be line-ending converted or treated as text: the bundled Microsoft WebView2
 # assemblies under SKYAPI/Dependencies would be corrupted by any such conversion. Git's auto-detection
