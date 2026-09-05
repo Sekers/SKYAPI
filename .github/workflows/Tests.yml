@@ -1,0 +1,40 @@
+name: Tests
+
+# Runs the offline suite. Nothing here touches a tenant or needs credentials: the runner selects offline
+# tests only, and a script that authenticates is classified live and skipped even if it forgets to say so.
+on:
+  push:
+  pull_request:
+  # Lets the release workflow gate publishing on this same suite instead of duplicating the steps.
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  # Catches what a YAML parser cannot: a job that needs one that does not exist, a reusable-workflow path
+  # that resolves to nothing, an unknown runner label, a retired action version. Pinned to a version rather
+  # than :latest so a workflow that passes today does not start failing on someone else's release. Linux
+  # because this is a container action, and linting workflows has no reason to care about the host.
+  lint:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check workflow files
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
+
+  offline:
+    name: Offline suite
+    # Windows, because the suite must pass under Windows PowerShell 5.1 as well as PowerShell 7.x and 5.1
+    # exists nowhere else. Invoke-Tests.ps1 drives both editions itself, so one job covers both.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run offline tests
+        run: .\Tests\Invoke-Tests.ps1
+        shell: pwsh

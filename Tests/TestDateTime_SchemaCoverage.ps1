@@ -1,3 +1,5 @@
+# TestRequires: Network
+#
 # Reports what each endpoint's PUBLISHED CONTRACT claims about its date fields, next to what the module
 # actually does about them. Its job is to rank which endpoints are worth measuring, nothing more.
 #

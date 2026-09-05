@@ -11,14 +11,21 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  # A release must not publish a build that cannot pass its own tests. Reuses the Tests workflow rather than
+  # repeating its steps, so the gate and the everyday suite can never drift apart.
+  test:
+    uses: ./.github/workflows/Tests.yml
+
   psgallery_publish:
+    needs: test
+
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Publish
         run: |

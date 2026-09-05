@@ -182,7 +182,17 @@ violation fails a test run rather than being noticed by hand three commits later
 ## Testing
 
 Tests in `Tests/` are plain scripts, not Pester. They print `PASS`/`FAIL` lines and a final summary, and exit
-non-zero on failure. Run one directly, for example:
+non-zero on failure. `Tests/Invoke-Tests.ps1` runs them:
+
+```powershell
+.\Tests\Invoke-Tests.ps1                      # offline tests, BOTH editions, one summary and exit code
+.\Tests\Invoke-Tests.ps1 -Edition Core        # PowerShell 7 only, while iterating
+.\Tests\Invoke-Tests.ps1 -Name '*DateTime*'   # one family
+.\Tests\Invoke-Tests.ps1 -Network             # add the portal checks
+```
+
+This is the pre-commit check: it is the whole offline suite across both editions in about a minute, which is
+the entire point of it existing. Run a single script directly when you are working on that script:
 
 ```powershell
 pwsh       -NoProfile -File Tests\TestRequestParameters_CommonParameterFilter.ps1   # PowerShell 7.x
@@ -191,7 +201,17 @@ powershell -NoProfile -File Tests\TestRequestParameters_CommonParameterFilter.ps
 
 They import the working copy (`SKYAPI/SKYAPI.psd1`), not an installed module, so they test your edits.
 
-**Every test is offline and safe to run with no setup except the five named below.** The offline ones must
+**A test that needs more than an offline run must say so**, with a `# TestRequires: Live` or
+`# TestRequires: Network` line in its header. The runner reads that and skips those by default, naming every
+script it skipped rather than counting them. A script that declares nothing but authenticates anyway is
+still classified live, so forgetting the marker keeps a new script out of the default run instead of letting
+it reach a real tenant unattended.
+
+CI runs the same thing. `.github/workflows/Tests.yml` runs the offline suite on every push and pull request,
+and `PSGallery.yml` calls that workflow as a gate, so a release cannot publish a build that fails its own
+tests. Neither needs credentials.
+
+**Every test is offline and safe to run with no setup except the four named below.** The offline ones must
 pass under **both** Windows PowerShell 5.1 and PowerShell 7.x, so run both editions before calling a change
 done. The exceptions:
 
@@ -208,7 +228,25 @@ done. The exceptions:
 
   Read which tenant such a script points at before running it; see the safety rules above. One of them,
   `TestDateTime_WireFormatSurvey`, is a *survey* rather than a pass/fail suite, so a missing summary line is
-  not a failure.
+  not a failure. `TestAPICallErrors_RateLimit` is live **on purpose**: the point is to trip the API's real
+  rate limiting and see what it returns, which no local stub can tell you, so do not "fix" it by
+  converting it to an offline test.
+
+### Pester was evaluated and declined (2026-09-04)
+
+Pester 6.1.0 was measured against this repo and does work here: it imports under both Windows PowerShell 5.1
+and PowerShell 7.x, `InModuleScope SKYAPI` reaches the private helpers, and `Mock -ModuleName SKYAPI`
+intercepts calls the module makes internally. It was still declined, so do not re-derive this.
+
+The only real draw is `Mock`, and it applies solely to the error-path scripts that are already offline by
+choice, where it would replace hand-rolled function shadowing without adding coverage. Against that: a
+contributor dependency where the offline suite currently needs no setup at all, a PowerShell 7.4 floor in
+Pester 6, and four of the seventeen scripts that are surveys, report generators or live observation scripts
+rather than pass/fail suites, so they do not fit `Describe`/`It` without changing their purpose. Running two
+idioms side by side would also make "match the surrounding shape" ambiguous for every later contributor.
+
+Revisit if one file's stub layer becomes genuinely unmanageable. That is a reason to convert that single
+file, not to adopt Pester across the suite.
 
 Measured API behavior belongs in `Research_Notes/`, one file per behavior category; list the directory to see
 what already exists. Label each claim with its evidence (measured, from source, from schema, or unverified)

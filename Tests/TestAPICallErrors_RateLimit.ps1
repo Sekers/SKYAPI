@@ -1,4 +1,12 @@
+# TestRequires: Live
+#
 # CODE FOR TESTING BLACKBAUD API RATE LIMITING
+#
+# Live on purpose. The point is to trip the API's real rate limiting and see what comes back: which status
+# code it returns under load, whether a Retry-After header is present, and the shape of the body. A local
+# stub can only confirm what the handler already assumes, so do not convert this to an offline test.
+#
+# It loops until rate limited and does not terminate on its own.
 
 $ErrorActionPreference = "Stop"
 

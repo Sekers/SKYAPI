@@ -1,3 +1,5 @@
+# TestRequires: Network
+#
 # Checks every SKY API documentation link in the repository against the developer portal's own operation
 # list, so a link that no longer resolves is caught here rather than by a reader who clicks it.
 #

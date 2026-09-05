@@ -1,3 +1,5 @@
+# TestRequires: Live
+#
 # Surveys how each endpoint expresses date and time values ON THE WIRE, using -ReturnRaw so nothing has been
 # deserialized yet. Read the results into Research_Notes/DateTime-Handling.md.
 #
