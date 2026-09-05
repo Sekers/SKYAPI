@@ -15,11 +15,11 @@
 #      do not affect how PowerShell parses a script; this is about there being no conversion layer to
 #      reason about.
 #
-#   3. Files Git treats as binary are skipped and reported, never rewritten. The repository contains a
-#      UTF-16 sample config that Git reports as i/-text, so no line-ending rule applies to it and a bulk
-#      "read text, write text" pass would silently re-encode it to UTF-8 and halve its size. A NUL byte is
-#      Git's own binary heuristic and is what this test uses, so any such file is skipped automatically
-#      rather than being mangled by the next tool that runs over the tree.
+#   3. Files Git treats as binary are skipped and reported, never rewritten. Git reports such a file as
+#      -text, so no line-ending rule applies to it, and a bulk "read text, write text" pass over one would
+#      silently re-encode it and can halve its size. A NUL byte is Git's own binary heuristic and is what
+#      this test uses, so any such file is skipped automatically rather than being mangled by the next tool
+#      that runs over the tree.
 #
 # Files are enumerated the way Tests/TestDocLinks_EndpointReferences.ps1 does it, with --cached --others
 # --exclude-standard, so a file that has been written but not yet committed is checked while .gitignore is

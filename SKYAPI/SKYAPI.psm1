@@ -488,7 +488,7 @@ Function Get-SKYAPINewTokens
     $Authorization | ConvertTo-Json `
         | ConvertTo-SecureString -AsPlainText -Force `
         | ConvertFrom-SecureString `
-        | Out-File -FilePath $sky_api_tokens_file_path -Force
+        | Out-File -FilePath $sky_api_tokens_file_path -Force -Encoding utf8
 }
 
 # Function to calculate the exponential backoff delay when dealing with errors that we retry because they may be transient issues.

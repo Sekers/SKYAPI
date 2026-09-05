@@ -122,7 +122,7 @@ function Set-SKYAPIConfig
               
         $ConfigTemplate | Select-Object api_subscription_key, client_id, client_secret, redirect_uri, authorize_uri, token_uri `
         | ConvertTo-Json `
-        | Out-File -FilePath $ConfigPath -Force
+        | Out-File -FilePath $ConfigPath -Force -Encoding utf8
 
         $sky_api_config = Get-Content -Path $ConfigPath | ConvertFrom-Json
     }
@@ -193,5 +193,5 @@ function Set-SKYAPIConfig
     # Write New Config File
     $updated_sky_api_config | Select-Object api_subscription_key, client_id, client_secret, redirect_uri, authorize_uri, token_uri `
     | ConvertTo-Json `
-    | Out-File -FilePath $ConfigPath -Force
+    | Out-File -FilePath $ConfigPath -Force -Encoding utf8
 }

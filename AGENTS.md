@@ -133,11 +133,22 @@ without going to look.
 
 - **LF everywhere.** Every text type is pinned `eol=lf`, which is what Git stores anyway, so a checked-out
   file is byte for byte the repository's copy on any platform and under any `core.autocrlf`.
-- **No byte order mark, ever.** Every text file in the repo is BOM-free, and all of them are pure ASCII.
-- **One file is exempt and must never be rewritten**: `Sample_Usage_Scripts/@SKYAPI Module/Config/`
-  `sky_api_config.json` is UTF-16, so Git reports it as `-text` and no line-ending rule applies. A bulk
-  "read text, write text" pass re-encodes it to UTF-8 and halves its size. Skip anything containing a NUL
-  byte, which is Git's own binary test.
+- **No byte order mark in the repository.** Every text file here is BOM-free, and all of them are pure ASCII.
+  `Tests/TestRepoHygiene_FileEncoding.ps1` enforces that over the tracked tree.
+- **The files the module writes at runtime are a separate question, and it is already answered.** The
+  configuration file and the cached tokens file are written with `Out-File -Encoding utf8`, which is BOM-free
+  on PowerShell 7 and carries a BOM on Windows PowerShell 5.1. **That BOM is accepted.** Do not "fix" those
+  calls to `[System.IO.File]::WriteAllText`, and do not read the repository rule above as covering them.
+  Windows PowerShell 5.1 has no `utf8NoBOM`; that value arrived in PowerShell 6, so no single `Out-File`
+  spelling is BOM-free on both editions. The 0.5.1 change was about getting off UTF-16, which halved the file
+  size and removed the NUL bytes that made Git treat it as binary, not about the last three bytes.
+  `Get-Content` honors a BOM, so the module reads either form, and `Out-File -Force` truncates before
+  writing, so the BOM clears itself the next time PowerShell 7 writes the file. The only thing that would
+  reopen this is a consumer outside PowerShell reading those files, which
+  `Research_Notes/File-Encoding-And-Line-Endings.md` section 8 lists as unverified.
+- **Skip anything containing a NUL byte**, which is Git's own binary test. Git reports such a file as
+  `-text`, so no line-ending rule applies to it, and a bulk "read text, write text" pass over one re-encodes
+  it and can halve its size.
 
 Git will not show you a line-ending mistake: it normalizes before diffing, so a wrong file produces no diff
 and leaves `git status` clean. Use this instead, which wants `w/lf` on every row:

@@ -184,7 +184,7 @@ Function Connect-SKYAPI
                 $Authorization | ConvertTo-Json `
                     | ConvertTo-SecureString -AsPlainText -Force `
                     | ConvertFrom-SecureString `
-                    | Out-File -FilePath $sky_api_tokens_file_path -Force
+                    | Out-File -FilePath $sky_api_tokens_file_path -Force -Encoding utf8
         }
 
         # Return the connection information, if requested.
