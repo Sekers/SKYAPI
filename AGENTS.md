@@ -125,6 +125,38 @@ immediately.
   and `DaylightName`, so a bare `Id` does not read as a typo. In PowerShell comment-based help, do **not** use
   backticks; `Get-Help` renders them literally.
 
+## File encoding and line endings
+
+**This is already decided. Do not re-derive it, and do not "tidy" files to match a different opinion.**
+`.gitattributes` is the authority and explains its own reasoning; this section exists so you know the answer
+without going to look.
+
+- **No byte order mark, ever.** Every text file in the repo is BOM-free, and all of them are pure ASCII.
+- **PowerShell sources are CRLF**: `.ps1`, `.psm1`, `.psd1`, `.ps1xml`, `.psrc`, `.pssc` are pinned
+  `eol=crlf`, so every contributor gets the same bytes regardless of platform or `core.autocrlf`.
+- **Everything else (`.md`, `.txt`, `.json`, `.yml`, `.csv`) is plain `text`**: Git stores LF and the checkout
+  decides. Either ending is correct in the working tree, so **leave these alone**. Converting one is pure
+  churn: it produces no diff, because Git normalized it away before the comparison.
+
+The trap that keeps catching people: **most editors and tools create a new file with LF**, so a newly written
+`.ps1` violates the pin the moment it exists, and nothing complains until much later. After creating any new
+PowerShell file, convert it:
+
+```powershell
+$Text = [System.IO.File]::ReadAllText($Path)
+[System.IO.File]::WriteAllText($Path, (($Text -replace "`r`n","`n") -replace "`n","`r`n"))
+```
+
+Never change the line endings of a file you are not otherwise editing. To see the real state, `git status`
+will not tell you (Git normalizes before diffing) but this will:
+
+```powershell
+git ls-files --eol -- '*.ps1' '*.psm1' '*.psd1'   # want w/crlf on every row
+```
+
+`Tests/TestRepoHygiene_FileEncoding.ps1` enforces all of the above and is part of the offline suite, so a
+violation fails a test run rather than being noticed by hand three commits later.
+
 ## Code
 
 - **A new public function needs an explicit entry in `FunctionsToExport` in `SKYAPI/SKYAPI.psd1`.** Every
