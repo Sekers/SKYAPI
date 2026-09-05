@@ -90,7 +90,23 @@ and is untouched: the second record still inherits `section_ids=111` from the fi
 A `section_ids` value that matches no section returns an empty result rather than an error, so this reads as
 "that year has no rosters" instead of as a fault.
 
-## 5. Unverified
+## 5. Measured: two binder details worth knowing before changing a parameter block
+
+Both came up while giving each function at most one by-value parameter, and neither is obvious from the
+declaration.
+
+**A `[switch]` is never bound positionally or by value.** Several functions declared `ValueFromPipeline` on
+`ReturnRaw`, `IncludeRosters` and `Silent`. The binder ignores it: a switch binds only by name, and a
+`Position` on one is inert. Those declarations were noise, and removing them changed nothing a caller can
+observe. It also means inserting a parameter ahead of a switch does not shift anything positionally.
+
+**`InputObjectNotBound` is non-terminating, and the function still runs.** When nothing accepts a piped
+value, PowerShell writes an error with `FullyQualifiedErrorId` `InputObjectNotBound,<FunctionName>` and
+category `InvalidArgument`, and then the function body **still executes once** with none of the piped value
+bound. So `'2022-2023' | Get-SchoolAcademicRoster` reports the error and also issues an unfiltered request.
+The error is visible, which is what matters, but it does not stop the call.
+
+## 6. Unverified
 
 - Whether any caller relies on the current single-request behavior. It looks unlikely to be deliberate, since
   the result is a filter the caller never asked for, but nothing here proves it.
