@@ -97,10 +97,8 @@ function Remove-SchoolUserRelationship
         # Set the parameters. This endpoint is a DELETE, so the values travel in the query string rather than a
         # JSON body. User_ID & Left_User_ID are excluded since we don't pass them on. -SuppliedNames keeps
         # fields from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
-        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
-                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
-        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID','Left_User_ID' `
-                      -SuppliedNames $SuppliedParameter
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID','Left_User_ID' -SuppliedNames $SuppliedParameter
 
         # Remove relationship(s) for one or more IDs
         foreach ($uid in $User_ID)

@@ -17,11 +17,12 @@
 # URL: the operation id lives in the fragment, which never reaches the server, so every well-formed link
 # returns HTTP 200 whether or not the operation exists. The portal's management API is what actually knows.
 #
-# Casing is NOT checked. The comparison below is PowerShell's -contains, which is case-insensitive, and the
-# portal's management API resolves an operation under either casing, so neither side would notice. Most
-# operation ids are PascalCase (V1UsersPatch) while exactly seven are lowercase on the portal (v1yearsget,
-# v1rolesget, v1termsget, v1levelsget, v1gradelevelsget, v1offeringtypesget, v1usersget). Those seven are
-# correct as written and must not be "fixed" to PascalCase, but this script will not stop anyone doing so.
+# Casing IS checked, against the portal's own spelling. The first comparison below is -ccontains, so a link
+# passes only when it matches exactly; a link that resolves under a different casing is reported as CASE and
+# fails the run, naming the spelling the portal uses. This matters because most operation ids are PascalCase
+# (V1UsersPatch) while exactly seven are lowercase on the portal (v1yearsget, v1rolesget, v1termsget,
+# v1levelsget, v1gradelevelsget, v1offeringtypesget, v1usersget). Those seven are correct as written, and
+# "fixing" one to PascalCase is caught here rather than shipping.
 #
 # Scans the files Git tracks plus the ones it does not track yet, honoring .gitignore. That keeps ignored
 # scratch folders such as '@Local Only' out of the results while still checking a file that has been written

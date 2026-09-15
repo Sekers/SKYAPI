@@ -65,8 +65,7 @@ $Result = & (Get-Module SKYAPI) {
     Assert-Equal 'fractional second at midnight keeps its time' $true ($mid.TimeOfDay -ne [timespan]::Zero)
     Assert-Equal 'and keeps the milliseconds' 123 $mid.Millisecond
     Assert-Equal 'fractional second is not treated as Unspecified' $false ($mid.Kind -eq [System.DateTimeKind]::Unspecified)
-    Assert-Equal 'fractional second just after midnight' $true `
-        ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00.001-05:00').TimeOfDay -ne [timespan]::Zero)
+    Assert-Equal 'fractional second just after midnight' $true ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00.001-05:00').TimeOfDay -ne [timespan]::Zero)
 
     # Presence of a fraction is the test, not its value. An all-zero fraction is not expected on the wire at
     # all (the API strips trailing zeros - see the two-digit '.38' timestamp above), but a serializer that
@@ -82,14 +81,12 @@ $Result = & (Get-Module SKYAPI) {
     $pos = ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00.500+10:00'
     Assert-Equal 'positive-offset fractional midnight keeps milliseconds' 500 $pos.Millisecond
     Assert-Equal 'positive-offset fractional midnight is not Unspecified' $false ($pos.Kind -eq [System.DateTimeKind]::Unspecified)
-    Assert-Equal 'positive-offset fractional midnight preserves the instant' '2025-12-31 14:00:00.500' `
-        $pos.ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss.fff')
+    Assert-Equal 'positive-offset fractional midnight preserves the instant' '2025-12-31 14:00:00.500' $pos.ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss.fff')
 
     # A bare midnight with NO fraction is read as a date when nothing else is known about the field. It has to
     # be: a real date-only value looks exactly like this ('1980-01-23T00:00:00-05:00' is a birth date), so
     # treating the shape as a timestamp would put every date back a day for clients west of the school.
-    Assert-Equal 'bare midnight is date-only when the field is unknown' $true `
-        ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00-05:00').TimeOfDay -eq [timespan]::Zero)
+    Assert-Equal 'bare midnight is date-only when the field is unknown' $true ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00-05:00').TimeOfDay -eq [timespan]::Zero)
 
     "--- -Timestamp resolves the case shape cannot"
     # A timestamp with exactly zero milliseconds is serialized with no fractional part at all ('created
@@ -106,12 +103,10 @@ $Result = & (Get-Module SKYAPI) {
     Assert-Equal 'named timestamp field, positive offset' '2025-12-31 14:00:00' $tsp.ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss')
 
     # The unset sentinel must still win, or a cleared audit field would become a real 0001-01-01 instant.
-    Assert-Equal '-Timestamp does not resurrect the unset sentinel' ([datetime]::MinValue) `
-        (ConvertTo-SKYAPIDateTimeValue -Value '0001-01-01T00:00:00+00:00' -Timestamp)
+    Assert-Equal '-Timestamp does not resurrect the unset sentinel' ([datetime]::MinValue) (ConvertTo-SKYAPIDateTimeValue -Value '0001-01-01T00:00:00+00:00' -Timestamp)
 
     # A caller naming a field in both lists is a mistake; date-only is the safer reading and wins.
-    Assert-Equal '-DateOnly beats -Timestamp' $true `
-        ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00-05:00' -DateOnly -Timestamp).TimeOfDay -eq [timespan]::Zero)
+    Assert-Equal '-DateOnly beats -Timestamp' $true ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00-05:00' -DateOnly -Timestamp).TimeOfDay -eq [timespan]::Zero)
 
     "--- the walker applies timestamp fields by name"
     # The exact regression: audit metadata at midnight, no fraction. Read by shape it is a date; by name it is
@@ -135,10 +130,8 @@ $Result = & (Get-Module SKYAPI) {
     Assert-Equal 'explicit -DateOnlyFields overrides the timestamp default' $true ($Both.created.TimeOfDay -eq [timespan]::Zero)
 
     # -DateOnly must still win outright: the occupations fields are date-only by decree, not by shape.
-    Assert-Equal '-DateOnly overrides a fractional second' '2026-01-01' `
-        (ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00.123Z' -DateOnly).ToString('yyyy-MM-dd')
-    Assert-Equal 'and leaves no time component' $true `
-        ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00.123Z' -DateOnly).TimeOfDay -eq [timespan]::Zero)
+    Assert-Equal '-DateOnly overrides a fractional second' '2026-01-01' (ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00.123Z' -DateOnly).ToString('yyyy-MM-dd')
+    Assert-Equal 'and leaves no time component' $true ((ConvertTo-SKYAPIDateTimeValue -Value '2026-01-01T00:00:00.123Z' -DateOnly).TimeOfDay -eq [timespan]::Zero)
 
     "--- non-date values are passed through untouched"
     Assert-Equal 'plain string'  'MB-22' (ConvertTo-SKYAPIDateTimeValue -Value 'MB-22')

@@ -174,10 +174,8 @@ function New-SchoolUserAddress
 
         # Set the parameters. User_ID is excluded since we don't pass that on. -SuppliedNames keeps fields
         # from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
-        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
-                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
-        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID' `
-                      -SuppliedNames $SuppliedParameter -As Body
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID' -SuppliedNames $SuppliedParameter -As Body
 
         # Verify the address type doesn't already exists for any of the users.
         foreach ($uid in $User_ID)

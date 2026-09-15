@@ -35,44 +35,33 @@ $Result = & (Get-Module SKYAPI) {
 
     # -ErrorAction Stop is the realistic case: routine in production scripts, and it bound as an integer,
     # which is how 'ErrorAction=1' ended up in request URLs.
-    Assert-Equal 'ErrorAction Stop does not leak' 'limit=5' `
-        (Get-SKYAPIRequestParameter -BoundParameters @{ limit = 5; ErrorAction = 'Stop' }).ToString()
+    Assert-Equal 'ErrorAction Stop does not leak' 'limit=5' (Get-SKYAPIRequestParameter -BoundParameters @{ limit = 5; ErrorAction = 'Stop' }).ToString()
 
     "--- named exclusions"
-    Assert-Equal 'excluded name is dropped' 'duration_id=2' `
-        (Get-SKYAPIRequestParameter -BoundParameters @{ duration_id = 2; Section_ID = 9 } -Exclude 'Section_ID').ToString()
-    Assert-Equal 'exclusion matching is case-insensitive' 'duration_id=2' `
-        (Get-SKYAPIRequestParameter -BoundParameters @{ duration_id = 2; ReturnRaw = $true } -Exclude 'returnraw').ToString()
-    Assert-Equal 'unknown exclusion name is harmless' 'duration_id=2' `
-        (Get-SKYAPIRequestParameter -BoundParameters @{ duration_id = 2 } -Exclude 'NotAParameter').ToString()
+    Assert-Equal 'excluded name is dropped' 'duration_id=2' (Get-SKYAPIRequestParameter -BoundParameters @{ duration_id = 2; Section_ID = 9 } -Exclude 'Section_ID').ToString()
+    Assert-Equal 'exclusion matching is case-insensitive' 'duration_id=2' (Get-SKYAPIRequestParameter -BoundParameters @{ duration_id = 2; ReturnRaw = $true } -Exclude 'returnraw').ToString()
+    Assert-Equal 'unknown exclusion name is harmless' 'duration_id=2' (Get-SKYAPIRequestParameter -BoundParameters @{ duration_id = 2 } -Exclude 'NotAParameter').ToString()
     # Compared as a sorted set: hashtable enumeration order is not guaranteed, and order is irrelevant in a query string.
-    Assert-Equal 'no -Exclude keeps every non-common value' 'a=1,b=2' `
-        (((Get-SKYAPIRequestParameter -BoundParameters @{ a = 1; b = 2 }).ToString() -split '&' | Sort-Object) -join ',')
+    Assert-Equal 'no -Exclude keeps every non-common value' 'a=1,b=2' (((Get-SKYAPIRequestParameter -BoundParameters @{ a = 1; b = 2 }).ToString() -split '&' | Sort-Object) -join ',')
 
     "--- -SuppliedNames drops what the current pipeline record did not supply"
     # End-to-end coverage of the pipeline bug this feeds is in TestRequestParameters_PipelineIsolation.ps1;
     # these pin the helper's own contract.
     $Stale = @{ middle_name = 'Alpha'; first_name = 'Bob'; User_ID = 102 }
-    Assert-Equal 'only the supplied name survives (Body)' 'first_name' `
-        ((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -SuppliedNames @('first_name','User_ID') -As Body).Keys -join ',')
-    Assert-Equal 'only the supplied name survives (Query)' 'first_name=Bob' `
-        (Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -SuppliedNames @('first_name','User_ID')).ToString()
+    Assert-Equal 'only the supplied name survives (Body)' 'first_name' ((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -SuppliedNames @('first_name','User_ID') -As Body).Keys -join ',')
+    Assert-Equal 'only the supplied name survives (Query)' 'first_name=Bob' (Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -SuppliedNames @('first_name','User_ID')).ToString()
 
     # Omitting the parameter must behave exactly as before it existed, which is what every non-pipeline
     # caller relies on.
-    Assert-Equal 'omitting -SuppliedNames keeps everything' 'first_name,middle_name' `
-        (((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -As Body).Keys | Sort-Object) -join ',')
+    Assert-Equal 'omitting -SuppliedNames keeps everything' 'first_name,middle_name' (((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -As Body).Keys | Sort-Object) -join ',')
 
     # An empty set is a real answer ("this record supplied nothing"), not the same as omitting the parameter.
-    Assert-Equal 'an empty supplied set drops everything' '' `
-        ((Get-SKYAPIRequestParameter -BoundParameters $Stale -SuppliedNames @() -As Body).Keys -join ',')
+    Assert-Equal 'an empty supplied set drops everything' '' ((Get-SKYAPIRequestParameter -BoundParameters $Stale -SuppliedNames @() -As Body).Keys -join ',')
 
-    Assert-Equal 'supplied-name matching is case-insensitive' 'first_name' `
-        ((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -SuppliedNames @('FIRST_NAME') -As Body).Keys -join ',')
+    Assert-Equal 'supplied-name matching is case-insensitive' 'first_name' ((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID' -SuppliedNames @('FIRST_NAME') -As Body).Keys -join ',')
 
     # Exclusion still wins: a name the record supplied but the caller excluded must not reach the API.
-    Assert-Equal 'exclusion beats supplied' 'first_name' `
-        ((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID','middle_name' -SuppliedNames @('first_name','middle_name','User_ID') -As Body).Keys -join ',')
+    Assert-Equal 'exclusion beats supplied' 'first_name' ((Get-SKYAPIRequestParameter -BoundParameters $Stale -Exclude 'User_ID','middle_name' -SuppliedNames @('first_name','middle_name','User_ID') -As Body).Keys -join ',')
 
     "--- collection type per -As"
     $Q = Get-SKYAPIRequestParameter -BoundParameters @{ a = 1 }
@@ -102,8 +91,7 @@ $Result = & (Get-Module SKYAPI) {
     Assert-Equal 'and never the hashtable literal' $false ($Rating.ToString() -like '*System.Collections*')
 
     # Get-SchoolCycleBySection excluded Section_ID but not the -ReturnRaw control switch.
-    $Cycle = Get-SKYAPIRequestParameter -BoundParameters @{ Section_ID = 1; duration_id = 2; ReturnRaw = $true } `
-                                        -Exclude 'Section_ID','ReturnRaw'
+    $Cycle = Get-SKYAPIRequestParameter -BoundParameters @{ Section_ID = 1; duration_id = 2; ReturnRaw = $true } -Exclude 'Section_ID','ReturnRaw'
     Assert-Equal 'Get-SchoolCycleBySection does not send ReturnRaw' 'duration_id=2' $Cycle.ToString()
 
     "--- the roster and course inactive filters"
@@ -114,8 +102,7 @@ $Result = & (Get-Module SKYAPI) {
 
     # Sorted, because a hashtable does not guarantee enumeration order and the helper preserves whatever it gets.
     $Course = Get-SKYAPIRequestParameter -BoundParameters @{ level_id = 229; exclude_inactive = $true } -Exclude 'ReturnRaw'
-    Assert-Equal 'Get-SchoolCourse exclude_inactive reaches the query' 'exclude_inactive=True,level_id=229' `
-        ((($Course.ToString() -split '&') | Sort-Object) -join ',')
+    Assert-Equal 'Get-SchoolCourse exclude_inactive reaches the query' 'exclude_inactive=True,level_id=229' ((($Course.ToString() -split '&') | Sort-Object) -join ',')
 
     # An omitted optional [bool] is never in $PSBoundParameters, so it must not appear at all. Sending
     # 'include_inactive=False' would be harmless today but would pin a default the API is free to change.

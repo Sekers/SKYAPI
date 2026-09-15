@@ -26,11 +26,18 @@ param(
     # be left alone. Off by default so the script reads as a report, matching the wire survey's behavior.
     [switch]$Strict,
 
-    [string]$FunctionPath = [System.IO.Path]::Combine($PSScriptRoot, '..', 'SKYAPI', 'Functions'),
-    [string]$ModulePath   = [System.IO.Path]::Combine($PSScriptRoot, '..', 'SKYAPI', 'SKYAPI.psm1')
+    [string]$FunctionPath,
+    [string]$ModulePath
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Defaulted here rather than in the param block above. Windows PowerShell 5.1 does not populate $PSScriptRoot
+# while it evaluates param defaults, so a default built from it comes out relative and then resolves against
+# the caller's working directory. PowerShell 7 does populate it, which is why running this from the repository
+# root used to work on one edition and throw "function directory not found" on the other.
+if (-not $FunctionPath) { $FunctionPath = [System.IO.Path]::Combine($PSScriptRoot, '..', 'SKYAPI', 'Functions') }
+if (-not $ModulePath)   { $ModulePath   = [System.IO.Path]::Combine($PSScriptRoot, '..', 'SKYAPI', 'SKYAPI.psm1') }
 
 # Normalize the '..' segments away rather than handing them to the provider, which resolves them against the
 # caller's current location and not against the script. Running from inside SKYAPI/Functions is enough to send
@@ -116,8 +123,7 @@ function Get-ModelProperty
         if (-not $Child -and $p.Value.items) { $Child = $p.Value.items.'$ref' }
         if ($Child)
         {
-            $Out += Get-ModelProperty -Models $Models -TypeName ($Child -replace '.*/','') `
-                        -Depth ($Depth + 1) -Prefix "$Prefix$($p.Name)." -Seen $Seen
+            $Out += Get-ModelProperty -Models $Models -TypeName ($Child -replace '.*/','') -Depth ($Depth + 1) -Prefix "$Prefix$($p.Name)." -Seen $Seen
         }
     }
     $Seen.Remove($TypeName)

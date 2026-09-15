@@ -885,10 +885,7 @@ try
                     Client_Id     = $MgClientID
                     Client_Secret = $MgApp_Secret
                 }
-                $Connection = Invoke-RestMethod `
-                    -Uri https://login.microsoftonline.com/$MgTenantID/oauth2/v2.0/token `
-                    -Method POST `
-                    -Body $Body
+                $Connection = Invoke-RestMethod -Uri https://login.microsoftonline.com/$MgTenantID/oauth2/v2.0/token -Method POST -Body $Body
                 $null = Connect-MgGraph -AccessToken $($Connection.access_token | ConvertTo-SecureString -AsPlainText -Force)
             }
             else # If Graph PowerShell SDK is version 2.0.0 or higher.
@@ -1681,9 +1678,7 @@ try
             $RunCounters.EventsUpdated += $UserEventsUpdated
             $RunCounters.EventsDeleted += $UserEventsDeleted
             if ($UserDeleteGuardTripped) { $RunCounters.DeleteGuardTrips++ }
-            Write-UserSyncHistory -Path $SaveUsersSyncHistoryPath -User $user -MeetingsCount $UserMeetingsCount `
-                -Created $UserEventsCreated -Updated $UserEventsUpdated -Deleted $UserEventsDeleted `
-                -Status $(if ($UserDeleteGuardTripped) {'DeleteGuardTripped'} else {'Success'})
+            Write-UserSyncHistory -Path $SaveUsersSyncHistoryPath -User $user -MeetingsCount $UserMeetingsCount -Created $UserEventsCreated -Updated $UserEventsUpdated -Deleted $UserEventsDeleted -Status $(if ($UserDeleteGuardTripped) {'DeleteGuardTripped'} else {'Success'})
         }
         catch
         {
@@ -1698,8 +1693,7 @@ try
             $RunCounters.EventsUpdated += $UserEventsUpdated
             $RunCounters.EventsDeleted += $UserEventsDeleted
             if ($UserDeleteGuardTripped) { $RunCounters.DeleteGuardTrips++ }
-            Write-UserSyncHistory -Path $SaveUsersSyncHistoryPath -User $user -MeetingsCount $UserMeetingsCount `
-                -Created $UserEventsCreated -Updated $UserEventsUpdated -Deleted $UserEventsDeleted -Status 'Failed'
+            Write-UserSyncHistory -Path $SaveUsersSyncHistoryPath -User $user -MeetingsCount $UserMeetingsCount -Created $UserEventsCreated -Updated $UserEventsUpdated -Deleted $UserEventsDeleted -Status 'Failed'
             continue
         }
     }

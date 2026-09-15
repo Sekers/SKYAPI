@@ -3,9 +3,11 @@
 # Offline tests run by default, under both PowerShell editions, because that is what the repository requires
 # before a change is considered done. Network and live tests are opt in.
 #
-# A script declares what it needs with a "# TestRequires: Live" or "# TestRequires: Network" line. A script
-# that declares nothing but authenticates anyway is still treated as live, so forgetting the marker keeps a
-# new script OUT of the default run rather than letting it reach a real tenant unattended.
+# A script declares what it needs with a "# TestRequires: Live" or "# TestRequires: Network" line. That line
+# is the mechanism. Behind it is a backstop: a script that declares nothing but calls Connect-SKYAPI or
+# Set-SKYAPITokensFilePath is treated as live anyway, so forgetting the marker keeps a new script OUT of the
+# default run rather than letting it reach a real tenant unattended. The backstop sees direct calls only and
+# is a courtesy, not a guarantee; write the marker.
 #
 #   .\Tests\Invoke-Tests.ps1                       # offline, both editions
 #   .\Tests\Invoke-Tests.ps1 -Edition Core          # offline, PowerShell 7 only
@@ -43,8 +45,23 @@ function Get-TestRequirement
     if ($Text -match '(?m)^#\s*TestRequires:\s*Live')    { return 'Live' }
     if ($Text -match '(?m)^#\s*TestRequires:\s*Network') { return 'Network' }
 
-    # The backstop, and it only ever escalates: a script that authenticates is live whether it says so or not.
-    if ($Text -match '(?m)^\s*(Set-SKYAPITokensFilePath|Connect-SKYAPI)\b') { return 'Live' }
+    # The backstop, and it only ever escalates: a script that calls the authentication commands is live
+    # whether it says so or not. Parsed rather than pattern matched, for both directions of the problem. A
+    # call written as "& Connect-SKYAPI", inside a block, or module qualified is still seen, and a mention
+    # inside a COMMENT is not; TestAuthToken_TokenFreshness.ps1 names both commands in comments, and a text
+    # match would quietly pull that offline script out of the default run and out of CI.
+    #
+    # It catches a DIRECT call only, and the marker above is the real mechanism. The module authenticates on
+    # its own inside its request helpers, so a script that calls a public function without stubbing them
+    # reaches a tenant with neither command named anywhere in it.
+    $Ast = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$null, [ref]$null)
+    $Commands = $Ast.FindAll({ $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)
+    foreach ($Command in $Commands)
+    {
+        # $null for the "& $SomeVariable" forms, which nothing can resolve without running the script.
+        $Name = $Command.GetCommandName()
+        if ($Name -match '(^|\\)(Set-SKYAPITokensFilePath|Connect-SKYAPI)$') { return 'Live' }
+    }
 
     return 'Offline'
 }

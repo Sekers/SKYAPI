@@ -175,16 +175,12 @@ Function Connect-SKYAPI
 
             if ($InvokeCount -ge $MaxInvokeCount)
             {
-                Write-Warning $("Invoke tried running $InvokeCount times, but failed each time. " `
-                + "It is possible that the Key JSON tokens file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it.")
+                Write-Warning $("Invoke tried running $InvokeCount times, but failed each time. " + "It is possible that the Key JSON tokens file is corrupted or invalid. Try running Connect-SKYAPI with the -ForceReauthentication parameter to recreate it.")
                 throw $LastCaughtError
             }
                 
                 # Save credentials to file
-                $Authorization | ConvertTo-Json `
-                    | ConvertTo-SecureString -AsPlainText -Force `
-                    | ConvertFrom-SecureString `
-                    | Out-File -FilePath $sky_api_tokens_file_path -Force -Encoding utf8
+                $Authorization | ConvertTo-Json | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString | Out-File -FilePath $sky_api_tokens_file_path -Force -Encoding utf8
         }
 
         # Return the connection information, if requested.

@@ -53,8 +53,7 @@ $Result = & (Get-Module SKYAPI) {
     {
         foreach ($Form in (Get-AgeForms $Case.Age).GetEnumerator())
         {
-            Assert-Equal "access, $($Case.Label), $($Form.Key)" $Case.Fresh `
-                (Confirm-SKYAPITokenIsFresh -TokenCreation $Form.Value -TokenType Access)
+            Assert-Equal "access, $($Case.Label), $($Form.Key)" $Case.Fresh (Confirm-SKYAPITokenIsFresh -TokenCreation $Form.Value -TokenType Access)
         }
     }
 
@@ -66,8 +65,7 @@ $Result = & (Get-Module SKYAPI) {
     {
         foreach ($Form in (Get-AgeForms $Case.Age).GetEnumerator())
         {
-            Assert-Equal "refresh, $($Case.Label), $($Form.Key)" $Case.Fresh `
-                (Confirm-SKYAPITokenIsFresh -TokenCreation $Form.Value -TokenType Refresh)
+            Assert-Equal "refresh, $($Case.Label), $($Form.Key)" $Case.Fresh (Confirm-SKYAPITokenIsFresh -TokenCreation $Form.Value -TokenType Refresh)
         }
     }
 
@@ -84,12 +82,17 @@ $Result = & (Get-Module SKYAPI) {
         $null = New-Item -ItemType Directory -Path $TempDir -Force
         Set-Variable -Name 'sky_api_tokens_file_path' -Value (Join-Path $TempDir 'tokens.json') -Scope Global -Force
 
-        # Exactly the pipeline Get-SKYAPINewTokens and Connect-SKYAPI use to persist tokens.
-        function Write-TestTokenFile { param($Object)
-            $Object | ConvertTo-Json `
-                | ConvertTo-SecureString -AsPlainText -Force `
-                | ConvertFrom-SecureString `
-                | Out-File -FilePath $global:sky_api_tokens_file_path -Force }
+        # Exactly the pipeline Get-SKYAPINewTokens and Connect-SKYAPI use to persist tokens, -Encoding utf8
+        # included. That flag is what makes this fixture the format the module actually ships: Out-File on
+        # Windows PowerShell 5.1 defaults to UTF-16, so without it the 5.1 run would be exercising a format
+        # nothing writes any more. -Encoding is a parameter here only so the legacy case below can ask for the
+        # old one on purpose.
+        function Write-TestTokenFile { param($Object,[string]$Encoding = 'utf8')
+            $Object |
+                ConvertTo-Json |
+                ConvertTo-SecureString -AsPlainText -Force |
+                ConvertFrom-SecureString |
+                Out-File -FilePath $global:sky_api_tokens_file_path -Force -Encoding $Encoding }
 
         function New-TestTokenObject { param($AccessCreation,$RefreshCreation)
             $Object = [pscustomobject]@{ access_token = 'stub-access'; refresh_token = 'stub-refresh' }
@@ -112,10 +115,25 @@ $Result = & (Get-Module SKYAPI) {
         }
         Assert-Equal 'the tokens themselves are untouched' 'stub-access' $Read.access_token
 
+        "--- the file on disk is UTF-8, which is the format the module writes"
+        # A BOM may or may not be there (5.1 writes one, 7 does not) and both are accepted, so this asserts the
+        # encoding rather than the first three bytes: no UTF-16 byte order mark, and no NUL bytes, which are
+        # what made Git treat the old file as binary and doubled its size.
+        $Bytes = [System.IO.File]::ReadAllBytes($global:sky_api_tokens_file_path)
+        Assert-Equal 'no UTF-16 byte order mark' $false ($Bytes[0] -eq 0xFF -and $Bytes[1] -eq 0xFE)
+        Assert-Equal 'no NUL bytes'              $false ($Bytes -contains 0)
+
+        "--- a tokens file left behind by an older version still reads"
+        # Anything before 0.5.1 wrote UTF-16. Get-Content honors the byte order mark, so an existing file keeps
+        # working until the next write replaces it, which is what the upgrade needing no action rests on.
+        Write-TestTokenFile (New-TestTokenObject -AccessCreation $Written -RefreshCreation $Written) -Encoding Unicode
+        $Read = Get-SKYAPIAuthTokensFromFile
+        Assert-Equal 'a UTF-16 tokens file still reads' 'stub-access' $Read.access_token
+        Assert-Equal 'and its stamp still survives'     $Written      (Format-Stamp $Read.access_token_creation)
+
         "--- a numeric-offset stamp converts to the same UTC instant on both editions"
         # Only 'Z' is ever written today, so this pins the stated contract rather than a live path.
-        Write-TestTokenFile (New-TestTokenObject -AccessCreation '2026-08-25T15:35:46.2256813+02:00' `
-                                                 -RefreshCreation '2026-08-25T15:35:46.2256813+02:00')
+        Write-TestTokenFile (New-TestTokenObject -AccessCreation '2026-08-25T15:35:46.2256813+02:00' -RefreshCreation '2026-08-25T15:35:46.2256813+02:00')
         $Read = Get-SKYAPIAuthTokensFromFile
         Assert-Equal '+02:00 stamp is Kind=Utc'       'Utc'                          $Read.access_token_creation.Kind
         Assert-Equal '+02:00 stamp converted to UTC'  '2026-08-25T13:35:46.2256813Z' (Format-Stamp $Read.access_token_creation)

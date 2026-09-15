@@ -95,9 +95,7 @@ $Result = & (Get-Module SKYAPI) {
             links = @([pscustomobject]@{ user_id = 10; type_id = 30; primary = $true; shared = $false })
             salutations = [pscustomobject]@{ informal = 'Friends'; formal = ''; household = '' }
         })
-    $Out = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' `
-        -city 'Chicago' -mailing_address $false -links @(@{ user_id = 10; type_id = 30; primary = $true }) `
-        -salutations @{ informal = 'Friends' } -Validate
+    $Out = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' -city 'Chicago' -mailing_address $false -links @(@{ user_id = 10; type_id = 30; primary = $true }) -salutations @{ informal = 'Friends' } -Validate
     Assert-True 'matching validation returns the normal response' ($Out -eq 20) "returned: $Out"
     Assert-True 'Validate performs one address read' ($ReadCount -eq 1) "reads: $ReadCount"
     Assert-True 'Validate is excluded from the body' (-not $SentBody.ContainsKey('Validate')) "keys: $($SentBody.Keys -join ',')"
@@ -108,8 +106,7 @@ $Result = & (Get-Module SKYAPI) {
     $script:ReadRecords = @(
         [pscustomobject]@{ id = 99; user_id = 10; type_id = 30; line_one = 'Other' },
         [pscustomobject]@{ id = 20; user_id = 10; type_id = 30; line_one = 'First'; city = 'Chicago' })
-    $Out = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' `
-        -city 'Chicago' -IncludeUpdatedObject
+    $Out = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' -city 'Chicago' -IncludeUpdatedObject
     Assert-True 'IncludeUpdatedObject alone keeps the numeric response at the root' ($Out -is [int] -and $Out -eq 20) "type=$($Out.GetType().FullName) returned=$Out"
     Assert-True 'IncludeUpdatedObject alone attaches the matching address' ($Out.UpdatedObject.id -eq 20 -and $Out.UpdatedObject.city -eq 'Chicago') "updated id=$($Out.UpdatedObject.id) city=$($Out.UpdatedObject.city)"
     Assert-True 'IncludeUpdatedObject alone performs one address read' ($ReadCount -eq 1) "reads: $ReadCount"
@@ -118,8 +115,7 @@ $Result = & (Get-Module SKYAPI) {
 
     Reset-State
     $script:ReadRecords = @([pscustomobject]@{ id = 20; user_id = 10; type_id = 30; line_one = 'First'; city = 'Chicago' })
-    $Out = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' `
-        -city 'Chicago' -Validate -IncludeUpdatedObject
+    $Out = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' -city 'Chicago' -Validate -IncludeUpdatedObject
     Assert-True 'combined mode returns one numeric response' (@($Out).Count -eq 1 -and $Out -is [int] -and $Out -eq 20) "count=$(@($Out).Count) type=$($Out.GetType().FullName) returned=$Out"
     Assert-True 'combined mode attaches the validated address' ($Out.UpdatedObject.id -eq 20 -and $Out.UpdatedObject.city -eq 'Chicago') "updated id=$($Out.UpdatedObject.id) city=$($Out.UpdatedObject.city)"
     Assert-True 'combined mode shares one read' ($ReadCount -eq 1) "reads: $ReadCount"
@@ -139,8 +135,7 @@ $Result = & (Get-Module SKYAPI) {
     "--- fields_to_delete"
     Reset-State
     $script:ReadRecords = @([pscustomobject]@{ id = 20; user_id = 10; type_id = 30; line_one = 'First'; line_two = '' })
-    $null = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' `
-        -line_two 'ignored because clear wins' -fields_to_delete 'line_two' -Validate
+    $null = Update-SchoolUserAddress -User_ID 10 -Address_ID 20 -type_id 30 -line_one 'First' -line_two 'ignored because clear wins' -fields_to_delete 'line_two' -Validate
     Assert-True 'a successfully cleared address field validates' ($ReadCount -eq 1) "reads: $ReadCount"
 
     Reset-State
@@ -161,8 +156,7 @@ $Result = & (Get-Module SKYAPI) {
     })
     $Err = $null
     try {
-        $Out = Update-SchoolUserAddress -user_id 10 -address_id 20 -type_id 30 -line_one 'First' `
-            -links @(@{ user_id = 10; type_id = 30; primary = $true
+        $Out = Update-SchoolUserAddress -user_id 10 -address_id 20 -type_id 30 -line_one 'First' -links @(@{ user_id = 10; type_id = 30; primary = $true
                         shared = $false; shared_user = ''; shared_relationship = ''; type = 'Home Address' }) -Validate
     } catch { $Err = $_.Exception.Message }
     Assert-True 'a shared address reading back a different user_id still validates' ($null -eq $Err) "$Err"

@@ -597,11 +597,8 @@ function Update-SchoolUser
         # Validate and IncludeUpdatedObject direct this function's behavior rather than the API request body.
         # -SuppliedNames drops fields left over from an earlier pipeline record; without it, piping users where
         # only the first sets a field wrote that field's value to all of them.
-        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
-                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
-        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters `
-                      -Exclude 'User_ID','Validate','IncludeUpdatedObject' `
-                      -SuppliedNames $SuppliedParameter -As Body
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID','Validate','IncludeUpdatedObject' -SuppliedNames $SuppliedParameter -As Body
 
         # Normalize nested object parameters: a bare string sets the object's primary field.
         foreach ($objectParam in $ObjectPrimaryFields.GetEnumerator())
@@ -829,8 +826,7 @@ function Update-SchoolUser
             # unsupported value can come back "updated" having silently changed nothing.
             if ($Validate)
             {
-                $ValidationFindings = @(Confirm-SKYAPIWriteResult -Actual $ReadBackRecord -Expected $parameters -FieldSpec $ValidationFieldSpec `
-                    -ReadModel $ValidationReadModel -ClearedFields $ClearedFieldList -Cache $TypeTableCache -RecordDescription "user $uid")
+                $ValidationFindings = @(Confirm-SKYAPIWriteResult -Actual $ReadBackRecord -Expected $parameters -FieldSpec $ValidationFieldSpec -ReadModel $ValidationReadModel -ClearedFields $ClearedFieldList -Cache $TypeTableCache -RecordDescription "user $uid")
 
                 if ($ValidationFindings.Count -gt 0)
                 {

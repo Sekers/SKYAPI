@@ -113,7 +113,7 @@ immediately.
   - Most operation ids are PascalCase (`V1UsersPatch`). Exactly seven are lowercase on the portal
     (`v1usersget`, `v1yearsget`, `v1rolesget`, `v1termsget`, `v1levelsget`, `v1gradelevelsget`,
     `v1offeringtypesget`). Write each id the way the portal reports it and do not "fix" those seven to
-    PascalCase. Nothing verifies casing, so a mismatch will not be caught for you.
+    PascalCase. Casing is verified against the portal's own spelling, so a mismatch fails the test below.
   - The older `developer.sky.blackbaud.com/docs/services/...` shape is retired and 404s everywhere.
   - After adding or editing a link, run `Tests/TestDocLinks_EndpointReferences.ps1`, which checks every link
     in the repo against the portal and catches all of the above.
@@ -203,9 +203,12 @@ They import the working copy (`SKYAPI/SKYAPI.psd1`), not an installed module, so
 
 **A test that needs more than an offline run must say so**, with a `# TestRequires: Live` or
 `# TestRequires: Network` line in its header. The runner reads that and skips those by default, naming every
-script it skipped rather than counting them. A script that declares nothing but authenticates anyway is
-still classified live, so forgetting the marker keeps a new script out of the default run instead of letting
-it reach a real tenant unattended.
+script it skipped rather than counting them. Behind that line is a backstop: a script that declares nothing
+but calls `Connect-SKYAPI` or `Set-SKYAPITokensFilePath` is classified live anyway, so forgetting the marker
+keeps a new script out of the default run instead of letting it reach a real tenant unattended. The backstop
+parses the script, so it sees those calls however they are written and ignores mentions in comments, but it
+catches a direct call only: the module authenticates inside its own request helpers, so a script that calls a
+public function without stubbing them reaches a tenant without naming either command. Write the marker.
 
 CI runs the same thing. `.github/workflows/Tests.yml` runs the offline suite on every push and pull request,
 and `PSGallery.yml` calls that workflow as a gate, so a release cannot publish a build that fails its own

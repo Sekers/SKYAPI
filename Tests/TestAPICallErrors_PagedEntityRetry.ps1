@@ -1,7 +1,9 @@
 # Offline tests for Get-SKYAPIPagedEntity's success and retry paths. No API calls are made.
 #
 # Guards the paging behavior (single page, multi-page accumulation, response_limit early return, empty
-# results) and the case where a request succeeds on its final permitted retry attempt.
+# results), the case where a request succeeds on its final permitted retry attempt, and what each request
+# actually carried: the page marker has to advance between pages, and a retry has to send the refreshed
+# token rather than the one that was just rejected.
 
 if (-not ('System.Web.HttpUtility' -as [type])) { Add-Type -AssemblyName System.Web }   # needed on 5.1, resolves natively on 7
 Import-Module ([System.IO.Path]::Combine($PSScriptRoot,'..','SKYAPI','SKYAPI.psd1')) -Force -ErrorAction Stop
@@ -26,8 +28,7 @@ $Result = & (Get-Module SKYAPI) {
 
     function Invoke-Paged { param($PageLimit = 100,$ResponseLimit)
         $p = New-Params; $p['marker'] = '0'
-        Get-SKYAPIPagedEntity -uid 1 -url 'https://x/' -api_key 'k' -authorisation $Auth -params $p `
-            -response_field 'value' -page_limit $PageLimit -response_limit $ResponseLimit -marker_type NEXT_RECORD_NUMBER
+        Get-SKYAPIPagedEntity -uid 1 -url 'https://x/' -api_key 'k' -authorisation $Auth -params $p -response_field 'value' -page_limit $PageLimit -response_limit $ResponseLimit -marker_type NEXT_RECORD_NUMBER
     }
 
     "--- single page (fewer records than the page limit, so the page loop ends immediately)"
@@ -85,6 +86,53 @@ $Result = & (Get-Module SKYAPI) {
     $Threw = $false
     try { Invoke-Paged -PageLimit 100 | Out-Null } catch { $Threw = $true }
     Assert-True 'all attempts failing still throws' $Threw 'returned instead of throwing'
+
+
+    # --- what each request actually carried ---------------------------------------------------------------
+    # Every stub above takes no parameters, which is enough to drive the paging and retry loops but cannot see
+    # the request itself. These two record it. Both fail if the request is ever built once and reused rather
+    # than rebuilt per attempt: the page marker would never advance, and a retry would resend the token that
+    # had just been rejected.
+
+    "--- each page asks for the next marker, not the first page again"
+    $script:Requests = New-Object System.Collections.ArrayList
+    $script:Call = 0
+    function Invoke-WebRequest {
+        param([switch]$UseBasicParsing,$Method,$ContentType,$Headers,$Uri,$Body)
+        $script:Call++
+        [void]$script:Requests.Add([pscustomobject]@{ Uri = "$Uri"; Auth = "$($Headers['Authorization'])" })
+        if ($script:Call -eq 1) { return [pscustomobject]@{ Content = '{"value":[1,2]}' } }
+        return [pscustomobject]@{ Content = '{"value":[3]}' }
+    }
+    $r = @(Invoke-Paged -PageLimit 2)
+    Assert-True 'both pages were requested'   ($script:Requests.Count -eq 2) "requests=$($script:Requests.Count)"
+    Assert-True 'page 1 asks for marker=0'    ($script:Requests[0].Uri -match '[?&]marker=0($|&)') "$($script:Requests[0].Uri)"
+    Assert-True 'page 2 advances to marker=2' ($script:Requests[1].Uri -match '[?&]marker=2($|&)') "$($script:Requests[1].Uri)"
+
+    "--- a retry carries the refreshed token, not the one that just failed"
+    # A 401 sends SKYAPICatchInvokeErrors through Connect-SKYAPI -ForceRefresh, after which the catch re-reads
+    # the tokens file. Attempt 1 uses the token passed in; attempt 2 must use whatever that re-read returned.
+    $script:Requests = New-Object System.Collections.ArrayList
+    $script:Attempt = 0
+    function Connect-SKYAPI { param([switch]$ForceRefresh) }
+    function Get-SKYAPIAuthTokensFromFile { [pscustomobject]@{ access_token = 'refreshed'; access_token_creation = (Get-Date) } }
+    function Invoke-WebRequest {
+        param([switch]$UseBasicParsing,$Method,$ContentType,$Headers,$Uri,$Body)
+        $script:Attempt++
+        [void]$script:Requests.Add([pscustomobject]@{ Uri = "$Uri"; Auth = "$($Headers['Authorization'])" })
+        if ($script:Attempt -eq 1)
+        {
+            $e = try { throw 'unauthorized' } catch { $_ }
+            $e.ErrorDetails = [System.Management.Automation.ErrorDetails]::new('{"statusCode":401,"message":"Unauthorized"}')
+            throw $e
+        }
+        return [pscustomobject]@{ Content = '{"value":["ok"]}' }
+    }
+    $r = @(Invoke-Paged -PageLimit 100)
+    Assert-True 'the call recovered after the 401'          ($r.Count -eq 1 -and $r[0] -eq 'ok') "got $($r -join ',')"
+    Assert-True 'it took exactly two attempts'              ($script:Requests.Count -eq 2) "attempts=$($script:Requests.Count)"
+    Assert-True 'attempt 1 sent the token it started with'  ($script:Requests[0].Auth -eq 'Bearer stub') "$($script:Requests[0].Auth)"
+    Assert-True 'attempt 2 sent the refreshed token'        ($script:Requests[1].Auth -eq 'Bearer refreshed') "$($script:Requests[1].Auth)"
 
     [pscustomobject]@{ Passes = $Stats.Pass; Failures = $Stats.Fail }
 }

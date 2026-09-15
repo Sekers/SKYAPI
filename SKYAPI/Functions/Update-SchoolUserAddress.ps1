@@ -91,16 +91,13 @@ function Update-SchoolUserAddress
         The function throws if the address cannot be read.
 
         .EXAMPLE
-        Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 `
-            -line_one '129 Huntington Drive' -city 'Chicago' -state 'IL' -postal_code '60601'
+        Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 -line_one '129 Huntington Drive' -city 'Chicago' -state 'IL' -postal_code '60601'
 
         .EXAMPLE
-        Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 `
-            -line_one '129 Huntington Drive' -fields_to_delete 'line_two','line_three' -Validate
+        Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 -line_one '129 Huntington Drive' -fields_to_delete 'line_two','line_three' -Validate
 
         .EXAMPLE
-        Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 `
-            -line_one '129 Huntington Drive' -city 'Chicago' -Validate -IncludeUpdatedObject
+        Update-SchoolUserAddress -user_id 3156271 -address_id 4708014 -type_id 1005 -line_one '129 Huntington Drive' -city 'Chicago' -Validate -IncludeUpdatedObject
 
         .OUTPUTS
         Returns the address ID from the update endpoint. With IncludeUpdatedObject, the same ID gains an
@@ -275,11 +272,8 @@ function Update-SchoolUserAddress
         # Build a body using only fields supplied by this pipeline record. The two URL/body IDs are added with
         # the names required by the API. Validate and IncludeUpdatedObject are local control switches rather than
         # request fields.
-        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
-                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
-        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters `
-                      -Exclude 'user_id','address_id','Validate','IncludeUpdatedObject' `
-                      -SuppliedNames $SuppliedParameter -As Body
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'user_id','address_id','Validate','IncludeUpdatedObject' -SuppliedNames $SuppliedParameter -As Body
         $parameters['id'] = $address_id
         $parameters['user_id'] = $user_id
 
@@ -291,8 +285,7 @@ function Update-SchoolUserAddress
         # opposite advice.
         try
         {
-            $response = Update-SKYAPIEntity -uid $user_id -url $endpoint -endUrl $endUrl `
-                        -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
+            $response = Update-SKYAPIEntity -uid $user_id -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters
         }
         catch
         {
@@ -352,9 +345,7 @@ function Update-SchoolUserAddress
         if ($Validate)
         {
             $ClearedFieldList = if ($parameters.ContainsKey('fields_to_delete')) { @($parameters['fields_to_delete']) } else { @() }
-            $ValidationFindings = @(Confirm-SKYAPIWriteResult -Actual $ReadBackRecord -Expected $parameters `
-                -FieldSpec $ValidationFieldSpec -ClearedFields $ClearedFieldList `
-                -RecordDescription "address $address_id for user $user_id")
+            $ValidationFindings = @(Confirm-SKYAPIWriteResult -Actual $ReadBackRecord -Expected $parameters -FieldSpec $ValidationFieldSpec -ClearedFields $ClearedFieldList -RecordDescription "address $address_id for user $user_id")
 
             if ($ValidationFindings.Count -gt 0)
             {

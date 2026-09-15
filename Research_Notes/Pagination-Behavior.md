@@ -28,8 +28,9 @@ Page sizes were **measured against live tenants** on 2026-08-11:
 
 ## 1. From source: how paging terminates
 
-Every paged endpoint routes through `Get-SKYAPIPagedEntity` (`SKYAPI/SKYAPI.psm1`, line 932). It requests a
-page, appends the records, advances a marker, and loops on a single condition (line 1054):
+Every paged endpoint routes through `Get-SKYAPIPagedEntity` in `SKYAPI/SKYAPI.psm1`. It requests a
+page, appends the records, advances a marker, and loops on a single condition, the `while` that closes its
+inner paging loop:
 
 ```powershell
 while ($pageRecordCount -eq $page_limit)   # Loop to the next page if the current page is full
@@ -217,7 +218,7 @@ normally because its pages really are 1000.
 which equals `$PageLimit`, so the module would request `page=2`, receive the identical 1000 rows, append them,
 and loop again, forever, with the record count growing without bound. Both preconditions are demonstrated
 above; only their combination has not been observed. Passing `-ResponseLimit` bounds the damage, since that
-check returns early (`SKYAPI/SKYAPI.psm1`, line 1043), but nothing bounds the default call.
+check returns early (the `response_limit` test inside `Get-SKYAPIPagedEntity`), but nothing bounds the default call.
 
 ## 7. Which endpoints expose a page-size parameter at all
 
@@ -235,7 +236,7 @@ unnoticed.
 
 `Get-SchoolEnrollment` sends `limit` on one call path only (§3). The other two functions send nothing, and a
 caller cannot supply the parameter either: request parameters are built by `Get-SKYAPIRequestParameter`
-(`SKYAPI/SKYAPI.psm1`, line 1417) from the calling function's `$PSBoundParameters`, and neither
+(in `SKYAPI/SKYAPI.psm1`) from the calling function's `$PSBoundParameters`, and neither
 `Get-SchoolUserExtendedByBaseRole` nor `Get-SchoolList` declares a `page_size` parameter.
 
 ## 8. Source: community thread 70158

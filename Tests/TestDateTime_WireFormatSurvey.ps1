@@ -28,14 +28,22 @@ param(
     # tenant other than the one the default id belongs to.
     [int]$User_ID = 0,
 
-    # Defaults match the layout of this repo; override for a different setup.
-    [string]$ConfigPath = [System.IO.Path]::Combine($PSScriptRoot, '..', '@Local Only', 'sky_api_config.json'),
+    # Defaults match the layout of this repo; override for a different setup. ConfigPath is defaulted below
+    # rather than here, since Windows PowerShell 5.1 does not populate $PSScriptRoot while it evaluates param
+    # defaults; see the note next to the assignment.
+    [string]$ConfigPath,
     [string]$TokensPath = [System.IO.Path]::Combine($env:USERPROFILE, 'API_Tokens', 'SKYAPI_Development_sky_api_key.json')
 )
 
 # Stop on error so a non-terminating failure inside an endpoint call cannot look like an empty response. Every
 # call below is individually wrapped, so nothing here aborts the run.
 $ErrorActionPreference = 'Stop'
+
+# Defaulted here rather than in the param block above. Windows PowerShell 5.1 does not populate $PSScriptRoot
+# while it evaluates param defaults, so a default built from it comes out relative and then resolves against
+# the caller's working directory. This one decides which tenant's credentials get loaded, so getting it from
+# the script's own location rather than from wherever the caller happened to be standing matters.
+if (-not $ConfigPath) { $ConfigPath = [System.IO.Path]::Combine($PSScriptRoot, '..', '@Local Only', 'sky_api_config.json') }
 
 # Normalize the '..' segments away rather than handing them to the provider, which resolves them against the
 # caller's current location and not against the script. This decides which tenant's credentials get loaded, so

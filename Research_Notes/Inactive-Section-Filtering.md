@@ -236,23 +236,33 @@ ever remove what it has positive evidence about.
 
 ## 6. Feature request sent to Blackbaud
 
-Raised so that a future reader knows the gap was reported rather than missed. Venue:
-<https://community.blackbaud.com>. Date sent: TBD. Link to the posted request: TBD.
+Recorded so that a future reader knows the gap was reported rather than missed.
 
-> **Subject: Add an `include_inactive` parameter to GET /v1/schedules/meetings**
+| | |
+| --- | --- |
+| Venue | Blackbaud developer ideas portal, <https://blackbaud-developer.ideas.aha.io> |
+| Idea | `API-I-624`, <https://blackbaud-developer.ideas.aha.io/ideas/API-I-624> |
+| Date sent | 2026-09-15 |
+| Status | Submitted. No response from Blackbaud yet. |
+
+The text as posted, with this repository's Markdown conventions applied to the identifiers; the portal holds
+it as plain text:
+
+> **Add an `include_inactive` parameter to GET /v1/schedules/meetings**
 >
 > Endpoint: `GET /v1/schedules/meetings`
 > Documentation: <https://developer.sky.blackbaud.com/api#api=school&operation=V1SchedulesMeetingsGet>
 >
-> The 2026-08-31 release added an `include_inactive` parameter to the roster endpoints (academics, activities,
-> advisories, athletics and community groups) and changed them to return only active sections by default. The
-> meetings endpoint did not get the same treatment. It still returns meetings for sections whose offering
-> status is `Inactive`, and it offers no way to filter them out.
+> Since the 2026-08-31 release added an `include_inactive` parameter to the roster endpoints (academics,
+> activities, advisories, athletics and community groups) and changed them to return only active sections by
+> default, this affects some of our integrations for getting meetings along with the meeting details and
+> rosters for those meetings. The main issue is that the meetings endpoint did not get the same treatment. It
+> still returns meetings for sections whose offering status is `Inactive`, and it offers no way to filter them
+> out.
 >
 > The response gives no way to filter them client side either. The `Meeting` model carries no offering or
 > section status field, so a caller cannot tell from the response whether a meeting belongs to an inactive
-> section. Verified against a developer tenant: a meeting on an inactive section is field for field
-> indistinguishable from a meeting on an active section on the same day.
+> section.
 >
 > The only workaround is a second request to a roster endpoint for the same sections, reading
 > `section.offering.status` and filtering locally. The concern is not payload size, which is trivial. It is
@@ -262,19 +272,30 @@ Raised so that a future reader knows the gap was reported rather than missed. Ve
 > That lookup costs one extra request per offering type, per school year, per batch of section IDs. A
 > single-day query for one offering type goes from one request to two. Pulling a full school year across all
 > four offering types is roughly 12 meetings requests plus 4 status requests, and a date range spanning two
-> school years adds 8. Those requests come out of the same rate limit and daily quota as the rest of an
-> integration, to answer a question the meetings response could answer at no cost.
+> school years adds 8.
 >
 > The request, in order of preference:
 >
 > 1. Add an `include_inactive` query parameter to `GET /v1/schedules/meetings`, using the same name as the
->    roster endpoints. Please default it to `true` so that current behavior is preserved and this does not
->    become a second breaking change for existing callers.
+>    roster endpoints.
 > 2. Failing that, add the offering `status` field to the `Meeting` model, so callers can filter client side
 >    without a second request.
 >
 > Either option removes the extra round trip. The first also makes the meetings endpoint consistent with the
-> roster endpoints it is normally used alongside.
+> roster endpoints.
+
+### 6a. What to watch for when it is implemented
+
+**The posted request does not ask for a default.** An earlier draft asked for `include_inactive` to default to
+`true` on this endpoint, so that current behavior was preserved; that sentence is not in the text above. If
+Blackbaud adds the parameter defaulting to `false`, matching the roster endpoints, then meetings on inactive
+sections drop out of the default response and `Get-SchoolScheduleMeeting` returns fewer records than it does
+today, with nothing reported. That is the same silent shape as the roster change in §3. Treat the parameter as
+a behavior change to verify when it appears rather than as a purely additive one.
+
+Two supporting points were also trimmed from the posted text, and both are kept here: the field for field
+comparison of an active and an inactive section's meetings is §5a, and the fact that the extra requests share
+one rate limit is §5b.
 
 ## 7. Unverified
 

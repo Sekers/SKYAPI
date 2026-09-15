@@ -194,10 +194,8 @@ function Set-SchoolUserRelationship
         # Set the parameters. User_ID & Left_User_ID aren't passed on, and ReturnRelationshipInfo is a control
         # switch that directs this function's output rather than the API request body. -SuppliedNames keeps
         # fields from one pipeline record out of the next; see Get-SKYAPISuppliedParameterName.
-        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
-                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
-        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters `
-                      -Exclude 'User_ID','Left_User_ID','ReturnRelationshipInfo' -SuppliedNames $SuppliedParameter -As Body
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'User_ID','Left_User_ID','ReturnRelationshipInfo' -SuppliedNames $SuppliedParameter -As Body
 
         # Save optional parameter original values.
         $give_parental_access_orig = $parameters.give_parental_access

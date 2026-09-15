@@ -143,8 +143,7 @@ function New-SchoolEventCategory
     {
         # Set the parameters. -SuppliedNames keeps fields from one pipeline record out of the next; see
         # Get-SKYAPISuppliedParameterName.
-        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters `
-                             -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
         $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -SuppliedNames $SuppliedParameter -As Body
 
         # Grab the security tokens

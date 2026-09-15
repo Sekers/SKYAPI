@@ -156,11 +156,8 @@ $Total = 0
         @{ user_id = 1; type_id = 10; primary = $false }) } -FieldSpec $Spec -Cache $Cache) 'Mismatch' 'links*primary'
     Assert-Case 'missing link is a mismatch' @(Confirm-SKYAPIWriteResult -Actual $ActualLinks -Expected @{ links = @(
         @{ user_id = 3; type_id = 30; primary = $true }) } -FieldSpec $Spec -Cache $Cache) 'Mismatch' 'links*'
-    Assert-Case 'single link without identity can be compared' @(Confirm-SKYAPIWriteResult `
-        -Actual ([pscustomobject]@{ links = @([pscustomobject]@{ primary = $true }) }) `
-        -Expected @{ links = @(@{ primary = $true }) } -FieldSpec $Spec -Cache $Cache) '' ''
-    Assert-Case 'multiple links without identity are unverifiable' @(Confirm-SKYAPIWriteResult -Actual $ActualLinks `
-        -Expected @{ links = @(@{ primary = $true },@{ primary = $false }) } -FieldSpec $Spec -Cache $Cache) 'Unverifiable' 'links*'
+    Assert-Case 'single link without identity can be compared' @(Confirm-SKYAPIWriteResult -Actual ([pscustomobject]@{ links = @([pscustomobject]@{ primary = $true }) }) -Expected @{ links = @(@{ primary = $true }) } -FieldSpec $Spec -Cache $Cache) '' ''
+    Assert-Case 'multiple links without identity are unverifiable' @(Confirm-SKYAPIWriteResult -Actual $ActualLinks -Expected @{ links = @(@{ primary = $true },@{ primary = $false }) } -FieldSpec $Spec -Cache $Cache) 'Unverifiable' 'links*'
 
     "--- fields_to_delete"
     Assert-Case 'cleared field blank -> ok' @(Confirm-SKYAPIWriteResult -Actual ([pscustomobject]@{ middle_name = '' }) -Expected @{} -FieldSpec $Spec -ClearedFields @('middle_name') -Cache $Cache) '' ''
