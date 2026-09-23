@@ -124,7 +124,7 @@ $Result = & (Get-Module SKYAPI) {
         Assert-Equal 'no NUL bytes'              $false ($Bytes -contains 0)
 
         "--- a tokens file left behind by an older version still reads"
-        # Anything before 0.5.1 wrote UTF-16. Get-Content honors the byte order mark, so an existing file keeps
+        # 0.5.0 and earlier wrote UTF-16. Get-Content honors the byte order mark, so an existing file keeps
         # working until the next write replaces it, which is what the upgrade needing no action rests on.
         Write-TestTokenFile (New-TestTokenObject -AccessCreation $Written -RefreshCreation $Written) -Encoding Unicode
         $Read = Get-SKYAPIAuthTokensFromFile

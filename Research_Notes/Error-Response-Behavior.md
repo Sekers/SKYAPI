@@ -71,7 +71,7 @@ order, before dispatching on it:
 | `error`, else `error.statuscode` | `elseif ($InvokeErrorMessage.error)` | **Guessed**, never observed; see below |
 | `errors`, else `errors.error_code` | `elseif ($InvokeErrorMessage.errors)` | Confirmed observed |
 | `message` | `elseif ($InvokeErrorMessage.message)` | Confirmed observed (prose, no code) |
-| `status`, if it is a plausible HTTP code | `elseif ($null -ne $InvokeErrorMessage.status ...)` | Confirmed observed; added in 0.5.1, see §8 |
+| `status`, if it is a plausible HTTP code | `elseif ($null -ne $InvokeErrorMessage.status ...)` | Confirmed observed; added after 0.5.0, see §8 |
 | the raw parsed body, if none of the above matched | the trailing `else` | Catch-all |
 
 The `$FallbackStatusCode` test short-circuits ahead of all of these: if the body was missing or unparseable,
@@ -139,7 +139,7 @@ branch:
   "trace_id": "86ac11ebd919418fbfe41a6873f399d5", "span_id": "d250a0ca47951c9b" }
 ```
 
-It carries `status`, not `statusCode`, and has no `message`, `error`, `errors` or `ErrorCode`. Until 0.5.1 no
+It carries `status`, not `statusCode`, and has no `message`, `error`, `errors` or `ErrorCode`. Through 0.5.0 no
 branch looked at `status`, so it reached the catch-all and was thrown. For this 400 that was accidentally
 right; for the **500** the same family returns from `afe-edcor` it was wrong, and it is the bug §8 describes.
 A `status` branch now classifies the whole family.
@@ -265,7 +265,7 @@ not one. One endpoint on one tenant is also still not a rule for `school/v1` gen
 
 **It is not a module defect**, which is worth writing down because the survey reports it as `ERROR`. The URL
 the function builds matches the documented operation, and the same 403 was recorded on an earlier run in
-`DateTime-Handling.md` before any of the 0.5.1 changes.
+`DateTime-Handling.md` before any of the changes made after 0.5.0.
 
 ## 6. Measured: the request rate is capped by SKY API's own response time, not by this module
 
@@ -357,7 +357,7 @@ Date: Tue, 08 Sep 2026 17:11:27 GMT
 Four things in that are worth keeping:
 
 - **`Retry-After: 1` is present**, and the module now reads it, falling back to one second only when the
-  header is absent or unusable. That fallback is where the original hardcoded value went. Until 0.5.1 the
+  header is absent or unusable. That fallback is where the original hardcoded value went. Through 0.5.0 the
   module always slept one second and would not have noticed the API asking for longer; the two happened to
   agree, so nothing a caller could write was affected. See `Get-SKYAPIRetryAfterDelay`.
 - **`Content-Type: application/problem+json`** is RFC 7807. That explains the doubled body in §2: `status`
@@ -416,7 +416,7 @@ Four things in that are worth carrying away:
 
 ### The bug this survey found
 
-The `urn:blackbaud:*` family puts its code in **`status`**, not `statusCode`, and until 0.5.1 no branch in
+The `urn:blackbaud:*` family puts its code in **`status`**, not `statusCode`, and through 0.5.0 no branch in
 `SKYAPICatchInvokeErrors` looked at `status`. Such a body therefore reached the catch-all, matched no case in
 the switch, and was thrown.
 
@@ -494,7 +494,7 @@ all. The three token cases are indistinguishable from each other, but they share
 matter.
 
 Note what this means for the module: `SKYAPICatchInvokeErrors` **already** tells these apart, because they
-take different branches of its chain, and until 0.5.1 threw that knowledge away by reducing both to the
+take different branches of its chain, and through 0.5.0 threw that knowledge away by reducing both to the
 integer 401 before the switch. The information needed to avoid the wasted retries was already in hand at the
 point the decision was made.
 
@@ -605,11 +605,11 @@ Each would turn something currently unrecorded or unverified in this file into a
 - A real payload for the `ErrorCode` branch and for the speculative `error` branch. Around forty deliberate
   failures across two APIs, two tenants and two role sets have produced neither, so the `error` branch remains
   a guess, as its own TODO says. At some point "never observed" becomes reason to delete it.
-- Whether a `401` in the `errors[]` shape is ever worth retrying after all. 0.5.1 stopped retrying it on the
-  strength of one day's observation across two tenants, and this file otherwise warns against generalizing
-  from that much evidence. If some endpoint ever returns that shape for a transient condition, the module
-  will now give up on the first attempt where it used to try seven times. Nothing seen so far suggests it
-  does, and the one refresh cap limits the damage in the other direction.
+- Whether a `401` in the `errors[]` shape is ever worth retrying after all. The module stopped retrying it
+  after 0.5.0 on the strength of one day's observation across two tenants, and this file otherwise warns
+  against generalizing from that much evidence. If some endpoint ever returns that shape for a transient
+  condition, the module will now give up on the first attempt where it used to try seven times. Nothing seen
+  so far suggests it does, and the one refresh cap limits the damage in the other direction.
 - Which `school/v1` endpoints enforce their documented role and which do not. §9 samples eight and finds two
   that do not; the mapping across the rest is unrecorded, so the documentation cannot be trusted either way.
 - Whether any endpoint besides `lists/advanced` answers with a JSON **string** rather than an object, and

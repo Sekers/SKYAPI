@@ -109,7 +109,7 @@ detects the UTF-16 BOM) followed by `WriteAllText` (which defaults to UTF-8) ove
 and no warning. **Before any bulk pass over text files, skip anything containing a NUL byte**, which is
 Git's own binary heuristic.
 
-That file had been UTF-16 since its first commit in 2023 and was converted to UTF-8 in 0.5.1, along with the
+That file had been UTF-16 since its first commit in 2023 and was converted to UTF-8 after 0.5.0, along with the
 four `Out-File` calls that produced files like it. Its three sibling config templates were always UTF-8,
 which is the sort of inconsistency worth checking for.
 

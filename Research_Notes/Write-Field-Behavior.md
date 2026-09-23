@@ -32,7 +32,7 @@ boolean bound to a string property; a stricter parser would have returned 400.
 
 **This caused a real bug.** `Set-SchoolUserRelationship` defaulted its `comments` field to `$false` alongside
 the six genuinely boolean options next to it, so every relationship it created without `-comments` got the
-literal text `false` in its Notes/Comments field. Fixed in 0.5.1; see the changelog.
+literal text `false` in its Notes/Comments field. Fixed after 0.5.0; see the changelog.
 
 **Implication:** a wrong-typed default is invisible in testing unless you read the value back. Do not rely on
 a 200 response, and do not assume PowerShell's `ConvertTo-Json` output shape is harmless because the call

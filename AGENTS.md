@@ -65,13 +65,14 @@ git tag --contains <commit>   # no output = the commit that introduced the bug n
 This is easy to get wrong while a release is in progress, because a lot of churn happens on `develop`, and a
 fix to something that itself landed after the last tag is invisible to users. The checks above settle it.
 
-**A function that does not exist in the last release** belongs under **Features** as a new endpoint only. It
-can never also appear as a "Fixed" entry, and it should not be listed among the functions a fix "affects."
+**A function that does not exist in the last release** belongs under **Added** as a new endpoint only. It can
+never also appear as a "Fixed" entry, and it should not be listed among the functions a fix "affects."
 
 **An API change the module adapted to is not a fix.** "Fixed" claims a defect in this module. If the code was
-never wrong and Blackbaud changed something underneath it, the entry belongs in **Features**, written as
-`Updated Endpoint:` when a public function's behavior changed. The giveaway is that the change in behavior
-already reached users on the last release, since it happened server side rather than in this repository.
+never wrong and Blackbaud changed something underneath it, the entry belongs in **Changed**, written as
+`Updated Endpoint:` when a public function's behavior changed, or in **Added** when it gives callers something
+new, such as a parameter that restores the old results. The giveaway is that the change in behavior already
+reached users on the last release, since it happened server side rather than in this repository.
 
 ### Write for the end user, never for the module developer
 
@@ -111,11 +112,43 @@ immediately.
 
 ### Structure and style
 
-- Sections in order: `### Fixes`, `### Features`, `### Other`. Omit a section that has no entries.
-- Prefix an entry with `Minor:` inside **Fixes** when a user probably never noticed it: help text wording, a
+The format is [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/). [RELEASING.md](./RELEASING.md)
+covers when `[Unreleased]` becomes a version and how that version is chosen.
+
+- **New entries go under `## [Unreleased]`** at the top of the file. Never invent a version number for them;
+  the release-prep pull request turns `[Unreleased]` into a dated version heading.
+- **Add the `[Unreleased]` section only with an entry.** Right after a release there is none, so the first new
+  entry also adds `## [Unreleased](https://github.com/Sekers/SKYAPI/compare/<release>...develop)` at the top,
+  where `<release>` is `$Release` from the baseline commands above. Never add an empty one, and never leave one
+  in a release.
+- Newest version first. A released version uses this heading shape, and a `---` line, with a blank line on each
+  side of it, separates it from the next (older) version:
+
+  ```markdown
+  ---
+
+  ## [0.6.0](https://github.com/Sekers/SKYAPI/tree/0.6.0) - 2026-10-01
+
+  ### Fixed
+
+  - ...
+  ```
+
+- Sections in order: `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, `### Security`.
+  Omit a section that has no entries.
+- Versions 0.5.0 and earlier use `### Fixes`, `### Features`, and `### Other`, with an author line and the date
+  in parentheses. Leave them as they are.
+- Prefix an entry with `Minor:` inside **Fixed** when a user probably never noticed it: help text wording, a
   message, an edge case needing unusual conditions to hit, or a cost the module absorbed itself such as a
-  wasted request. List the `Minor:` entries after the rest of the Fixes.
-- A new endpoint reads `- New Endpoint: [Function-Name](<docs link>)`.
+  wasted request. List the `Minor:` entries after the rest of the Fixed entries.
+- Prefix an entry with `**BREAKING CHANGE:**` when it breaks the public contract as
+  [RELEASING.md](./RELEASING.md) defines it, so an existing script, configuration file, or tokens file can stop
+  working, and say what the user has to change. Qualify it when the break is limited, as in
+  `**BREAKING CHANGE (Windows PowerShell 5.1 only):**`. Such an entry usually belongs under **Changed** or
+  **Removed**.
+- A new endpoint goes under **Added** and reads `- New Endpoint: [Function-Name](<docs link>)`.
+- A change to an existing endpoint function with several parts reads
+  `- Updated Endpoint: [Function-Name](<docs link>)`, with the details as nested bullets.
 - Link every endpoint to the SKY API docs in this exact shape:
   `https://developer.sky.blackbaud.com/api#api=<api>&operation=<OperationId>`
   - `<api>` is `school` for Education Management. For Raiser's Edge NXT Constituent it is the service id
@@ -150,7 +183,7 @@ without going to look.
   on PowerShell 7 and carries a BOM on Windows PowerShell 5.1. **That BOM is accepted.** Do not "fix" those
   calls to `[System.IO.File]::WriteAllText`, and do not read the repository rule above as covering them.
   Windows PowerShell 5.1 has no `utf8NoBOM`; that value arrived in PowerShell 6, so no single `Out-File`
-  spelling is BOM-free on both editions. The 0.5.1 change was about getting off UTF-16, which halved the file
+  spelling is BOM-free on both editions. The move to UTF-8 was about getting off UTF-16, which halved the file
   size and removed the NUL bytes that made Git treat it as binary, not about the last three bytes.
   `Get-Content` honors a BOM, so the module reads either form, and `Out-File -Force` truncates before
   writing, so the BOM clears itself the next time PowerShell 7 writes the file. The only thing that would

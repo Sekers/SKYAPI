@@ -92,7 +92,7 @@ request should pass the values by name, which is what the first row does.
 | Module | Requests | Query sent |
 | --- | --- | --- |
 | 0.5.0 | 1 | `last_modified=@{school_year=2023-2024}&section_ids=@{school_year=2023-2024}&school_year=2023-2024` |
-| 0.5.1 mid-development | 1 | `section_ids=111&school_year=2023-2024` |
+| after 0.5.0, mid-development | 1 | `section_ids=111&school_year=2023-2024` |
 | now | 2 | `school_year=2022-2023&section_ids=111` then `school_year=2023-2024` |
 
 The middle row is what the multiple-`ValueFromPipeline` fix alone produced: it removed the stringified-record
