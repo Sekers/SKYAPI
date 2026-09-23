@@ -64,7 +64,7 @@ Connect-SKYAPI | Out-Null
 
 # Borrow the module's own credentials for the raw phase, so both phases hit as the same caller.
 $Credential = & (Get-Module SKYAPI) {
-    $Config = Get-SKYAPIConfig -ConfigPath $global:sky_api_config_file_path
+    $Config = Get-SKYAPIConfig
     $Tokens = Get-SKYAPIAuthTokensFromFile
     [pscustomobject]@{ AccessToken = $Tokens.access_token; SubscriptionKey = $Config.api_subscription_key }
 }

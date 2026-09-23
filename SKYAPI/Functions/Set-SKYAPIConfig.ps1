@@ -36,7 +36,7 @@ function Set-SKYAPIConfig
         Default is https://oauth2.sky.blackbaud.com/token
 
         .EXAMPLE
-        Set-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        Set-SKYAPIConfig
         .EXAMPLE
         Set-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json' -api_subscription_key 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
         .EXAMPLE
@@ -49,7 +49,7 @@ function Set-SKYAPIConfig
         Position=0,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
-        [string]$ConfigPath = $sky_api_config_file_path, # If not entered will try to pull path from this variable.
+        [string]$ConfigPath = $sky_api_config_file_path, # Defaults to the path set by Set-SKYAPIConfigFilePath.
 
         [Parameter(
         Position=1,

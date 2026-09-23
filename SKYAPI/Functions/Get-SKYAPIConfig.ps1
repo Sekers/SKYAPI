@@ -25,13 +25,13 @@ function Get-SKYAPIConfig
         Position=0,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [string]$ConfigPath = $sky_api_config_file_path # If not entered will see if it can pull path from this variable.
+        [string]$ConfigPath = $sky_api_config_file_path # Defaults to the path set by Set-SKYAPIConfigFilePath.
     )
     
     # Make Sure Requested Path Isn't Null or Empty (better to catch it here than validating on the parameter of this function)
     if ([string]::IsNullOrEmpty($ConfigPath))
     {
-        throw "`'`$sky_api_config_file_path`' is not specified. Don't forget to first use the `'Set-SKYAPIConfigFilePath`' & `'Set-SKYAPITokensFilePath`' cmdlets!"
+        throw "The configuration file path is not specified. Don't forget to first use the `'Set-SKYAPIConfigFilePath`' & `'Set-SKYAPITokensFilePath`' cmdlets!"
     }
 
     try {

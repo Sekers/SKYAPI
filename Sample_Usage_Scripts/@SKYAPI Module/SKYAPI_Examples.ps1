@@ -62,7 +62,7 @@
     Remove the configurations and secrets file used to connect to your Blackbaud SKY API application.
 #>
 # Remove-SKYAPIConfig
-# Remove-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+# Remove-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json'
 # Remove-SKYAPIConfig -Confirm:$false
 # Remove-SKYAPIConfig -WhatIf
 

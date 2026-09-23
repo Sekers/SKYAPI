@@ -1,5 +1,16 @@
-# Set Global User Data Path Variable
-New-Variable -Name 'sky_api_user_data_path' -Value "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell" -Scope Global -Force
+# Module Variables
+# Module scope rather than global, so callers can neither see nor change them, and each import starts them fresh.
+# Declaring the two paths as $null matters: it stops a leftover global of the same name in the caller's session
+# from being read in their place. Functions read all three by their bare names.
+
+# The folder the WebView2 sign-in window keeps its browser data in, and downloads its runtime installer to.
+$script:sky_api_user_data_path = "$([Environment]::GetEnvironmentVariable('LOCALAPPDATA'))\SKYAPI PowerShell"
+
+# The configuration file path set by Set-SKYAPIConfigFilePath, and the default for every -ConfigPath.
+$script:sky_api_config_file_path = $null
+
+# The cached tokens file path set by Set-SKYAPITokensFilePath.
+$script:sky_api_tokens_file_path = $null
 
 # Aliases
 Set-Alias -Name Get-SchoolLegacyList -Value Get-SchoolList
@@ -76,7 +87,7 @@ function Set-SKYAPIConfigFilePath
         [string]$Path
     )
    
-    New-Variable -Name 'sky_api_config_file_path' -Value $Path -Scope Global -Force
+    $script:sky_api_config_file_path = $Path
 }
 
 function Set-SKYAPITokensFilePath
@@ -90,7 +101,7 @@ function Set-SKYAPITokensFilePath
         [string]$Path
     )
    
-    New-Variable -Name 'sky_api_tokens_file_path' -Value $Path -Scope Global -Force
+    $script:sky_api_tokens_file_path = $Path
 }
 
 Function Get-SKYAPIAuthToken
@@ -2366,7 +2377,7 @@ function Get-SKYAPIAuthTokensFromFile
     # Make Sure Requested Path Isn't Null or Empty
     if ([string]::IsNullOrEmpty($sky_api_tokens_file_path))
     {
-        throw "`'`$sky_api_tokens_file_path`' is not specified. Don't forget to first use the `'Set-SKYAPIConfigFilePath`' & `'Set-SKYAPITokensFilePath`' cmdlets!"
+        throw "The tokens file path is not specified. Don't forget to first use the `'Set-SKYAPIConfigFilePath`' & `'Set-SKYAPITokensFilePath`' cmdlets!"
     }
 
     try

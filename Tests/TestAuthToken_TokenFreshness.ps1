@@ -69,18 +69,17 @@ $Result = & (Get-Module SKYAPI) {
         }
     }
 
-    # The token path is a Global variable (Set-SKYAPITokensFilePath uses New-Variable -Scope Global), so
-    # capture whether it existed at all, not just its value, and put it back exactly as found.
-    $PreviousVar   = Get-Variable -Name 'sky_api_tokens_file_path' -Scope Global -ErrorAction SilentlyContinue
-    $HadPrevious   = $null -ne $PreviousVar
-    $PreviousValue = if ($HadPrevious) { $PreviousVar.Value } else { $null }
+    # The token path lives in the module's script scope, which this block runs inside, so it is set there
+    # directly and put back afterwards. Calling Set-SKYAPITokensFilePath instead would make Invoke-Tests.ps1
+    # classify this offline script as live.
+    $PreviousTokensPath = $script:sky_api_tokens_file_path
 
     $TempDir = Join-Path $env:TEMP ('SKYAPI_TokenFreshness_' + [guid]::NewGuid().ToString('N'))
 
     try
     {
         $null = New-Item -ItemType Directory -Path $TempDir -Force
-        Set-Variable -Name 'sky_api_tokens_file_path' -Value (Join-Path $TempDir 'tokens.json') -Scope Global -Force
+        $script:sky_api_tokens_file_path = Join-Path $TempDir 'tokens.json'
 
         # Exactly the pipeline Get-SKYAPINewTokens and Connect-SKYAPI use to persist tokens, -Encoding utf8
         # included. That flag is what makes this fixture the format the module actually ships: Out-File on
@@ -92,7 +91,7 @@ $Result = & (Get-Module SKYAPI) {
                 ConvertTo-Json |
                 ConvertTo-SecureString -AsPlainText -Force |
                 ConvertFrom-SecureString |
-                Out-File -FilePath $global:sky_api_tokens_file_path -Force -Encoding $Encoding }
+                Out-File -FilePath $script:sky_api_tokens_file_path -Force -Encoding $Encoding }
 
         function New-TestTokenObject { param($AccessCreation,$RefreshCreation)
             $Object = [pscustomobject]@{ access_token = 'stub-access'; refresh_token = 'stub-refresh' }
@@ -119,7 +118,7 @@ $Result = & (Get-Module SKYAPI) {
         # A BOM may or may not be there (5.1 writes one, 7 does not) and both are accepted, so this asserts the
         # encoding rather than the first three bytes: no UTF-16 byte order mark, and no NUL bytes, which are
         # what made Git treat the old file as binary and doubled its size.
-        $Bytes = [System.IO.File]::ReadAllBytes($global:sky_api_tokens_file_path)
+        $Bytes = [System.IO.File]::ReadAllBytes($script:sky_api_tokens_file_path)
         Assert-Equal 'no UTF-16 byte order mark' $false ($Bytes[0] -eq 0xFF -and $Bytes[1] -eq 0xFE)
         Assert-Equal 'no NUL bytes'              $false ($Bytes -contains 0)
 
@@ -148,7 +147,7 @@ $Result = & (Get-Module SKYAPI) {
 
         "--- an unreadable file is reported, never returned as null"
         # Fails at ConvertTo-SecureString, before any JSON or date parsing.
-        'this is not an encrypted blob' | Out-File -FilePath $global:sky_api_tokens_file_path -Force
+        'this is not an encrypted blob' | Out-File -FilePath $script:sky_api_tokens_file_path -Force
         $Message = Get-ThrownMessage { Get-SKYAPIAuthTokensFromFile }
         Assert-Equal 'undecryptable file throws' $true ($Message -like '*missing, corrupted or invalid*')
 
@@ -164,8 +163,7 @@ $Result = & (Get-Module SKYAPI) {
     }
     finally
     {
-        if ($HadPrevious) { Set-Variable -Name 'sky_api_tokens_file_path' -Value $PreviousValue -Scope Global -Force }
-        else { Remove-Variable -Name 'sky_api_tokens_file_path' -Scope Global -Force -ErrorAction SilentlyContinue }
+        $script:sky_api_tokens_file_path = $PreviousTokensPath
         Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 

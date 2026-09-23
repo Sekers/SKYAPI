@@ -227,6 +227,10 @@ violation fails a test run rather than being noticed by hand three commits later
   invisible to callers. Aliases work the same way through `AliasesToExport`.
 - **Comments describe the code as it is now**, never what it used to do or what a fix changed. Change history
   belongs in the commit message and the changelog.
+- **Module state lives in `$script:` variables declared at the top of `SKYAPI/SKYAPI.psm1`, never in the global
+  scope.** Declare each one there, even as `$null`, so a leftover global of the same name in the caller's session
+  cannot be read in its place; functions then read it by its bare name. `VariablesToExport` stays `@()`.
+  `Tests/TestModuleState_NoGlobalVariables.ps1` enforces this.
 - Match the surrounding function's shape when adding one. The GET functions are near-identical in layout, and
   the write functions follow a `begin`/`process`/`end` convention that builds request parameters with the
   shared `Get-SKYAPIRequestParameter` helper rather than hand-rolling a copy loop.

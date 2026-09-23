@@ -16,7 +16,7 @@ function Remove-SKYAPIConfig
         .EXAMPLE
         Remove-SKYAPIConfig
         .EXAMPLE
-        Remove-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        Remove-SKYAPIConfig -ConfigPath '.\Config\sky_api_config.json'
         .EXAMPLE
         Remove-SKYAPIConfig -Confirm:$false
         .EXAMPLE
@@ -30,7 +30,7 @@ function Remove-SKYAPIConfig
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
         [ValidateNotNullOrEmpty()]
-        [string]$ConfigPath = $sky_api_config_file_path # If not entered will try to pull path from this variable.
+        [string]$ConfigPath = $sky_api_config_file_path # Defaults to the path set by Set-SKYAPIConfigFilePath.
     )
 
     # Make Sure Requested Path Isn't Null or Empty
