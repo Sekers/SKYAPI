@@ -9,14 +9,17 @@
 # Justification, never by excluding the rule in this script, so each exception sits next to the code it excuses
 # and says why. This script fails a suppression that gives no reason.
 #
-# Runs under PowerShell 7 only. The analysis does not depend on the edition running it, and CI installs the
-# analyzer for PowerShell 7 alone. Where it cannot run, it prints a "SKIPPED:" line and exits 77, which
-# Invoke-Tests.ps1 reports as a named SKIP rather than a pass, so the offline suite still needs no setup.
+# Runs under PowerShell 7 only, because CI installs the analyzer for PowerShell 7 alone. The rules are the same in
+# both editions, but the analyzer parses with the host's own parser, so this run cannot see syntax that only
+# Windows PowerShell 5.1 rejects, such as the ternary operator. The other tests' 5.1 runs catch that instead: a
+# function file 5.1 cannot parse fails to load there, and TestModuleManifest_Exports reports its function as not
+# exported. Where this script cannot run, it prints a "SKIPPED:" line and exits 77, which Invoke-Tests.ps1
+# reports as a named SKIP rather than a pass, so the offline suite still needs no setup.
 #
 # PSSCRIPTANALYZER_VERSION, when set, names the exact version to use. The Tests workflow sets it to the version
-# it installs, because the runner image ships its own copy and choosing the newest would quietly let an image
-# update change the rules. Without it, the newest installed version is used. In CI, where GitHub sets CI=true,
-# a missing analyzer fails rather than skips, so the check cannot quietly disappear if the install step breaks.
+# it installs, because the runner image ships its own copy. Without it, this script picks the highest version
+# installed, which an image update could change. In CI, where GitHub sets CI=true, a missing analyzer fails
+# rather than skips, so the check cannot quietly disappear if the install step breaks.
 
 $Stats = @{ Pass = 0; Fail = (New-Object System.Collections.ArrayList) }
 function Assert-Equal { param([string]$Name,$Expected,$Actual)
@@ -25,7 +28,7 @@ function Assert-Equal { param([string]$Name,$Expected,$Actual)
 
 if ($PSVersionTable.PSEdition -ne 'Core')
 {
-    'SKIPPED: runs under PowerShell 7 only; the analysis does not depend on the edition running it.'
+    'SKIPPED: runs under PowerShell 7 only. The other tests'' 5.1 runs catch syntax that only this edition rejects.'
     exit 77
 }
 
