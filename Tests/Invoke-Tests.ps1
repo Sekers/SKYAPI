@@ -9,6 +9,10 @@
 # default run rather than letting it reach a real tenant unattended. The backstop sees direct calls only and
 # is a courtesy, not a guarantee; write the marker.
 #
+# A script that cannot run where it is (under the wrong edition, or without an optional tool) prints a line
+# starting "SKIPPED:" and exits 77, the conventional skip code. The runner reports that run as SKIP with the
+# reason, never as a pass.
+#
 #   .\Tests\Invoke-Tests.ps1                       # offline, both editions
 #   .\Tests\Invoke-Tests.ps1 -Edition Core          # offline, PowerShell 7 only
 #   .\Tests\Invoke-Tests.ps1 -Network               # offline plus the portal checks
@@ -144,15 +148,22 @@ foreach ($Entry in $Selected)
         finally { $ErrorActionPreference = $PreviousPreference }
         $Watch.Stop()
 
-        $Passed = ($Code -eq 0)
+        $Passed     = ($Code -eq 0)
+        $SkippedRun = ($Code -eq 77)
         [void]$Results.Add([pscustomobject]@{
             Name = $Entry.File.BaseName; Edition = $TestHost.Label
-            Passed = $Passed; Seconds = $Watch.Elapsed.TotalSeconds; Output = $Output })
+            Passed = $Passed; Skipped = $SkippedRun; Seconds = $Watch.Elapsed.TotalSeconds; Output = $Output })
 
-        $Verdict = if ($Passed) { 'PASS' } else { 'FAIL' }
+        $Verdict = if ($SkippedRun) { 'SKIP' } elseif ($Passed) { 'PASS' } else { 'FAIL' }
         "  $Verdict  {0,-22} {1,-46} {2,6:N1}s" -f $TestHost.Label, $Entry.File.BaseName, $Watch.Elapsed.TotalSeconds
 
-        if ($ShowOutput -or -not $Passed)
+        if ($SkippedRun)
+        {
+            $Reason = @($Output | ForEach-Object { "$_" } | Where-Object { $_ -match '^SKIPPED:' }) | Select-Object -First 1
+            if ($Reason) { "         $Reason" } else { '         (the script gave no SKIPPED: line saying why)' }
+        }
+
+        if ($ShowOutput -or -not ($Passed -or $SkippedRun))
         {
             $Output | ForEach-Object { "         $_" }
         }
@@ -166,11 +177,14 @@ foreach ($Entry in $Skipped)
     "  SKIP  $($Entry.File.BaseName) (requires $($Entry.Requirement))"
 }
 
-$Failed = @($Results | Where-Object { -not $_.Passed })
-$Total  = [math]::Round((($Results | Measure-Object -Property Seconds -Sum).Sum), 1)
+$Failed      = @($Results | Where-Object { -not $_.Passed -and -not $_.Skipped })
+$SelfSkipped = @($Results | Where-Object { $_.Skipped })
+$Ran         = $Results.Count - $SelfSkipped.Count
+$Total       = [math]::Round((($Results | Measure-Object -Property Seconds -Sum).Sum), 1)
+$SkipNote    = if ($SelfSkipped.Count) { " ($($SelfSkipped.Count) skipped, named above)" } else { '' }
 
 ""
-if ($Results.Count -eq 0)
+if ($Ran -eq 0)
 {
     # Still a failure, because a run that executed nothing must never look like a pass. But naming a script
     # that needs more than an offline run is a mismatch rather than a mystery, so say which switch runs it.
@@ -179,11 +193,12 @@ if ($Results.Count -eq 0)
         $Switches = @($Skipped | ForEach-Object { "-$($_.Requirement)" } | Sort-Object -Unique) -join ' '
         "NO TESTS RAN - $($Skipped.Count) matched but were skipped. Re-run with $Switches to include them."
     }
+    elseif ($SelfSkipped.Count) { "NO TESTS RAN - every matching run skipped itself; the SKIP lines above say why." }
     else { "NO TESTS RAN - nothing matched -Name '$Name'" }
     exit 1
 }
-if ($Failed.Count -eq 0) { "ALL $($Results.Count) TEST RUNS PASSED in ${Total}s"; exit 0 }
+if ($Failed.Count -eq 0) { "ALL $Ran TEST RUNS PASSED in ${Total}s$SkipNote"; exit 0 }
 
-"$($Failed.Count) of $($Results.Count) TEST RUNS FAILED in ${Total}s:"
+"$($Failed.Count) of $Ran TEST RUNS FAILED in ${Total}s${SkipNote}:"
 $Failed | ForEach-Object { "  $($_.Name) [$($_.Edition)]" }
 exit 1

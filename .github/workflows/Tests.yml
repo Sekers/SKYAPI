@@ -36,9 +36,18 @@ jobs:
     # Windows, because the suite must pass under Windows PowerShell 5.1 as well as PowerShell 7.x and 5.1
     # exists nowhere else. Invoke-Tests.ps1 drives both editions itself, so one job covers both.
     runs-on: windows-latest
+    env:
+      # Pinned so a new analyzer rule cannot fail a build that passed before. The runner image ships its own
+      # copy, so TestRepoHygiene_ScriptAnalyzer.ps1 reads this to use exactly this version rather than the newest.
+      PSSCRIPTANALYZER_VERSION: '1.25.0'
 
     steps:
       - uses: actions/checkout@v7
+
+      # TestRepoHygiene_ScriptAnalyzer.ps1 needs this, and fails in CI rather than skipping without it.
+      - name: Install PSScriptAnalyzer
+        run: Install-PSResource -Name PSScriptAnalyzer -Version $env:PSSCRIPTANALYZER_VERSION -TrustRepository
+        shell: pwsh
 
       - name: Run offline tests
         run: .\Tests\Invoke-Tests.ps1

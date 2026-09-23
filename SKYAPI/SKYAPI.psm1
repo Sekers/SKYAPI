@@ -434,6 +434,8 @@ Function Show-SKYAPIOAuthWindow
 
 Function Get-SKYAPINewTokens
 {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '',
+        Justification = 'The plain text is the token response, turned into a SecureString only so ConvertFrom-SecureString can encrypt it for the tokens file. No caller input is involved.')]
     [CmdletBinding()]
     Param(
         [parameter(

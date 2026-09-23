@@ -253,6 +253,17 @@ parses the script, so it sees those calls however they are written and ignores m
 catches a direct call only: the module authenticates inside its own request helpers, so a script that calls a
 public function without stubbing them reaches a tenant without naming either command. Write the marker.
 
+**A script that cannot run where it is** (under the wrong edition, or without an optional tool) prints a line
+starting `SKIPPED:` and exits `77`. The runner reports that run as `SKIP`, by name and with the reason, and never
+counts it as a pass, so exit `0` always means the checks actually ran.
+
+`TestRepoHygiene_ScriptAnalyzer` runs PSScriptAnalyzer over the module and fails on any `Error` or `ParseError`
+finding. It runs under PowerShell 7 only, and skips where the analyzer is not installed, except in CI, where it
+fails. The Tests workflow pins the analyzer version through `PSSCRIPTANALYZER_VERSION`, which the test honors
+because the runner image ships its own copy. When a finding is intended, suppress it on its function with a
+`SuppressMessageAttribute` that carries a `Justification`, as `Connect-SKYAPI` does. Never exclude the rule in
+the test instead; the test also fails a suppression that gives no reason.
+
 CI runs the same thing. `.github/workflows/Tests.yml` runs the offline suite on every branch push and pull
 request, and `Release.yml` calls that workflow as a gate, so a release cannot publish a build that fails its
 own tests. The tests need no credentials; only the Release workflow's publish job uses the PowerShell Gallery
