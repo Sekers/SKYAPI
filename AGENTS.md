@@ -120,7 +120,7 @@ covers when `[Unreleased]` becomes a version and how that version is chosen.
 - **Add the `[Unreleased]` section only with an entry.** Right after a release there is none, so the first new
   entry also adds `## [Unreleased](https://github.com/Sekers/SKYAPI/compare/<release>...develop)` at the top,
   where `<release>` is `$Release` from the baseline commands above. Never add an empty one, and never leave one
-  in a release.
+  in a release: the Release workflow refuses to publish while it is there.
 - Newest version first. A released version uses this heading shape, and a `---` line, with a blank line on each
   side of it, separates it from the next (older) version:
 
@@ -253,9 +253,10 @@ parses the script, so it sees those calls however they are written and ignores m
 catches a direct call only: the module authenticates inside its own request helpers, so a script that calls a
 public function without stubbing them reaches a tenant without naming either command. Write the marker.
 
-CI runs the same thing. `.github/workflows/Tests.yml` runs the offline suite on every push and pull request,
-and `PSGallery.yml` calls that workflow as a gate, so a release cannot publish a build that fails its own
-tests. Neither needs credentials.
+CI runs the same thing. `.github/workflows/Tests.yml` runs the offline suite on every branch push and pull
+request, and `Release.yml` calls that workflow as a gate, so a release cannot publish a build that fails its
+own tests. The tests need no credentials; only the Release workflow's publish job uses the PowerShell Gallery
+key.
 
 **Every test is offline and safe to run with no setup except the four named below.** The offline ones must
 pass under **both** Windows PowerShell 5.1 and PowerShell 7.x, so run both editions before calling a change

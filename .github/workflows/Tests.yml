@@ -3,11 +3,16 @@ name: Tests
 # Runs the offline suite. Nothing here touches a tenant or needs credentials: the runner selects offline
 # tests only, and a script that authenticates is classified live and skipped even if it forgets to say so.
 on:
+  # Branch pushes only. A release tag runs this suite through the Release workflow instead.
   push:
+    branches: ['**']
   pull_request:
-  # Lets the release workflow gate publishing on this same suite instead of duplicating the steps.
+  # Lets the Release workflow gate publishing on this same suite instead of duplicating the steps.
   workflow_call:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   # Catches what a YAML parser cannot: a job that needs one that does not exist, a reusable-workflow path

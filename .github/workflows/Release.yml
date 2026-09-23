@@ -1,0 +1,177 @@
+name: Release
+
+# Publishes a release when a maintainer pushes a version tag, such as 0.6.0 or 0.7.0-rc01. RELEASING.md describes
+# the whole process. The job order matters: nothing becomes public until the checks and tests pass, and the
+# GitHub release is created only after the PowerShell Gallery accepts the package, so a failed publish never
+# leaves behind a release for a version that did not ship.
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: read
+
+# One run per tag, so two runs can never publish the same version at once.
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate the release tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history, to confirm the tagged commit is on main (or on develop, for a prerelease).
+          fetch-depth: 0
+
+      - name: Check the tag against the manifest, changelog, and branch
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Tag = $env:TAG
+
+          # Release tags must be annotated; a lightweight tag has no tagger, date, or message.
+          $TagObjectType = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$Tag" --jq '.object.type'
+          if ($LASTEXITCODE -ne 0) { throw "Could not look up tag $Tag." }
+          if ($TagObjectType -ne 'tag') { throw "Tag $Tag is a lightweight tag. Release tags must be annotated (git tag -a)." }
+
+          # The tag must match the manifest version, including any prerelease label.
+          $Manifest = Import-PowerShellDataFile -Path 'SKYAPI/SKYAPI.psd1'
+          $Prerelease = $Manifest.PrivateData.PSData.Prerelease
+          $ManifestVersion = if ($Prerelease) { "$($Manifest.ModuleVersion)-$Prerelease" } else { "$($Manifest.ModuleVersion)" }
+          if ($ManifestVersion -ne $Tag) { throw "Tag $Tag does not match the manifest version $ManifestVersion." }
+
+          # The changelog must have a dated section for this version.
+          $HeadingPattern = '^## \[' + [regex]::Escape($Tag) + '\](\([^)]*\))? - \d{4}-\d{2}-\d{2}\s*$'
+          if (-not (Select-String -Path 'CHANGELOG.md' -Pattern $HeadingPattern -Quiet)) { throw "CHANGELOG.md has no dated section for $Tag, such as '## [$Tag] - 2026-01-31'." }
+
+          # [Unreleased] exists only on develop, so a released CHANGELOG.md never carries one.
+          if (Select-String -Path 'CHANGELOG.md' -Pattern '^## \[Unreleased\]' -Quiet) { throw "CHANGELOG.md still has an [Unreleased] section. The release-prep pull request renames it to the $Tag heading and adds no new one." }
+
+          # Stable releases come only from main; prereleases may also come from develop.
+          $AllowedBranches = if ($Prerelease) { @('origin/main', 'origin/develop') } else { @('origin/main') }
+          $OnAllowedBranch = $false
+          foreach ($Branch in $AllowedBranches) {
+              git merge-base --is-ancestor $env:GITHUB_SHA $Branch
+              if ($LASTEXITCODE -eq 0) { $OnAllowedBranch = $true }
+          }
+          if (-not $OnAllowedBranch) { throw "Tag $Tag points at $env:GITHUB_SHA, which is not on $($AllowedBranches -join ' or ')." }
+
+          "Tag $Tag is annotated, matches the manifest and changelog, and is on $($AllowedBranches -join ' or ')."
+          # git merge-base leaves a non-zero exit code when the commit is not on one of the branches checked.
+          exit 0
+
+  test:
+    name: Tests
+    needs: validate
+    uses: ./.github/workflows/Tests.yml
+
+  publish:
+    name: Publish to the PowerShell Gallery
+    needs: test
+    runs-on: windows-latest
+    # The PowerShell Gallery API key is stored only in this environment, which can require a maintainer's approval.
+    environment: psgallery
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path 'out' | Out-Null
+          Compress-PSResource -Path './SKYAPI' -DestinationPath './out'
+          $Packages = @(Get-ChildItem -Path './out' -Filter '*.nupkg')
+          if ($Packages.Count -ne 1) { throw "Expected one package, found $($Packages.Count)." }
+          "Built $($Packages[0].Name) ($($Packages[0].Length) bytes)."
+
+      - name: Publish the package
+        shell: pwsh
+        env:
+          PS_GALLERY_KEY: ${{ secrets.PS_GALLERY_KEY }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Package = Get-ChildItem -Path './out' -Filter '*.nupkg' | Select-Object -First 1
+          Publish-PSResource -NupkgPath $Package.FullName -Repository 'PSGallery' -ApiKey $env:PS_GALLERY_KEY
+
+      # The GitHub release job attaches this exact package instead of building its own.
+      - name: Keep the package for the GitHub release
+        uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: out/*.nupkg
+          if-no-files-found: error
+
+  github_release:
+    name: Create the GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Get the published package
+        uses: actions/download-artifact@v8
+        with:
+          name: package
+          path: out
+
+      - name: Create and publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Tag = $env:TAG
+
+          # The release notes are this version's CHANGELOG.md section, without its heading or trailing separator.
+          $Lines = @(Get-Content -Path 'CHANGELOG.md')
+          $HeadingPattern = '^## \[' + [regex]::Escape($Tag) + '\]'
+          $HeadingIndex = -1
+          for ($Index = 0; $Index -lt $Lines.Count; $Index++) {
+              if ($Lines[$Index] -match $HeadingPattern) { $HeadingIndex = $Index; break }
+          }
+          if ($HeadingIndex -lt 0) { throw "CHANGELOG.md has no section for $Tag." }
+          $SectionLines = @()
+          if ($HeadingIndex -lt ($Lines.Count - 1)) {
+              $SectionLines = foreach ($Line in $Lines[($HeadingIndex + 1)..($Lines.Count - 1)]) {
+                  if ($Line -match '^## \[') { break }
+                  $Line
+              }
+          }
+          $Notes = ((@($SectionLines) -join "`n").Trim() -replace '\s*-{3,}\s*$', '').Trim()
+          Set-Content -Path 'release-notes.md' -Value $Notes -Encoding utf8
+
+          # A re-run of this job finds the release already created. Only a draft still needs its package and publishing.
+          $Existing = gh release view $Tag --json isDraft 2>$null
+          if ($LASTEXITCODE -ne 0) {
+              $CreateArguments = @('release', 'create', $Tag, '--verify-tag', '--draft', '--title', $Tag, '--notes-file', 'release-notes.md')
+              if ($Tag.Contains('-')) { $CreateArguments += '--prerelease' }
+              gh @CreateArguments
+              if ($LASTEXITCODE -ne 0) { throw "Could not create the release for $Tag." }
+          }
+          elseif (-not ($Existing | ConvertFrom-Json).isDraft) {
+              "The release for $Tag is already published."
+              exit 0
+          }
+
+          foreach ($Package in Get-ChildItem -Path 'out' -Filter '*.nupkg') {
+              gh release upload $Tag $Package.FullName --clobber
+              if ($LASTEXITCODE -ne 0) { throw "Could not attach $($Package.Name) to the release for $Tag." }
+          }
+
+          gh release edit $Tag --draft=false
+          if ($LASTEXITCODE -ne 0) { throw "Could not publish the release for $Tag." }
+          exit 0
