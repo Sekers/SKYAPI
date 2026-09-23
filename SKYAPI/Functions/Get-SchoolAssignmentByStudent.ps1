@@ -64,34 +64,47 @@ function Get-SchoolAssignmentByStudent
         [switch]$ReturnRaw
     )
     
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/'
-    $endUrl = '/assignments'
-
-    # Set the response field
-    $ResponseField = "value"
-
-    # Set the parameters
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Student_ID','ReturnRaw'
-
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Get data for one or more IDs
-    foreach ($uid in $Student_ID)
+    begin
     {
-        if ($ReturnRaw)
-        {
-            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
-            $response
-            continue
-        }
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/'
+        $endUrl = '/assignments'
 
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
-        $response
+        # Set the response field
+        $ResponseField = "value"
+
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
+
+    process
+    {
+        # Set the parameters
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Student_ID','ReturnRaw' -SuppliedNames $SuppliedParameter
+
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Get data for one or more IDs
+        foreach ($uid in $Student_ID)
+        {
+            if ($ReturnRaw)
+            {
+                $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+                $response
+                continue
+            }
+
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+            $response
+        }
+    }
+
+    end {}
 }

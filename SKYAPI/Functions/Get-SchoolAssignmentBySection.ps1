@@ -86,41 +86,54 @@ function Get-SchoolAssignmentBySection
         [switch]$ReturnRaw
     )
     
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/sections/'
-    $endUrl = '/assignments'
-
-    # Set the response field
-    $ResponseField = "value"
-
-    # Set the parameters
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Section_ID','ReturnRaw'
-
-    # Remove spaces from 'types' string if included in a comma-separated list, as the endpoint doesn't allow spaces.
-    if ($parameters -contains 'types')
+    begin
     {
-        $parameters.Remove('types') | Out-Null
-        $parameters.Add('types',$($types.Replace(' ','')))
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/sections/'
+        $endUrl = '/assignments'
+
+        # Set the response field
+        $ResponseField = "value"
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Get data for one or more section IDs
-    foreach ($uid in $Section_ID)
+    process
     {
-        if ($ReturnRaw)
+        # Set the parameters
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Section_ID','ReturnRaw' -SuppliedNames $SuppliedParameter
+
+        # Remove spaces from 'types' string if included in a comma-separated list, as the endpoint doesn't allow spaces.
+        if ($parameters -contains 'types')
         {
-            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
-            $response
-            continue
+            $parameters.Remove('types') | Out-Null
+            $parameters.Add('types',$($types.Replace(' ','')))
         }
 
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
-        $response
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Get data for one or more section IDs
+        foreach ($uid in $Section_ID)
+        {
+            if ($ReturnRaw)
+            {
+                $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+                $response
+                continue
+            }
+
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+            $response
+        }
     }
+
+    end {}
 }

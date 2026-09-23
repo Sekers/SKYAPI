@@ -146,6 +146,30 @@ $Result = & (Get-Module SKYAPI) {
         Assert-Equal "$($Keeper.Function) still binds $($Keeper.Parameter) by value" $true ($null -ne $Attribute)
     }
 
+    "--- a function that accepts pipeline input must have a process block"
+    # Without one the whole body is an implicit end block, which runs ONCE however many records were piped:
+    # the function returns a result for the last record only, built from that record plus whatever earlier
+    # records left in $PSBoundParameters. Nothing reports the dropped records, so this is caught structurally
+    # rather than waiting for someone to notice a short result set. The way it spread in the first place was a
+    # copied function body, which is exactly what a blanket rule is for.
+    $NoProcessBlock = foreach ($Command in (Get-Module SKYAPI).ExportedFunctions.Values)
+    {
+        # These accept pipeline input but make no API call and build nothing from $PSBoundParameters. Each
+        # names a single local file or sets a single path variable, so the last record winning is the only
+        # sensible outcome and a process block would not change what any of them does.
+        if ($Command.Name -in 'Disconnect-SKYAPI','Get-SKYAPIConfig','Remove-SKYAPIConfig','Set-SKYAPIConfig',
+                              'Set-SKYAPIConfigFilePath','Set-SKYAPITokensFilePath') { continue }
+
+        $TakesPipeline = @($Command.Parameters.Values | Where-Object {
+                              $_.Attributes | Where-Object {
+                                  $_ -is [System.Management.Automation.ParameterAttribute] -and
+                                  ($_.ValueFromPipeline -or $_.ValueFromPipelineByPropertyName) } })
+        if (-not $TakesPipeline.Count) { continue }
+
+        if ($null -eq $Command.ScriptBlock.Ast.Body.ProcessBlock) { $Command.Name }
+    }
+    Assert-Equal 'every pipeline-aware function has a process block' '' ($NoProcessBlock -join ' | ')
+
     # A filter-only function has no identity parameter, so nothing should bind by value at all.
     foreach ($FilterOnly in 'Get-SchoolAcademicRoster','Get-SchoolActivityRoster','Get-SchoolAdvisoryRoster','Get-SchoolAthleticRoster','Get-SchoolCourse')
     {

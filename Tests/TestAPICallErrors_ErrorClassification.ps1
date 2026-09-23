@@ -171,6 +171,194 @@ $Result = & (Get-Module SKYAPI) {
         Assert-True "$Fn throws on an opaque failure" $Threw "returned $Returned instead of throwing"
     }
 
+
+
+
+    "--- a 401 is three unrelated conditions, and only one of them is worth retrying"
+    # Captured 2026-09-08 from two tenants. A token or subscription problem comes back in the gateway's shape,
+    # carrying a top level statusCode; a permission refusal comes back in the backend's shape, carrying only
+    # an errors[] array. Both reduce to the integer 401, so the handler has to look at which branch supplied
+    # it. Retrying the permission case can never succeed and used to cost seven requests and six forced
+    # re-authentications.
+    $Perm401  = '{"errors":[{"message":"You do not have access to this route.","error_code":401,"error_name":"ServiceClientException","raw_message":"You do not have access to this route."}]}'
+    $Token401 = '{"statusCode":401,"message":"The required Authorization header was missing or invalid, or the token has expired","status":401,"title":"The required Authorization header was missing or invalid, or the token has expired"}'
+    $Sub401   = '{"statusCode":401,"message":"Access denied due to invalid subscription key. Make sure to provide a valid key for an active subscription.","status":401,"title":"Access denied due to invalid subscription key."}'
+
+    # Count forced refreshes without performing any.
+    $script:Refreshes = 0
+    function Connect-SKYAPI { param([switch]$ForceRefresh,[switch]$ForceReauthentication) $script:Refreshes++ }
+
+    function Invoke-401 { param($Body,$Counter)
+        $script:Refreshes = 0
+        $Err = New-FakeError -Body $Body -StatusCode 401
+        try { $v = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $Err -InvokeCount 1 -MaxInvokeCount 7 -AuthRefreshCount $Counter
+              return [pscustomobject]@{ Threw=$false; Value=$v; Refreshes=$script:Refreshes } }
+        catch { return [pscustomobject]@{ Threw=$true; Value=$_.Exception.Message; Refreshes=$script:Refreshes } }
+    }
+
+    $c = 0
+    $r = Invoke-401 $Perm401 ([ref]$c)
+    Assert-True 'a permission 401 throws instead of retrying' $r.Threw "returned '$($r.Value)'"
+    Assert-True 'and it does not spend a token refresh on it' ($r.Refreshes -eq 0) "refreshes=$($r.Refreshes)"
+
+    $c = 0
+    $r = Invoke-401 $Token401 ([ref]$c)
+    Assert-True 'an expired-token 401 still retries' ((-not $r.Threw) -and $r.Value -eq 'retry') "threw=$($r.Threw) value='$($r.Value)'"
+    Assert-True 'and it refreshes exactly once' ($r.Refreshes -eq 1) "refreshes=$($r.Refreshes)"
+    Assert-True 'and the counter records that refresh' ($c -eq 1) "counter=$c"
+
+    # The cap. A second 401 on the same call must not buy a second refresh: the refresh mints the same
+    # credential from the same refresh token, so it cannot succeed where the first failed.
+    $r = Invoke-401 $Token401 ([ref]$c)
+    Assert-True 'a second token 401 on the same call gives up' $r.Threw "returned '$($r.Value)'"
+    Assert-True 'and spends no second refresh' ($r.Refreshes -eq 0) "refreshes=$($r.Refreshes)"
+
+    # A bad subscription key wears the same shape as an expired token, so it gets one refresh and then stops.
+    # That is the case the cap exists for: the body cannot tell us it is hopeless, but the budget still ends.
+    $c = 0
+    $r = Invoke-401 $Sub401 ([ref]$c)
+    Assert-True 'a bad subscription key retries once' ((-not $r.Threw) -and $r.Value -eq 'retry') "threw=$($r.Threw)"
+    $r = Invoke-401 $Sub401 ([ref]$c)
+    Assert-True 'and then gives up rather than looping' $r.Threw "returned '$($r.Value)'"
+
+    # Shapes that are not the backend's keep the old behavior, which is to assume the token and retry.
+    $c = 0
+    $r = Invoke-401 '{"type":"urn:blackbaud:unexpected","title":"x","status":401}' ([ref]$c)
+    Assert-True 'an unfamiliar 401 shape still retries once' ((-not $r.Threw) -and $r.Value -eq 'retry') "threw=$($r.Threw) value='$($r.Value)'"
+
+    $c = 0
+    $r = Invoke-401 '<html>401</html>' ([ref]$c)
+    Assert-True 'a 401 with an unparseable body still retries once' ((-not $r.Threw) -and $r.Value -eq 'retry') "threw=$($r.Threw) value='$($r.Value)'"
+
+    # Callers that pass no counter must behave exactly as before, since the parameter is optional.
+    $script:Refreshes = 0
+    $Err = New-FakeError -Body $Token401 -StatusCode 401
+    $v = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $Err -InvokeCount 1 -MaxInvokeCount 7
+    Assert-True 'omitting the counter keeps the old refresh-every-time behavior' ($v -eq 'retry') "returned '$v'"
+
+    # A permission 401 must throw even without a counter, since that decision does not depend on one.
+    $Err = New-FakeError -Body $Perm401 -StatusCode 401
+    $Threw = $false
+    try { SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $Err -InvokeCount 1 -MaxInvokeCount 7 | Out-Null } catch { $Threw = $true }
+    Assert-True 'a permission 401 throws with or without a counter' $Threw 'retried instead of throwing'
+    "--- RFC 7807 problem+json, where the code is in 'status' rather than 'statusCode'"
+    # These are payloads captured live from afe-edcor on 2026-09-08, not reconstructions. Before the 'status'
+    # branch existed they reached the catch-all, matched no case, and threw, so a transient 500 that should
+    # have been retried seven times failed on the first attempt instead.
+    $Unexpected500 = '{"type":"urn:blackbaud:unexpected","title":"An error has occurred.","status":500,"trace_id":"c81b3f737a1c479a84e8979b61a1cd46","span_id":"eb3819731237a395"}'
+    $Validation400 = '{"type":"urn:blackbaud:model-validation-error","title":"One or more validation errors occurred.","status":400,"detail":"The value is not valid.","trace_id":"86ac11ebd919418fbfe41a6873f399d5","span_id":"d250a0ca47951c9b"}'
+
+    $r = Invoke-Catcher (New-FakeError -Body $Unexpected500 -StatusCode 500)
+    Assert-True 'a 500 in problem+json retries instead of throwing' ((-not $r.Threw) -and $r.Value -eq 'retry') "threw=$($r.Threw) value='$($r.Value)'"
+
+    $r = Invoke-Catcher (New-FakeError -Body $Validation400 -StatusCode 400)
+    Assert-True 'a 400 in problem+json still throws' $r.Threw "returned '$($r.Value)'"
+
+    # Every transient code, so the branch is not accidentally specific to 500.
+    foreach ($Transient in 429,500,502,503,504)
+    {
+        $Body = '{"type":"urn:blackbaud:unexpected","title":"An error has occurred.","status":' + $Transient + '}'
+        $r = Invoke-Catcher (New-FakeError -Body $Body -StatusCode $Transient)
+        Assert-True "problem+json $Transient retries" ((-not $r.Threw) -and $r.Value -eq 'retry') "threw=$($r.Threw) value='$($r.Value)'"
+    }
+    # 401 is deliberately absent from this list. It is permanent only when the body says the caller lacks the
+    # role, which is the backend's errors[] shape rather than this one; a 401 in any other shape is treated as
+    # a possible token problem and gets one refresh. The 401 section above covers both paths.
+    foreach ($Permanent in 400,403,404,415)
+    {
+        $Body = '{"type":"urn:blackbaud:unexpected","title":"An error has occurred.","status":' + $Permanent + '}'
+        $r = Invoke-Catcher (New-FakeError -Body $Body -StatusCode $Permanent)
+        Assert-True "problem+json $Permanent throws" $r.Threw "returned '$($r.Value)'"
+    }
+
+    # The guard: a body whose 'status' is not an HTTP code must not be mistaken for one. Both of these fall
+    # through to the catch-all and throw, which is the safe outcome, rather than dispatching on nonsense.
+    $r = Invoke-Catcher (New-FakeError -Body '{"status":"Active","name":"a record that happens to have a status"}')
+    Assert-True 'a non-numeric status is not treated as an HTTP code' $r.Threw "returned '$($r.Value)'"
+
+    $r = Invoke-Catcher (New-FakeError -Body '{"status":99}')
+    Assert-True 'a numeric status outside 100-599 is ignored' $r.Threw "returned '$($r.Value)'"
+
+    # Precedence: a body carrying both must still use statusCode, so nothing that already classified moves.
+    $r = Invoke-Catcher (New-FakeError -Body '{"statusCode":404,"message":"Not Found","status":500}')
+    Assert-True 'statusCode still wins over status' $r.Threw "returned '$($r.Value)' (retried, so status won)"
+    "--- Retry-After: the header is the authority, the one second default is only a fallback"
+    # Both response shapes are built by hand, because they are genuinely different objects and a reader
+    # written for one silently finds nothing in the other. 5.1 gives a WebHeaderCollection, indexable by
+    # name; 7 gives HttpResponseHeaders, which only enumerates as key/value pairs. A WebHeaderCollection
+    # ALSO enumerates, but as header NAMES, so the 7-shaped loop appears to work against it and comes back
+    # empty, which is indistinguishable from a response that carried no Retry-After.
+    function New-RetryAfterError {
+        param([string]$Value,[ValidateSet('Desktop','Core','None')][string]$Shape = 'Core')
+        $Err = try { throw 'synthetic throttle' } catch { $_ }
+        $Headers = switch ($Shape) {
+            'Desktop' {
+                $h = [System.Net.WebHeaderCollection]::new()
+                if ($PSBoundParameters.ContainsKey('Value')) { $h.Add('Retry-After', $Value) }
+                # The leading comma matters, for the same reason it does in Get-SKYAPIRequestParameter: a
+                # WebHeaderCollection derives from NameValueCollection and so is enumerable, and returning it
+                # bare unrolls it into its header NAMES. The fixture then hands the helper a string instead of
+                # a collection, which fails the type check and silently exercises the wrong branch.
+                ,$h
+            }
+            'Core' {
+                # A list of key/value pairs is what HttpResponseHeaders enumerates as.
+                if ($PSBoundParameters.ContainsKey('Value')) {
+                    @([pscustomobject]@{ Key = 'Retry-After'; Value = @($Value) })
+                } else { @([pscustomobject]@{ Key = 'Date'; Value = @('now') }) }
+            }
+            'None' { $null }
+        }
+        $Response  = [pscustomobject]@{ StatusCode = [Enum]::ToObject([System.Net.HttpStatusCode], 429); Headers = $Headers }
+        $Exception = [pscustomobject]@{ Response = $Response; Message = 'synthetic throttle' }
+        $Err | Add-Member -MemberType NoteProperty -Name Exception -Value $Exception -Force
+        return $Err
+    }
+
+    foreach ($Shape in 'Desktop','Core')
+    {
+        Assert-True "$Shape : plain seconds are read from the header" ((Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '7' -Shape $Shape)) -eq 7) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '7' -Shape $Shape))'"
+
+        Assert-True "$Shape : surrounding whitespace does not defeat it" ((Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '  3 ' -Shape $Shape)) -eq 3) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '  3 ' -Shape $Shape))'"
+
+        Assert-True "$Shape : an absent header returns null so the caller can default" ($null -eq (Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Shape $Shape))) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Shape $Shape))'"
+
+        Assert-True "$Shape : an unparseable header returns null rather than 0" ($null -eq (Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value 'soon' -Shape $Shape))) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value 'soon' -Shape $Shape))'"
+
+        Assert-True "$Shape : a negative header returns null rather than a negative sleep" ($null -eq (Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '-5' -Shape $Shape))) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '-5' -Shape $Shape))'"
+
+        # The value is server controlled and this runs inside a retry loop, so it must not be able to park a
+        # script for hours.
+        Assert-True "$Shape : an absurd header is capped" ((Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '86400' -Shape $Shape)) -eq 300) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value '86400' -Shape $Shape))'"
+
+        # RFC 7231 allows an HTTP-date instead of seconds. SKY API sends seconds today; this pins the contract.
+        $Future = ([datetime]::UtcNow.AddSeconds(30)).ToString('r')
+        $FromDate = Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value $Future -Shape $Shape)
+        Assert-True "$Shape : an HTTP-date is converted to a wait in seconds" ($FromDate -ge 25 -and $FromDate -le 31) "got '$FromDate'"
+
+        # A date already gone means do not wait, which is 0 and NOT null; null means "no usable header".
+        $Past = ([datetime]::UtcNow.AddSeconds(-30)).ToString('r')
+        Assert-True "$Shape : an HTTP-date in the past is zero, not a negative or a null" ((Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value $Past -Shape $Shape)) -eq 0) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Value $Past -Shape $Shape))'"
+    }
+
+    Assert-True 'a response with no headers at all returns null' ($null -eq (Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Shape 'None'))) "got '$(Get-SKYAPIRetryAfterDelay (New-RetryAfterError -Shape 'None'))'"
+
+    Assert-True 'a null error record returns null rather than throwing' ($null -eq (Get-SKYAPIRetryAfterDelay $null)) 'threw or returned a value'
+
+    "--- the 429 branch sleeps for what the header asked, and falls back to one second"
+    # Start-Sleep is shadowed so the wait is recorded instead of served.
+    $script:Slept = @()
+    function Start-Sleep { param([int]$Seconds,[int]$Milliseconds) $script:Slept += $Seconds }
+
+    $script:Slept = @()
+    $r = Invoke-Catcher (New-RetryAfterError -Value '4' -Shape 'Core')
+    Assert-True 'a 429 carrying Retry-After still retries' ($r.Value -eq 'retry') "value='$($r.Value)'"
+    Assert-True 'and it slept for the 4 seconds the header asked for' (($script:Slept -join ',') -eq '4') "slept '$($script:Slept -join ',')'"
+
+    $script:Slept = @()
+    $r = Invoke-Catcher (New-RetryAfterError -Shape 'Core')
+    Assert-True 'a 429 with no Retry-After still retries' ($r.Value -eq 'retry') "value='$($r.Value)'"
+    Assert-True 'and it falls back to the hardcoded one second' (($script:Slept -join ',') -eq '1') "slept '$($script:Slept -join ',')'"
     [pscustomobject]@{ Passes = $Stats.Pass; Failures = $Stats.Fail }
 }
 

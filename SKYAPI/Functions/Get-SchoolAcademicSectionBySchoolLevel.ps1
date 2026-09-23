@@ -47,37 +47,50 @@ function Get-SchoolAcademicSectionBySchoolLevel
         [switch]$ReturnRaw
     )
     
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/sections'
-
-    # Set the response field
-    $ResponseField = "value"
-
-    # Set the parameters
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Level_Number','ReturnRaw'
-
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Get data for one or more school levels
-    foreach ($level_num in $Level_Number)
+    begin
     {
-        # Clear out old school level parameter and add in new
-        $parameters.Remove('level_num') | Out-Null
-        $parameters.Add('level_num',$level_num) 
-        
-        if ($ReturnRaw)
-        {
-            $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
-            $response
-            continue
-        }
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/academics/sections'
 
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
-        $response
+        # Set the response field
+        $ResponseField = "value"
+
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
+
+    process
+    {
+        # Set the parameters
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'Level_Number','ReturnRaw' -SuppliedNames $SuppliedParameter
+
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Get data for one or more school levels
+        foreach ($level_num in $Level_Number)
+        {
+            # Clear out old school level parameter and add in new
+            $parameters.Remove('level_num') | Out-Null
+            $parameters.Add('level_num',$level_num) 
+
+            if ($ReturnRaw)
+            {
+                $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+                $response
+                continue
+            }
+
+            $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField
+            $response
+        }
+    }
+
+    end {}
 }

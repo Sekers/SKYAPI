@@ -116,9 +116,14 @@ function Get-SchoolUserAuditByRole
         # (today, or unbounded) and then rejecting its own default. It is certainly not defaulting to
         # start_date + 7 days. The same call with an explicit end_date of today succeeded and returned 13
         # records. This workaround stays.
+        #
+        # The computed date goes into a local rather than back into $end_date. A parameter variable keeps
+        # whatever the body last assigned to it, so writing it back would leave the next piped record already
+        # holding this record's date instead of getting its own.
+        $EffectiveEndDate = $end_date
         if ((-not [string]::IsNullOrWhiteSpace($start_date)) -and ([string]::IsNullOrWhiteSpace($end_date)))
         {
-            $end_date = (Get-Date -Date $start_date).AddDays(7).ToString('yyyy-MM-dd') 
+            $EffectiveEndDate = (Get-Date -Date $start_date).AddDays(7).ToString('yyyy-MM-dd')
         }
 
         # Grab the security tokens
@@ -132,7 +137,7 @@ function Get-SchoolUserAuditByRole
 
             #TODO: PART 2 of 2 > Temporary fix for "end_date" not actually defaulting to "start_date + 7 days" if not specified.
             $parameters.Remove('end_date') | Out-Null
-            $parameters.Add('end_date',$end_date) 
+            $parameters.Add('end_date',$EffectiveEndDate)
 
             if ($ReturnRaw)
             {

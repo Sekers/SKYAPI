@@ -91,37 +91,52 @@ function Get-SchoolUserByRole
         [int]$ResponseLimit
     )
     
-    # Set API responses per page limit.
-    $PageLimit = 100
-
-    # Specify Marker Type
-    [MarkerType]$MarkerType = [MarkerType]::NEXT_RECORD_NUMBER
-    
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users'
-
-    # Set the response field
-    $ResponseField = "value"
-
-    # Set the parameters
-    # ResponseLimit is excluded because it is handled differently, not passed to the API.
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ResponseLimit'
-
-    # Set/Replace Marker parameter to 1 if not set or 0. That way it can do pagination properly.
-    if ($null -eq $marker -or $marker -eq '' -or $marker -eq 0)
+    begin
     {
-        $parameters.Remove('marker') | Out-Null
-        $marker = 1
-        $parameters.Add('marker',$marker)
+        # Set API responses per page limit.
+        $PageLimit = 100
+
+        # Specify Marker Type
+        [MarkerType]$MarkerType = [MarkerType]::NEXT_RECORD_NUMBER
+
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/users'
+
+        # Set the response field
+        $ResponseField = "value"
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
+    process
+    {
+        # Set the parameters
+        # ResponseLimit is excluded because it is handled differently, not passed to the API.
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ResponseLimit' -SuppliedNames $SuppliedParameter
 
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+        # Set/Replace Marker parameter to 1 if not set or 0. That way it can do pagination properly.
+        # The default goes into the request rather than into $marker. A parameter variable keeps whatever the
+        # body last assigned to it, so writing 1 back would leave the next piped record looking already set
+        # and send it no marker at all.
+        if ($null -eq $marker -or $marker -eq '' -or $marker -eq 0)
+        {
+            $parameters.Remove('marker') | Out-Null
+            $parameters.Add('marker',1)
+        }
 
-    $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
-    $response
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
+        $response
+    }
+
+    end {}
 }

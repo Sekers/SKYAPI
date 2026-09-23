@@ -110,11 +110,13 @@ Function Get-SKYAPIAuthToken
     'client_secret=' + [System.Web.HttpUtility]::UrlEncode($client_secret) + '&' +
     'code=' + $authCode
 
-    $Authorization =
-        Invoke-RestMethod   -Method Post `
-                            -ContentType application/x-www-form-urlencoded `
-                            -Uri $token_uri `
-                            -Body $AuthorizationPostRequest
+    $TokenRequest = @{
+        Method      = 'Post'
+        ContentType = 'application/x-www-form-urlencoded'
+        Uri         = $token_uri
+        Body        = $AuthorizationPostRequest
+    }
+    $Authorization = Invoke-RestMethod @TokenRequest
     $Authorization
 }
 
@@ -141,11 +143,13 @@ Function Get-SKYAPIAccessToken
     'client_secret=' + [System.Web.HttpUtility]::UrlEncode($client_secret) + '&' +
     'refresh_token=' + $authCode
 
-    $Authorization =
-        Invoke-RestMethod   -Method Post `
-                            -ContentType application/x-www-form-urlencoded `
-                            -Uri $token_uri `
-                            -Body $AuthorizationPostRequest
+    $TokenRequest = @{
+        Method      = 'Post'
+        ContentType = 'application/x-www-form-urlencoded'
+        Uri         = $token_uri
+        Body        = $AuthorizationPostRequest
+    }
+    $Authorization = Invoke-RestMethod @TokenRequest
     
     # Add in creation timestamps for the tokens (NOTE THIS IS UTC).
     $Timestamp = $((Get-Date).ToUniversalTime().ToString("o"))
@@ -485,10 +489,11 @@ Function Get-SKYAPINewTokens
     }
 
     # Save credentials to file
-    $Authorization | ConvertTo-Json `
-        | ConvertTo-SecureString -AsPlainText -Force `
-        | ConvertFrom-SecureString `
-        | Out-File -FilePath $sky_api_tokens_file_path -Force -Encoding utf8
+    $Authorization |
+        ConvertTo-Json |
+        ConvertTo-SecureString -AsPlainText -Force |
+        ConvertFrom-SecureString |
+        Out-File -FilePath $sky_api_tokens_file_path -Force -Encoding utf8
 }
 
 # Function to calculate the exponential backoff delay when dealing with errors that we retry because they may be transient issues.
@@ -552,6 +557,82 @@ function Get-SKYAPIErrorStatusCode
     }
 }
 
+# Reads the 'Retry-After' header off a failed response and returns it as whole seconds, or $null when it is
+# absent or unusable. Callers decide what to do with $null; they must not treat it as "retry immediately".
+#
+# The two editions expose headers completely differently and neither shape works against the other. Windows
+# PowerShell 5.1 hands back a WebHeaderCollection, which is indexable by name; PowerShell 7 hands back
+# HttpResponseHeaders, which is not indexable and enumerates as key/value pairs. Worse, a WebHeaderCollection
+# enumerates as header NAMES, so 7-shaped code appears to work against 5.1 and quietly finds nothing, which
+# looks identical to a response that carried no Retry-After.
+#
+# RFC 7231 allows either delta-seconds or an HTTP-date, so both are handled. SKY API sends delta-seconds
+# ('Retry-After: 1', measured 2026-09-08, see Research_Notes/Error-Response-Behavior.md), but a caller should
+# not have to depend on that staying true.
+function Get-SKYAPIRetryAfterDelay
+{
+    [CmdletBinding()]
+    Param(
+        [parameter(Position=0, Mandatory=$true)]
+        [AllowNull()]
+        $InvokeErrorMessageRaw,
+
+        # An upper bound on how long a server may tell us to sleep. The value is server controlled and this
+        # runs inside a retry loop, so an absurd or hostile one would otherwise hang a script for hours.
+        [parameter(Mandatory=$false)]
+        [int]$MaximumSeconds = 300
+    )
+
+    try
+    {
+        $Response = $InvokeErrorMessageRaw.Exception.Response
+        if ($null -eq $Response) { return $null }
+
+        $HeaderValue = $null
+        if ($Response.Headers -is [System.Net.WebHeaderCollection])
+        {
+            $HeaderValue = $Response.Headers['Retry-After']
+        }
+        else
+        {
+            foreach ($Header in $Response.Headers)
+            {
+                if ($Header.Key -eq 'Retry-After') { $HeaderValue = ($Header.Value | Select-Object -First 1); break }
+            }
+        }
+
+        if ([string]::IsNullOrWhiteSpace($HeaderValue)) { return $null }
+        $HeaderValue = "$HeaderValue".Trim()
+
+        # Form 1: delta-seconds.
+        [int]$Seconds = 0
+        if ([int]::TryParse($HeaderValue, [ref]$Seconds))
+        {
+            if ($Seconds -lt 0) { return $null }
+            if ($Seconds -gt $MaximumSeconds) { return $MaximumSeconds }
+            return $Seconds
+        }
+
+        # Form 2: an HTTP-date to wait until. Parsed as UTC so the client's own zone cannot shift it.
+        [datetime]$RetryAt = [datetime]::MinValue
+        if ([datetime]::TryParse($HeaderValue, [System.Globalization.CultureInfo]::InvariantCulture,
+                                 [System.Globalization.DateTimeStyles]::AdjustToUniversal -bor [System.Globalization.DateTimeStyles]::AssumeUniversal,
+                                 [ref]$RetryAt))
+        {
+            $Wait = [int][math]::Ceiling(($RetryAt - [datetime]::UtcNow).TotalSeconds)
+            if ($Wait -le 0) { return 0 }
+            if ($Wait -gt $MaximumSeconds) { return $MaximumSeconds }
+            return $Wait
+        }
+
+        return $null
+    }
+    catch
+    {
+        return $null
+    }
+}
+
 # Handle Common Errors > https://developer.blackbaud.com/skyapi/docs/in-depth-topics/handle-common-errors
 function SKYAPICatchInvokeErrors
 {
@@ -576,7 +657,18 @@ function SKYAPICatchInvokeErrors
         Mandatory=$true,
         ValueFromPipeline=$true,
         ValueFromPipelineByPropertyName=$true)]
-        [int]$MaxInvokeCount
+        [int]$MaxInvokeCount,
+
+        # Forced token refreshes already spent on THIS call, passed by reference so the count survives across
+        # retry iterations. Per call rather than module wide on purpose: a request helper can end up running
+        # inside another one (Get-SchoolScheduleMeeting calls Get-SchoolYear, Update-SchoolUserAddress calls
+        # Get-SchoolUserAddress), and a shared counter would let the inner call reset the outer one's budget.
+        # Omit it and the 401 branch keeps its old behavior of refreshing on every attempt.
+        # Deliberately untyped rather than [ref]. A [ref] parameter cannot be left unbound: PowerShell tries
+        # to coerce the absent value and fails with "Reference type is expected in argument", which would make
+        # the parameter mandatory in practice and break every existing caller.
+        [parameter(Position=3, Mandatory=$false)]
+        $AuthRefreshCount = $null
     )
 
     # Convert From JSON
@@ -626,6 +718,14 @@ function SKYAPICatchInvokeErrors
         }
     }
 
+    # Declared up front because [int]::TryParse needs somewhere to write, and a [ref] to an undeclared
+    # variable is an error on Windows PowerShell 5.1.
+    [int]$ParsedProblemStatus = 0
+
+    # Which shape the code came out of, for the 401 handler below. Anything other than 'errors' is treated as
+    # possibly-a-token-problem, so an unfamiliar shape keeps the old refresh-and-retry behavior.
+    $StatusCodeSource = 'other'
+
     # Get Status Code (preferred), or Error if Code is blank. Blackbaud sends error messages at least 5 different ways so we need to account for that. Yay for no consistency.
     If ($null -ne $FallbackStatusCode)
     {
@@ -646,9 +746,30 @@ function SKYAPICatchInvokeErrors
     }
     elseif ($InvokeErrorMessage.errors) {
         $StatusCodeorError = If($InvokeErrorMessage.errors.error_code) {$InvokeErrorMessage.errors.error_code} else {$InvokeErrorMessage.errors}
+        # Which branch supplied the code is not just bookkeeping for a 401. A token or subscription problem
+        # arrives in the gateway's shape and is read above from 'statusCode'; a permission refusal arrives in
+        # the backend's shape and is read here from errors[].error_code. Both reduce to the integer 401, so
+        # without this the 401 handler cannot tell "refresh the token" from "this caller will never be
+        # allowed". Measured 2026-09-08; see Research_Notes/Error-Response-Behavior.md.
+        $StatusCodeSource = 'errors'
     }
     elseif ($InvokeErrorMessage.message) {
         $StatusCodeorError = $InvokeErrorMessage.message
+    }
+    # RFC 7807 'problem+json', where the code is in 'status' rather than 'statusCode'. The API sends this for
+    # validation failures ("urn:blackbaud:model-validation-error") and for server faults
+    # ("urn:blackbaud:unexpected"), and afe-edcor returns the latter with a real HTTP 500. Without this branch
+    # such a body reaches the catch-all below, matches no case, and is thrown: a transient 500 that should
+    # have been retried seven times becomes an immediate failure. Measured 2026-09-08 against live afe-edcor
+    # responses; see Research_Notes/Error-Response-Behavior.md.
+    #
+    # Guarded on the value being a plausible HTTP code so an unrelated field called 'status' (a record's own
+    # status, say) cannot be mistaken for one. Placed last so no shape that already classified changes.
+    elseif ($null -ne $InvokeErrorMessage.status -and
+            [int]::TryParse("$($InvokeErrorMessage.status)", [ref]$ParsedProblemStatus) -and
+            $ParsedProblemStatus -ge 100 -and $ParsedProblemStatus -le 599)
+    {
+        $StatusCodeorError = $ParsedProblemStatus
     }
     else
     {
@@ -704,7 +825,34 @@ function SKYAPICatchInvokeErrors
             {
                 throw $InvokeErrorMessageRaw
             }
-            
+
+            # A 401 means one of three unrelated things, and only one of them is worth retrying:
+            #   - the access token is missing, malformed or expired      -> a refresh fixes it
+            #   - the subscription key is wrong                          -> nothing fixes it
+            #   - the caller's roles do not permit this route            -> nothing fixes it
+            #
+            # The body says which. The first two arrive in the gateway's shape and were read from
+            # 'statusCode'; the third arrives in the backend's shape, carrying only an errors[] array with
+            # "You do not have access to this route.", and was read from errors[].error_code. Refusing to
+            # retry that one turns a guaranteed failure from seven requests and six forced re-authentications
+            # into a single request. Measured 2026-09-08 against two tenants; see
+            # Research_Notes/Error-Response-Behavior.md.
+            if ($StatusCodeSource -eq 'errors')
+            {
+                throw $InvokeErrorMessageRaw
+            }
+
+            # Otherwise assume the token, and refresh ONCE. A second refresh has no mechanism by which it
+            # could succeed where the first failed: it mints the same credential from the same refresh token
+            # against the same clock. Retrying past that only matters for the cases a refresh cannot fix
+            # anyway, such as the wrong subscription key, which shares this shape and would otherwise spend
+            # the whole budget. Callers that pass no counter keep the old behavior.
+            if ($null -ne $AuthRefreshCount -and $AuthRefreshCount.Value -ge 1)
+            {
+                throw $InvokeErrorMessageRaw
+            }
+            if ($null -ne $AuthRefreshCount) { $AuthRefreshCount.Value++ }
+
             # This can happens if the token has expired so we will try to refresh and then run the invoke again.
             Connect-SKYAPI -ForceRefresh
             'retry'
@@ -731,8 +879,12 @@ function SKYAPICatchInvokeErrors
                 throw $InvokeErrorMessageRaw
             }
 
-            # Sleep for 1 second and return the retry action command.
-            Start-Sleep -Seconds 1
+            # Wait for as long as the API asked. It sends 'Retry-After: 1' today, which is where the one
+            # second default came from, but the header is the authority and the default only covers a
+            # response that omits it or sends something unusable.
+            $RetryAfterSeconds = Get-SKYAPIRetryAfterDelay -InvokeErrorMessageRaw $InvokeErrorMessageRaw
+            if ($null -eq $RetryAfterSeconds) { $RetryAfterSeconds = 1 }
+            if ($RetryAfterSeconds -gt 0) { Start-Sleep -Seconds $RetryAfterSeconds }
             'retry'
         }
         500 # Internal Server Error. An unexpected error has occurred on the SKY API side. You should never receive this response, but if you do let Blackbaud Support know.
@@ -869,6 +1021,9 @@ Function Get-SKYAPIUnpagedEntity
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
+    # Forced token refreshes spent on this call. Declared here, not module wide, so a nested request helper
+    # cannot reset it; see the 401 branch in SKYAPICatchInvokeErrors.
+    [int]$AuthRefreshCount = 0
     [int]$MaxInvokeCount = 7
     do
     {      
@@ -876,29 +1031,26 @@ Function Get-SKYAPIUnpagedEntity
         $NextAction = $null
         try
         {
+            $RequestArgument = @{
+                Method      = 'Get'
+                ContentType = 'application/json'
+                Uri         = $Request.Uri.AbsoluteUri
+                Headers     = @{
+                    'Authorization'           = "Bearer $($authorisation.access_token)"
+                    'bb-api-subscription-key' = $api_key
+                }
+            }
+
             if ($ReturnRaw)
             {
-                $apiCallResult =
-                Invoke-WebRequest   -UseBasicParsing `
-                                    -Method Get `
-                                    -ContentType application/json `
-                                    -Headers @{
-                                            'Authorization' = ("Bearer "+ $($authorisation.access_token))
-                                            'bb-api-subscription-key' = ($api_key)} `
-                                    -Uri $($Request.Uri.AbsoluteUri)
-                
+                $apiCallResult = Invoke-WebRequest -UseBasicParsing @RequestArgument
+
                 return $apiCallResult.Content
             }
             else
             {
-                $apiCallResult =
-                Invoke-RestMethod   -Method Get `
-                                    -ContentType application/json `
-                                    -Headers @{
-                                            'Authorization' = ("Bearer "+ $($authorisation.access_token))
-                                            'bb-api-subscription-key' = ($api_key)} `
-                                    -Uri $($Request.Uri.AbsoluteUri)
-            
+                $apiCallResult = Invoke-RestMethod @RequestArgument
+
                 # If there is a response field set for the endpoint cmdlet, return that.
                 if ($null -ne $response_field -and "" -ne $response_field)
                 {
@@ -915,7 +1067,7 @@ Function Get-SKYAPIUnpagedEntity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
+            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount -AuthRefreshCount ([ref]$AuthRefreshCount)
 
             # Just in case the token was refreshed by the error catcher, update $authorisation
             $authorisation = Get-SKYAPIAuthTokensFromFile
@@ -974,6 +1126,9 @@ Function Get-SKYAPIPagedEntity
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
+    # Forced token refreshes spent on this call. Declared here, not module wide, so a nested request helper
+    # cannot reset it; see the 401 branch in SKYAPICatchInvokeErrors.
+    [int]$AuthRefreshCount = 0
     [int]$MaxInvokeCount = 7
     do
     {      
@@ -990,14 +1145,16 @@ Function Get-SKYAPIPagedEntity
                 # every date-only field a day out for anyone west of the school. Windows PowerShell 5.1 left
                 # them as raw strings instead, so this also makes the two editions agree.
                 # See Research_Notes/DateTime-Handling.md.
-                $apiResponse =
-                Invoke-WebRequest   -UseBasicParsing `
-                                    -Method Get `
-                                    -ContentType application/json `
-                                    -Headers @{
-                                            'Authorization' = ("Bearer "+ $authorisation.access_token)
-                                            'bb-api-subscription-key' = ($api_key)} `
-                                    -Uri $($Request.Uri.AbsoluteUri)
+                $RequestArgument = @{
+                    Method      = 'Get'
+                    ContentType = 'application/json'
+                    Uri         = $Request.Uri.AbsoluteUri
+                    Headers     = @{
+                        'Authorization'           = "Bearer $($authorisation.access_token)"
+                        'bb-api-subscription-key' = $api_key
+                    }
+                }
+                $apiResponse = Invoke-WebRequest -UseBasicParsing @RequestArgument
 
                 $apiItems = ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $apiResponse.Content
                 $null = Repair-SKYAPIResponseDateTime -InputObject $apiItems -DateOnlyFields $date_only_fields
@@ -1066,7 +1223,7 @@ Function Get-SKYAPIPagedEntity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
+            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount -AuthRefreshCount ([ref]$AuthRefreshCount)
 
             # Just in case the token was refreshed by the error catcher, update $authorisation
             $authorisation = Get-SKYAPIAuthTokensFromFile
@@ -1112,6 +1269,9 @@ Function Remove-SKYAPIEntity
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
+    # Forced token refreshes spent on this call. Declared here, not module wide, so a nested request helper
+    # cannot reset it; see the 401 branch in SKYAPICatchInvokeErrors.
+    [int]$AuthRefreshCount = 0
     [int]$MaxInvokeCount = 7
     do
     {      
@@ -1119,13 +1279,16 @@ Function Remove-SKYAPIEntity
         $NextAction = $null
         try
         {
-            $apiCallResult =
-            Invoke-RestMethod   -Method Delete `
-                                -ContentType application/json `
-                                -Headers @{
-                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
-                                        'bb-api-subscription-key' = ($api_key)} `
-                                -Uri $($Request.Uri.AbsoluteUri)
+            $RequestArgument = @{
+                Method      = 'Delete'
+                ContentType = 'application/json'
+                Uri         = $Request.Uri.AbsoluteUri
+                Headers     = @{
+                    'Authorization'           = "Bearer $($authorisation.access_token)"
+                    'bb-api-subscription-key' = $api_key
+                }
+            }
+            $apiCallResult = Invoke-RestMethod @RequestArgument
         
             # If there is a response field set for the endpoint cmdlet, return that.
             if ($null -ne $response_field -and "" -ne $response_field)
@@ -1142,7 +1305,7 @@ Function Remove-SKYAPIEntity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
+            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount -AuthRefreshCount ([ref]$AuthRefreshCount)
 
             # Just in case the token was refreshed by the error catcher, update $authorisation
             $authorisation = Get-SKYAPIAuthTokensFromFile
@@ -1187,6 +1350,9 @@ function Submit-SKYAPIEntity
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
+    # Forced token refreshes spent on this call. Declared here, not module wide, so a nested request helper
+    # cannot reset it; see the 401 branch in SKYAPICatchInvokeErrors.
+    [int]$AuthRefreshCount = 0
     [int]$MaxInvokeCount = 7
     do
     {      
@@ -1194,14 +1360,17 @@ function Submit-SKYAPIEntity
         $NextAction = $null
         try
         {
-            $apiCallResult =
-            Invoke-RestMethod   -Method Post `
-                                -ContentType application/json `
-                                -Headers @{
-                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
-                                        'bb-api-subscription-key' = ($api_key)} `
-                                -Uri $($Request.Uri.AbsoluteUri) `
-                                -Body $PostRequest
+            $RequestArgument = @{
+                Method      = 'Post'
+                ContentType = 'application/json'
+                Uri         = $Request.Uri.AbsoluteUri
+                Body        = $PostRequest
+                Headers     = @{
+                    'Authorization'           = "Bearer $($authorisation.access_token)"
+                    'bb-api-subscription-key' = $api_key
+                }
+            }
+            $apiCallResult = Invoke-RestMethod @RequestArgument
         
             # If there is a response field set for the endpoint cmdlet, return that.
             if ($null -ne $response_field -and "" -ne $response_field)
@@ -1218,7 +1387,7 @@ function Submit-SKYAPIEntity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
+            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount -AuthRefreshCount ([ref]$AuthRefreshCount)
 
             # Just in case the token was refreshed by the error catcher, update $authorisation
             $authorisation = Get-SKYAPIAuthTokensFromFile
@@ -1263,6 +1432,9 @@ function Update-SKYAPIEntity
 
     # Run Invoke Command and Catch Responses
     [int]$InvokeCount = 0
+    # Forced token refreshes spent on this call. Declared here, not module wide, so a nested request helper
+    # cannot reset it; see the 401 branch in SKYAPICatchInvokeErrors.
+    [int]$AuthRefreshCount = 0
     [int]$MaxInvokeCount = 7
     do
     {      
@@ -1270,14 +1442,17 @@ function Update-SKYAPIEntity
         $NextAction = $null
         try
         {
-            $apiCallResult =
-            Invoke-RestMethod   -Method Patch `
-                                -ContentType application/json `
-                                -Headers @{
-                                        'Authorization' = ("Bearer "+ $($authorisation.access_token))
-                                        'bb-api-subscription-key' = ($api_key)} `
-                                -Uri $($Request.Uri.AbsoluteUri) `
-                                -Body $PatchRequest
+            $RequestArgument = @{
+                Method      = 'Patch'
+                ContentType = 'application/json'
+                Uri         = $Request.Uri.AbsoluteUri
+                Body        = $PatchRequest
+                Headers     = @{
+                    'Authorization'           = "Bearer $($authorisation.access_token)"
+                    'bb-api-subscription-key' = $api_key
+                }
+            }
+            $apiCallResult = Invoke-RestMethod @RequestArgument
         
             # If there is a response field set for the endpoint cmdlet, return that.
             if ($null -ne $response_field -and "" -ne $response_field)
@@ -1294,7 +1469,7 @@ function Update-SKYAPIEntity
         {
             # Process Invoke Error
             $LastCaughtError = ($_)
-            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount
+            $NextAction = SKYAPICatchInvokeErrors -InvokeErrorMessageRaw $_ -InvokeCount $InvokeCount -MaxInvokeCount $MaxInvokeCount -AuthRefreshCount ([ref]$AuthRefreshCount)
 
             # Just in case the token was refreshed by the error catcher, update $authorisation
             $authorisation = Get-SKYAPIAuthTokensFromFile
@@ -1758,16 +1933,14 @@ function Confirm-SKYAPIWriteResult
     {
         if ($null -ne $Actual)
         {
-            $Findings.Add((New-SKYAPIFinding -Field '(record)' -Sent '(deleted)' -Actual '(still present)' `
-                -Reason "the $RecordDescription still exists after the delete" -Kind 'Mismatch'))
+            $Findings.Add((New-SKYAPIFinding -Field '(record)' -Sent '(deleted)' -Actual '(still present)' -Reason "the $RecordDescription still exists after the delete" -Kind 'Mismatch'))
         }
         return $Findings
     }
 
     if ($null -eq $Actual)
     {
-        $Findings.Add((New-SKYAPIFinding -Field '(record)' -Sent '' -Actual '' `
-            -Reason "the $RecordDescription could not be read back" -Kind 'Unverifiable'))
+        $Findings.Add((New-SKYAPIFinding -Field '(record)' -Sent '' -Actual '' -Reason "the $RecordDescription could not be read back" -Kind 'Unverifiable'))
         return $Findings
     }
 
@@ -1902,15 +2075,13 @@ function Confirm-SKYAPIWriteResult
 
         if ($ReadModel -eq 'Basic' -and -not $Spec.Contains('BasicRead'))
         {
-            $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual '' `
-                -Reason "'$SentField' isn't returned by the basic user read, so it can't be validated from it" -Kind 'Unverifiable'))
+            $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual '' -Reason "'$SentField' isn't returned by the basic user read, so it can't be validated from it" -Kind 'Unverifiable'))
             continue
         }
 
         if ($Spec['Unmapped'])
         {
-            $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual '' `
-                -Reason "no confirmed read-back field is known for '$SentField', so it can't be validated" -Kind 'Unverifiable'))
+            $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual '' -Reason "no confirmed read-back field is known for '$SentField', so it can't be validated" -Kind 'Unverifiable'))
             continue
         }
 
@@ -1952,8 +2123,7 @@ function Confirm-SKYAPIWriteResult
 
                 if ($null -ne $Unresolved)
                 {
-                    $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue `
-                        -Reason $Unresolved -Kind 'Unverifiable'))
+                    $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue -Reason $Unresolved -Kind 'Unverifiable'))
                     continue
                 }
 
@@ -1975,8 +2145,7 @@ function Confirm-SKYAPIWriteResult
                     $ActualShown = (@($ActualValue) | ForEach-Object { [string](Get-SKYAPIMemberValue -InputObject $_ -Name 'description') }) -join ', '
                     if ([string]::IsNullOrWhiteSpace($SentShown)) { $SentShown = '(empty)' }
                     if ([string]::IsNullOrWhiteSpace($ActualShown)) { $ActualShown = '(empty)' }
-                    $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue `
-                        -Reason "sent '$SentShown' but read back '$ActualShown'" -Kind 'Mismatch'))
+                    $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue -Reason "sent '$SentShown' but read back '$ActualShown'" -Kind 'Mismatch'))
                 }
             }
 
@@ -2017,22 +2186,19 @@ function Confirm-SKYAPIWriteResult
                         }
                         else
                         {
-                            $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex]" -Sent $SentItem -Actual $ActualValue `
-                                -Reason 'no identity field was supplied, so the returned collection item cannot be selected reliably' -Kind 'Unverifiable'))
+                            $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex]" -Sent $SentItem -Actual $ActualValue -Reason 'no identity field was supplied, so the returned collection item cannot be selected reliably' -Kind 'Unverifiable'))
                             continue
                         }
                     }
 
                     if ($Candidates.Count -eq 0)
                     {
-                        $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex]" -Sent $SentItem -Actual $ActualValue `
-                            -Reason 'no matching item was returned' -Kind 'Mismatch'))
+                        $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex]" -Sent $SentItem -Actual $ActualValue -Reason 'no matching item was returned' -Kind 'Mismatch'))
                         continue
                     }
                     if ($Candidates.Count -gt 1)
                     {
-                        $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex]" -Sent $SentItem -Actual $ActualValue `
-                            -Reason 'more than one returned item matched, so the comparison is ambiguous' -Kind 'Unverifiable'))
+                        $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex]" -Sent $SentItem -Actual $ActualValue -Reason 'more than one returned item matched, so the comparison is ambiguous' -Kind 'Unverifiable'))
                         continue
                     }
 
@@ -2043,19 +2209,16 @@ function Confirm-SKYAPIWriteResult
                         if ($null -eq $SentSub) { continue }
 
                         $ActualSub = Get-SKYAPIMemberValue -InputObject $ActualItem -Name $SubField
-                        $Reason = Compare-SKYAPILeafValue -Sent $SentSub -ActualValue $ActualSub `
-                                    -LeafSpec $SubFields[$SubField] -TypeTableCache $Cache
+                        $Reason = Compare-SKYAPILeafValue -Sent $SentSub -ActualValue $ActualSub -LeafSpec $SubFields[$SubField] -TypeTableCache $Cache
                         if ($null -eq $Reason) { continue }
 
                         if ($Reason.StartsWith('Unverifiable:'))
                         {
-                            $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex].$SubField" -Sent $SentSub -Actual $ActualSub `
-                                -Reason $Reason.Substring(13) -Kind 'Unverifiable'))
+                            $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex].$SubField" -Sent $SentSub -Actual $ActualSub -Reason $Reason.Substring(13) -Kind 'Unverifiable'))
                         }
                         else
                         {
-                            $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex].$SubField" -Sent $SentSub -Actual $ActualSub `
-                                -Reason $Reason -Kind 'Mismatch'))
+                            $Findings.Add((New-SKYAPIFinding -Field "$SentField[$SentIndex].$SubField" -Sent $SentSub -Actual $ActualSub -Reason $Reason -Kind 'Mismatch'))
                         }
                     }
                 }
@@ -2076,13 +2239,11 @@ function Confirm-SKYAPIWriteResult
                     {
                         if ($Reason.StartsWith('Unverifiable:'))
                         {
-                            $Findings.Add((New-SKYAPIFinding -Field "$SentField.$SubField" -Sent $SentSub -Actual $ActualSub `
-                                -Reason $Reason.Substring(13) -Kind 'Unverifiable'))
+                            $Findings.Add((New-SKYAPIFinding -Field "$SentField.$SubField" -Sent $SentSub -Actual $ActualSub -Reason $Reason.Substring(13) -Kind 'Unverifiable'))
                         }
                         else
                         {
-                            $Findings.Add((New-SKYAPIFinding -Field "$SentField.$SubField" -Sent $SentSub -Actual $ActualSub `
-                                -Reason $Reason -Kind 'Mismatch'))
+                            $Findings.Add((New-SKYAPIFinding -Field "$SentField.$SubField" -Sent $SentSub -Actual $ActualSub -Reason $Reason -Kind 'Mismatch'))
                         }
                     }
                 }
@@ -2095,13 +2256,11 @@ function Confirm-SKYAPIWriteResult
                 {
                     if ($Reason.StartsWith('Unverifiable:'))
                     {
-                        $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue `
-                            -Reason $Reason.Substring(13) -Kind 'Unverifiable'))
+                        $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue -Reason $Reason.Substring(13) -Kind 'Unverifiable'))
                     }
                     else
                     {
-                        $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue `
-                            -Reason $Reason -Kind 'Mismatch'))
+                        $Findings.Add((New-SKYAPIFinding -Field $SentField -Sent $SentValue -Actual $ActualValue -Reason $Reason -Kind 'Mismatch'))
                     }
                 }
             }
@@ -2123,8 +2282,7 @@ function Confirm-SKYAPIWriteResult
         $SpecKey = if ($null -ne $ObjectName) { $ObjectName } else { $LeafName }
         if (-not $FieldSpec.Contains($SpecKey))
         {
-            $Findings.Add((New-SKYAPIFinding -Field $ClearedField -Sent '(cleared)' -Actual '' `
-                -Reason "'$ClearedField' isn't a known field of this endpoint, so the clear can't be validated" -Kind 'Unverifiable'))
+            $Findings.Add((New-SKYAPIFinding -Field $ClearedField -Sent '(cleared)' -Actual '' -Reason "'$ClearedField' isn't a known field of this endpoint, so the clear can't be validated" -Kind 'Unverifiable'))
             continue
         }
 
@@ -2134,8 +2292,7 @@ function Confirm-SKYAPIWriteResult
 
         if ($ReadModel -eq 'Basic' -and -not $Spec.Contains('BasicRead'))
         {
-            $Findings.Add((New-SKYAPIFinding -Field $ClearedField -Sent '(cleared)' -Actual '' `
-                -Reason "'$ClearedField' isn't returned by the basic user read, so the clear can't be validated from it" -Kind 'Unverifiable'))
+            $Findings.Add((New-SKYAPIFinding -Field $ClearedField -Sent '(cleared)' -Actual '' -Reason "'$ClearedField' isn't returned by the basic user read, so the clear can't be validated from it" -Kind 'Unverifiable'))
             continue
         }
 
@@ -2148,8 +2305,7 @@ function Confirm-SKYAPIWriteResult
         # A cleared field reads back blank, absent, or - for the tri-state fields - as the literal 'No answer'.
         if ((Test-SKYAPIValueIsBlank $ActualValue) -or ([string]$ActualValue -eq 'No answer')) { continue }
 
-        $Findings.Add((New-SKYAPIFinding -Field $ClearedField -Sent '(cleared)' -Actual $ActualValue `
-            -Reason "asked to clear it but read back '$ActualValue'" -Kind 'Mismatch'))
+        $Findings.Add((New-SKYAPIFinding -Field $ClearedField -Sent '(cleared)' -Actual $ActualValue -Reason "asked to clear it but read back '$ActualValue'" -Kind 'Mismatch'))
     }
 
     return $Findings
@@ -2395,9 +2551,7 @@ function Repair-SKYAPIResponseDateTime
 
         if ($Value -is [string])
         {
-            $Converted = ConvertTo-SKYAPIDateTimeValue -Value $Value `
-                            -DateOnly:($DateOnlyFields -contains $Property.Name) `
-                            -Timestamp:($TimestampFields -contains $Property.Name)
+            $Converted = ConvertTo-SKYAPIDateTimeValue -Value $Value -DateOnly:($DateOnlyFields -contains $Property.Name) -Timestamp:($TimestampFields -contains $Property.Name)
             if ($Converted -is [datetime]) { $Property.Value = $Converted }
         }
         elseif ($Value -isnot [ValueType])

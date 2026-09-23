@@ -55,6 +55,12 @@ $Result = & (Get-Module SKYAPI) {
         [void]$script:SentUid.Add("$uid")
         if ($ReturnRaw) { return '[]' }
         return @() }
+    # The paged read side. Recorded the same way, since what is under test here is the request each record
+    # builds, not the paging itself.
+    function Get-SKYAPIPagedEntity { param($uid,$url,$endUrl,$api_key,$authorisation,$params,$response_field,$response_limit,$page_limit,$marker_type,[switch]$ReturnRaw)
+        Add-Sent $params
+        [void]$script:SentUid.Add("$uid")
+        return @() }
     # Type table lookups must never veto a value in these tests; an empty table means "unreadable", which
     # Confirm-SKYAPITypeTableValue treats as "skip validation".
     function Get-SchoolTypeTableValue { param($tableName,$includeInactive) return @() }
@@ -181,12 +187,7 @@ $Result = & (Get-Module SKYAPI) {
     # that declared ValueFromPipeline on more than one parameter. Piping this one record used to send
     # last_modified and section_ids as the literal text '@{school_year=2022-2023}' next to the correct
     # school_year, and a section_ids that matches no section makes the call come back empty rather than fail.
-    #
-    # These cases pipe ONE record on purpose. A read function has no process block, so a piped COLLECTION is
-    # a separate, still-open defect: it makes one request from the last record, carrying whatever earlier
-    # records left behind. That is not asserted here, because a passing test may only state what should be
-    # true. It is measured in Research_Notes/Pipeline-Binding-Behavior.md, and cases belong here once the
-    # read functions stream per record the way the write functions have since 0.5.0.
+    # These first cases pipe ONE record; the collection cases follow below.
     Reset-Sent
     $null = [pscustomobject]@{ school_year = '2022-2023' } | Get-SchoolAcademicRoster
     Assert-Equal 'one roster request was sent' 1 $script:Sent.Count
@@ -206,12 +207,96 @@ $Result = & (Get-Module SKYAPI) {
     # A filter-only function has no identity parameter, so nothing accepts a bare value any more. PowerShell
     # reports InputObjectNotBound rather than binding it to every text filter at once. Pinned because it is a
     # deliberate behavior change: the caller has to pass the value by name instead.
+    #
+    # InputObjectNotBound is non-terminating, so the error alone does not stop the call. What stops it is the
+    # process block: a record that never bound is a record process never runs for. Before the read functions
+    # had one, the body was an implicit end block and ran anyway, sending an unfiltered request that returned
+    # every roster in the school alongside the error.
     Reset-Sent
     $Bound = '2022-2023' | Get-SchoolAcademicRoster 2>&1
     $ErrorRecord = @($Bound | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
-    Assert-Equal 'a bare value into a filter-only function is reported, not guessed at' 'InputObjectNotBound' `
-        ($ErrorRecord[0].FullyQualifiedErrorId -split ',')[0]
-    Assert-Equal 'and it sets no filter of its own' '<absent>' (Get-SentField 0 'section_ids')
+    Assert-Equal 'a bare value into a filter-only function is reported, not guessed at' 'InputObjectNotBound' ($ErrorRecord[0].FullyQualifiedErrorId -split ',')[0]
+    Assert-Equal 'and no request is made at all' 0 $script:Sent.Count
+
+    "--- Get-School* reads: every piped record gets its own request"
+    # The read functions build their request from $PSBoundParameters inside a process block, so a collection
+    # streams the way the write functions above do. Before that they had no process block at all: the whole
+    # body was an implicit end block, so a collection produced ONE request, built from the last record plus
+    # whatever earlier records had left behind. The pair below is the exact case that used to send
+    # 'section_ids=111&school_year=2023-2024', asking for a section the caller never named on a year it does
+    # not belong to, which comes back empty rather than failing.
+    Reset-Sent
+    $null = @(
+        [pscustomobject]@{ school_year = '2022-2023'; section_ids = '111' }
+        [pscustomobject]@{ school_year = '2023-2024' }
+    ) | Get-SchoolAcademicRoster
+    Assert-Equal 'both roster records were sent'           2           $script:Sent.Count
+    Assert-Equal 'record 1 sends its own school_year'      '2022-2023' (Get-SentField 0 'school_year')
+    Assert-Equal 'record 1 sends its own section_ids'      '111'       (Get-SentField 0 'section_ids')
+    Assert-Equal 'record 2 sends its own school_year'      '2023-2024' (Get-SentField 1 'school_year')
+    Assert-Equal 'record 2 does NOT inherit section_ids'   '<absent>'  (Get-SentField 1 'section_ids')
+
+    "--- a command-line filter reaches every piped read record"
+    Reset-Sent
+    $null = @(
+        [pscustomobject]@{ school_year = '2022-2023'; section_ids = '111' }
+        [pscustomobject]@{ school_year = '2023-2024' }
+    ) | Get-SchoolAcademicRoster -include_dropped $true
+    Assert-Equal 'command-line filter on record 1' 'True' (Get-SentField 0 'include_dropped')
+    Assert-Equal 'command-line filter on record 2' 'True' (Get-SentField 1 'include_dropped')
+    Assert-Equal 'record 2 still does not inherit section_ids' '<absent>' (Get-SentField 1 'section_ids')
+
+    "--- an identity-only read function streams too, with its ID in the URL"
+    # Get-SchoolUser builds no query string: User_ID is looped straight into the endpoint. It needs the
+    # process block for the same reason, but not -SuppliedNames, since it never reads $PSBoundParameters.
+    Reset-Sent
+    $null = @(
+        [pscustomobject]@{ User_ID = 111 }
+        [pscustomobject]@{ User_ID = 222 }
+    ) | Get-SchoolUser
+    Assert-Equal 'both user records were sent'        2         $script:Sent.Count
+    Assert-Equal 'each request carries its own ID'    '111,222' ($script:SentUid -join ',')
+
+    Reset-Sent
+    $null = 111,222,333 | Get-SchoolUser
+    Assert-Equal 'bare values stream one request each' 3             $script:Sent.Count
+    Assert-Equal 'and in the order piped'              '111,222,333' ($script:SentUid -join ',')
+
+    Reset-Sent
+    $null = Get-SchoolUser -User_ID 111,222,333
+    Assert-Equal 'an ID array on the command line is unchanged' 3             $script:Sent.Count
+    Assert-Equal 'and still one request per ID'                 '111,222,333' ($script:SentUid -join ',')
+
+    "--- a paged read function streams per record as well"
+    # Paging happens inside the helper, so what matters here is that each record reaches it with its own
+    # request. roles is mandatory, so record 2 supplies it and only first_name is left to leak.
+    Reset-Sent
+    $null = @(
+        [pscustomobject]@{ roles = '111'; first_name = 'Alpha' }
+        [pscustomobject]@{ roles = '222' }
+    ) | Get-SchoolUserByRole
+    Assert-Equal 'both paged records were sent'         2          $script:Sent.Count
+    Assert-Equal 'record 1 sends its own roles'         '111'      (Get-SentField 0 'roles')
+    Assert-Equal 'record 2 sends its own roles'         '222'      (Get-SentField 1 'roles')
+    Assert-Equal 'record 2 does NOT inherit first_name' '<absent>' (Get-SentField 1 'first_name')
+
+    "--- a default the body computes must be computed again for the next record"
+    # The other way a value crosses records, and it survives -SuppliedNames because it never goes near
+    # $PSBoundParameters: a body that assigns its default back to the PARAMETER variable. The variable keeps
+    # that value, so the next record looks already set and the default is not applied again. These functions
+    # compute into a local instead, so every record gets its own.
+    Assert-Equal 'record 1 gets the default marker' '1' (Get-SentField 0 'marker')
+    Assert-Equal 'record 2 gets it too'             '1' (Get-SentField 1 'marker')
+
+    Reset-Sent
+    $null = @(
+        [pscustomobject]@{ role_id = '11'; start_date = '2025-01-01' }
+        [pscustomobject]@{ role_id = '22'; start_date = '2025-06-01' }
+    ) | Get-SchoolUserAuditByRole
+    # end_date defaults to start_date + 7 days, so record 2's must follow record 2's start_date.
+    Assert-Equal 'both audit records were sent'     2            $script:Sent.Count
+    Assert-Equal 'record 1 gets its own end_date'   '2025-01-08' (Get-SentField 0 'end_date')
+    Assert-Equal 'record 2 gets its own end_date'   '2025-06-08' (Get-SentField 1 'end_date')
 
     "--- a function that kept by-value binding still takes a bare value"
     # Get-SchoolCycleBySection keeps ValueFromPipeline on Section_ID, its mandatory identity parameter, so

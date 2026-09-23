@@ -75,63 +75,76 @@ function Get-SchoolEnrollment
         [int]$ResponseLimit
     )
     
-    # Set API responses per page limit.
-    [int]$PageLimit = 5000
-    
-    # Specify Marker Type
-    [MarkerType]$MarkerType = [MarkerType]::OFFSET
-    
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/enrollments'
-
-    # Set the response field
-    $ResponseField = "value"
-
-    # Set the parameters
-    # School_Year is passed on in the URL and ResponseLimit is adjusted later, so neither goes to the API as-is.
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'School_Year','ResponseLimit'
-
-    # If not null, add in the limit parameter since this endpoint actually uses it.
-    if ($ResponseLimit)
-    {   
-        if ($ResponseLimit -lt $PageLimit)
-        {
-            $parameters.Add('limit',$ResponseLimit)
-        }
-        else
-        {
-            $parameters.Add('limit',$PageLimit)
-        }
-    }
-
-    # Set/Replace Marker parameter to 1 if not set. This shouldn't matter since 0 is the default but I like to cover all the bases.
-    if ($null -eq $offset -or $offset -eq '')
+    begin
     {
-        $parameters.Remove('offset') | Out-Null
-        $offset = 0
-        $parameters.Add('offset',$offset)
+        # Set API responses per page limit.
+        [int]$PageLimit = 5000
+
+        # Specify Marker Type
+        [MarkerType]$MarkerType = [MarkerType]::OFFSET
+
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/enrollments'
+
+        # Set the response field
+        $ResponseField = "value"
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
-    $SchoolYears = $School_Year
-    $OriginalOffset = $offset # We do this because if you have multiple items in $SchoolYears then the offset doesn't reset on subsequent loops.
-
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Get data for one or more school years.
-    foreach ($school_year in $SchoolYears)
+    process
     {
-        # Clear out old school year & offset parameters and add in new
-        $parameters.Remove('school_year') | Out-Null
-        $parameters.Add('school_year',$school_year)
-        $parameters.Remove('offset') | Out-Null
-        $parameters.Add('offset',$OriginalOffset)
-        
-        $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
-        $response
+        # Set the parameters
+        # School_Year is passed on in the URL and ResponseLimit is adjusted later, so neither goes to the API as-is.
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'School_Year','ResponseLimit' -SuppliedNames $SuppliedParameter
+
+        # If not null, add in the limit parameter since this endpoint actually uses it.
+        if ($ResponseLimit)
+        {   
+            if ($ResponseLimit -lt $PageLimit)
+            {
+                $parameters.Add('limit',$ResponseLimit)
+            }
+            else
+            {
+                $parameters.Add('limit',$PageLimit)
+            }
+        }
+
+        # Set/Replace Marker parameter to 1 if not set. This shouldn't matter since 0 is the default but I like to cover all the bases.
+        if ($null -eq $offset -or $offset -eq '')
+        {
+            $parameters.Remove('offset') | Out-Null
+            $offset = 0
+            $parameters.Add('offset',$offset)
+        }
+
+        $SchoolYears = $School_Year
+        $OriginalOffset = $offset # We do this because if you have multiple items in $SchoolYears then the offset doesn't reset on subsequent loops.
+
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Get data for one or more school years.
+        foreach ($school_year in $SchoolYears)
+        {
+            # Clear out old school year & offset parameters and add in new
+            $parameters.Remove('school_year') | Out-Null
+            $parameters.Add('school_year',$school_year)
+            $parameters.Remove('offset') | Out-Null
+            $parameters.Add('offset',$OriginalOffset)
+
+            $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
+            $response
+        }
     }
+
+    end {}
 }

@@ -89,71 +89,86 @@ function Get-SchoolList
         [string]$ConvertTo
     )
     
-    # Set API responses per page limit.
-    $PageLimit = 1000
-
-    # Specify Marker Type
-    [MarkerType]$MarkerType = [MarkerType]::NEXT_PAGE
-
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/lists/advanced/'
-
-    # Set the response field
-    $ResponseField = "results.rows"
-    
-    # Set the parameters
-    # List_ID is passed on in the URL and ResponseLimit is handled differently, so neither goes to the API.
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'List_ID','ResponseLimit'
-
-    # Set/Replace Page parameter to 1 if not set or 0. That way it can do pagination properly.
-    if ($null -eq $page -or $page -eq '' -or $page -eq 0)
+    begin
     {
-        $parameters.Remove('page') | Out-Null
-        [int]$page = 1
-        $parameters.Add('page',$page)
+        # Set API responses per page limit.
+        $PageLimit = 1000
+
+        # Specify Marker Type
+        [MarkerType]$MarkerType = [MarkerType]::NEXT_PAGE
+
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/lists/advanced/'
+
+        # Set the response field
+        $ResponseField = "results.rows"
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Get the data for one or more List IDs.
-    foreach ($uid in $List_ID)
+    process
     {
+        # Set the parameters
+        # List_ID is passed on in the URL and ResponseLimit is handled differently, so neither goes to the API.
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'List_ID','ResponseLimit' -SuppliedNames $SuppliedParameter
 
-        $response = Get-SKYAPIPagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
-        
-        # Check to see if the data should be returned in a different format or as is.
-        switch ($ConvertTo)
+        # Set/Replace Page parameter to 1 if not set or 0. That way it can do pagination properly.
+        # The default goes into the request rather than into $page. A parameter variable keeps whatever the
+        # body last assigned to it, so writing 1 back would leave the next piped record looking already set
+        # and send it no page at all.
+        if ($null -eq $page -or $page -eq '' -or $page -eq 0)
         {
-            Array
-            {               
-                $Array = foreach ($listItem in $response)
-                {
-                    # Get the column headers.
-                    $ColumnHeaders = $listItem | Select-Object -ExpandProperty "columns" | Select-Object -ExpandProperty name
+            $parameters.Remove('page') | Out-Null
+            $parameters.Add('page',1)
+        }
 
-                    # Build the list item object.
-                    $ArrayItem = New-Object System.Object
-                    foreach ($columnHeader in $ColumnHeaders)
-                    {
-                        [string]$HeaderValue = $listItem | Select-Object -ExpandProperty "columns" | Where-Object {$_.name -eq $columnHeader} | Select-Object -ExpandProperty value
-                        $ArrayItem | Add-Member -MemberType NoteProperty -Name $columnHeader -Value $HeaderValue
-                    }
-                   
-                    # Output list item object.
-                    $ArrayItem
-                }
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
-                return $Array
-            }
-            Default # Return the result as is.
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Get the data for one or more List IDs.
+        foreach ($uid in $List_ID)
+        {
+
+            $response = Get-SKYAPIPagedEntity -uid $uid -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
+
+            # Check to see if the data should be returned in a different format or as is.
+            switch ($ConvertTo)
             {
-                return $response
+                Array
+                {               
+                    $Array = foreach ($listItem in $response)
+                    {
+                        # Get the column headers.
+                        $ColumnHeaders = $listItem | Select-Object -ExpandProperty "columns" | Select-Object -ExpandProperty name
+
+                        # Build the list item object.
+                        $ArrayItem = New-Object System.Object
+                        foreach ($columnHeader in $ColumnHeaders)
+                        {
+                            [string]$HeaderValue = $listItem | Select-Object -ExpandProperty "columns" | Where-Object {$_.name -eq $columnHeader} | Select-Object -ExpandProperty value
+                            $ArrayItem | Add-Member -MemberType NoteProperty -Name $columnHeader -Value $HeaderValue
+                        }
+
+                        # Output list item object.
+                        $ArrayItem
+                    }
+
+                    return $Array
+                }
+                Default # Return the result as is.
+                {
+                    return $response
+                }
             }
         }
     }
+
+    end {}
 }

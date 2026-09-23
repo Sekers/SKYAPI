@@ -55,28 +55,41 @@ function Get-SchoolUserBBIDStatus
         [int]$ResponseLimit
     )
     
-    # Set API responses per page limit.
-    $PageLimit = 1000
+    begin
+    {
+        # Set API responses per page limit.
+        $PageLimit = 1000
 
-    # Specify Marker Type
-    [MarkerType]$MarkerType = [MarkerType]::LAST_USER_ID
+        # Specify Marker Type
+        [MarkerType]$MarkerType = [MarkerType]::LAST_USER_ID
 
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/bbidstatus?base_role_ids='
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/bbidstatus?base_role_ids='
 
-    # Set the response field
-    $ResponseField = "value"
-    
-    # Set the parameters
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ResponseLimit'
+        # Set the response field
+        $ResponseField = "value"
 
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
+    }
 
-    $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
-    $response
+    process
+    {
+        # Set the parameters
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ResponseLimit' -SuppliedNames $SuppliedParameter
+
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        $response = Get-SKYAPIPagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -response_field $ResponseField -response_limit $ResponseLimit -page_limit $PageLimit -marker_type $MarkerType
+        $response
+    }
+
+    end {}
 }

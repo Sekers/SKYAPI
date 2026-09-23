@@ -38,31 +38,39 @@ function Get-SchoolUserAddress
         [switch]$ReturnRaw
     )
     
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/'
-    $endUrl = '/addresses'
-
-    # Set the response field
-    $ResponseField = "value"
-
-    # Get data for one or more IDs
-    foreach ($uid in $User_ID)
+    begin
     {
-        if ($ReturnRaw)
-        {
-            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
-            $response
-            continue
-        }
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
 
-        $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
-        $response
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/users/'
+        $endUrl = '/addresses'
+
+        # Set the response field
+        $ResponseField = "value"
     }
+
+    process
+    {
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        # Get data for one or more IDs
+        foreach ($uid in $User_ID)
+        {
+            if ($ReturnRaw)
+            {
+                $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -ReturnRaw
+                $response
+                continue
+            }
+
+            $response = Get-SKYAPIUnpagedEntity -uid $uid -url $endpoint -endUrl $endUrl -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -response_field $ResponseField
+            $response
+        }
+    }
+
+    end {}
 }

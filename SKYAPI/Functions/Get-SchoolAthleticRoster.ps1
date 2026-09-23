@@ -85,37 +85,50 @@ function Get-SchoolAthleticRoster
         [switch]$ReturnRaw
     )
     
-    # Set the endpoints
-    $endpoint = 'https://api.sky.blackbaud.com/school/v1/athletics/rosters'
-
-    # Set the response field
-    $ResponseField = $null
-
-    # Set the parameters
-    $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ReturnRaw'
-
-    # Get the SKY API subscription key
-    $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
-    $sky_api_subscription_key = $sky_api_config.api_subscription_key
-
-    # Grab the security tokens
-    $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
-
-    if ($ReturnRaw)
+    begin
     {
-        $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
-        return $response
+        # Set the endpoints
+        $endpoint = 'https://api.sky.blackbaud.com/school/v1/athletics/rosters'
+
+        # Set the response field
+        $ResponseField = $null
+
+        # Get the SKY API subscription key
+        $sky_api_config = Get-SKYAPIConfig -ConfigPath $sky_api_config_file_path
+        $sky_api_subscription_key = $sky_api_config.api_subscription_key
+
+        # Capture the command-line arguments while $PSBoundParameters still holds only those.
+        $CommandLineBoundParameter = @($PSBoundParameters.Keys)
     }
 
-    # Parse with date/time values left as strings so the calendar date the API wrote stays readable, then
-    # normalize. Taking the written date is what keeps these correct for a client in any time zone.
-    # enroll_date is left to shape on purpose: it appears both as a date-only value and as a real timestamp
-    # within the same payload, so its name proves nothing and is deliberately absent from the reader's
-    # date-only and timestamp lists alike.
-    # See Research_Notes/DateTime-Handling.md.
-    $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
-    $response_parsed = ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw
-    $response = if ([string]::IsNullOrEmpty($ResponseField)) {$response_parsed} else {Resolve-SKYAPIMemberChain -InputObject $response_parsed -MemberPath $ResponseField -Delimiter "."}
-    $null = Repair-SKYAPIResponseDateTime -InputObject $response
-    $response
+    process
+    {
+        # Set the parameters
+        # -SuppliedNames drops anything bound by an earlier pipeline record; see Get-SKYAPISuppliedParameterName.
+        $SuppliedParameter = Get-SKYAPISuppliedParameterName -BoundParameters $PSBoundParameters -CommandLineBound $CommandLineBoundParameter -PipelineItem $PSItem -Invocation $MyInvocation
+        $parameters = Get-SKYAPIRequestParameter -BoundParameters $PSBoundParameters -Exclude 'ReturnRaw' -SuppliedNames $SuppliedParameter
+
+        # Grab the security tokens
+        $AuthTokensFromFile = Get-SKYAPIAuthTokensFromFile
+
+        if ($ReturnRaw)
+        {
+            $response = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+            return $response
+        }
+
+        # Parse with date/time values left as strings so the calendar date the API wrote stays readable, then
+        # normalize. Taking the written date is what keeps these correct for a client in any time zone.
+        # enroll_date is left to shape on purpose: it appears both as a date-only value and as a real timestamp
+        # within the same payload, so its name proves nothing and is deliberately absent from the reader's
+        # date-only and timestamp lists alike.
+        # See Research_Notes/DateTime-Handling.md.
+        $response_raw = Get-SKYAPIUnpagedEntity -url $endpoint -api_key $sky_api_subscription_key -authorisation $AuthTokensFromFile -params $parameters -ReturnRaw
+        $response_parsed = ConvertFrom-JsonWithoutDateTimeDeserialization -InputObject $response_raw
+        $response = if ([string]::IsNullOrEmpty($ResponseField)) {$response_parsed} else {Resolve-SKYAPIMemberChain -InputObject $response_parsed -MemberPath $ResponseField -Delimiter "."}
+        $null = Repair-SKYAPIResponseDateTime -InputObject $response
+        $response
+    }
+
+    end {}
 }
