@@ -5,7 +5,10 @@ to this file, so Claude Code and Codex both pick up the same rules. Edit this fi
 
 **What this repository is:** `SKYAPI`, a PowerShell module wrapping Blackbaud's SKY API (mainly the Education
 Management "school" API). Public functions live one-per-file in `SKYAPI/Functions/`; shared private helpers
-live in `SKYAPI/SKYAPI.psm1`. Work happens on `develop`; `master` is the released branch.
+live in `SKYAPI/SKYAPI.psm1`. Work happens on `develop`; `main` is the released branch.
+[RELEASING.md](./RELEASING.md) holds the versioning rules and the release process, and
+[CONTRIBUTING.md](./CONTRIBUTING.md) the everyday workflow. The GitHub wiki is a separate repository
+(`Sekers/SKYAPI.wiki`), not part of this one.
 
 ## Safety rules that override convenience
 
@@ -16,6 +19,12 @@ live in `SKYAPI/SKYAPI.psm1`. Work happens on `develop`; `master` is the release
   scripts can be pointed at either a throwaway development environment or the live production tenant, and the
   target is set by whichever `Set-SKYAPIConfigFilePath` / `Set-SKYAPITokensFilePath` lines are uncommented. Read
   those lines before running anything that authenticates.
+- **Every placeholder email address uses a domain reserved by [RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)**:
+  `example.com`, `example.net`, or `example.org`. None of them can ever be registered, so a placeholder copied
+  out of a help example and run unedited cannot reach a real person. Help examples are exactly what readers copy
+  and run, and some of them write to the tenant: `Connect-SchoolUserBBID -send_invite $true` emails the address
+  it is given. Prefer `example.com` for anything new, but all three are equally correct: never rename existing
+  placeholders to match that preference.
 
 ## CHANGELOG.md
 
@@ -29,16 +38,17 @@ it is a big enough issue that people need to be warned about it.
 An entry describes what changed for someone **upgrading from the last released version**. Before writing any
 "Fixed ..." entry, verify the bug actually existed in that release.
 
-**Derive the release. Do not trust a version number written down anywhere, including here.** The released
-commit is `origin/master`, and it carries the release tag:
+**Derive the release. Do not trust a version number written down anywhere, including here or in
+`SKYAPI/SKYAPI.psd1`.** A release is a tag on `main` ([RELEASING.md](./RELEASING.md) describes the process).
+`origin/main` can sit past the last tag, so ask for the nearest tag rather than an exact match:
 
 ```powershell
-git fetch origin --tags --quiet                          # only if the local copy might be behind
-$Release = git describe --tags --exact-match origin/master
+git fetch origin --tags --quiet                        # only if the local copy might be behind
+$Release = git describe --tags --abbrev=0 origin/main
 ```
 
-- Work happens on `develop`. The **local `master` branch is stale**, so compare against `$Release` or
-  `origin/master`, never local `master`, and never against `HEAD` or `develop`.
+- Work happens on `develop`. The **local `main` branch is stale**, so compare against `$Release` or
+  `origin/main`, never local `main`, and never against `HEAD` or `develop`.
 - <https://github.com/Sekers/SKYAPI/releases> has been seen serving a stale "Latest" label, so trust the tag
   over the page.
 
@@ -48,12 +58,12 @@ Verify before claiming a fix:
 git cat-file -e "${Release}:SKYAPI/Functions/<Name>.ps1"   # nonzero exit = did not exist in the release
 git show     "${Release}:SKYAPI/Functions/<Name>.ps1" | Select-String '<pattern>'   # was the bug there?
 git show     "${Release}:SKYAPI/SKYAPI.psm1"          | Select-String '<pattern>'
+git tag --contains <commit>   # no output = the commit that introduced the bug never shipped
 ```
 
 **A bug introduced on `develop` and fixed before release is not a changelog entry.** It never reached a user.
 This is easy to get wrong while a release is in progress, because a lot of churn happens on `develop`, and a
-fix to something that itself landed after the last tag is invisible to users. The `git show` check above is
-what settles it.
+fix to something that itself landed after the last tag is invisible to users. The checks above settle it.
 
 **A function that does not exist in the last release** belongs under **Features** as a new endpoint only. It
 can never also appear as a "Fixed" entry, and it should not be listed among the functions a fix "affects."
@@ -251,7 +261,21 @@ idioms side by side would also make "match the surrounding shape" ambiguous for 
 Revisit if one file's stub layer becomes genuinely unmanageable. That is a reason to convert that single
 file, not to adopt Pester across the suite.
 
-Measured API behavior belongs in `Research_Notes/`, one file per behavior category; list the directory to see
-what already exists. Label each claim with its evidence (measured, from source, from schema, or unverified)
-and give the date and environment for anything measured, matching the existing notes. Create a new file for a
-new category rather than stretching an existing one.
+## Research notes
+
+Measured or researched behavior belongs in `Research_Notes/`, one file per behavior category (error responses,
+pagination, date and time handling, and so on); list the directory to see what already exists. Add to the
+matching file, or create a new file for a new category rather than stretching an existing one.
+
+- **Label every claim with its evidence:** **Measured**, **From source** (read from a file in this repository),
+  **From schema** (the published OpenAPI schema), **From documentation** (with the page linked), or
+  **Unverified**. An unverified assumption the module depends on is still worth recording, labelled as such.
+- **Date everything that can change.** Give the date and environment (development or production tenant,
+  PowerShell editions and versions) for anything measured, and the date read for anything taken from the schema
+  or documentation.
+- **Say what a result does not establish**, so a later reader does not stretch it past what was tested.
+- **Tie each behavior to the code it affects**, by file and function name rather than line number.
+- **The notes are for contributors.** Link them from commit messages and code comments, never from
+  `CHANGELOG.md` or other user-facing text.
+- **The safety rules above apply while gathering evidence:** reads only against the production tenant unless
+  writing was explicitly permitted, and never name it in a note.

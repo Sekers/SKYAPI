@@ -209,7 +209,7 @@ PrivateData = @{
         Tags = @('API', 'PowerShell', 'Blackbaud', 'SKYAPI', "RaisersEdge", "FinancialEdge")
 
         # A URL to the license for this module.
-        LicenseUri = 'https://github.com/Sekers/SKYAPI/blob/master/LICENSE'
+        LicenseUri = 'https://github.com/Sekers/SKYAPI/blob/main/LICENSE'
 
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/Sekers/SKYAPI'
@@ -218,7 +218,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://github.com/Sekers/SKYAPI/blob/master/CHANGELOG.md'
+        ReleaseNotes = 'https://github.com/Sekers/SKYAPI/blob/main/CHANGELOG.md'
 
         # Prerelease string of this module
         # Prerelease = ''

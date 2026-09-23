@@ -38,6 +38,6 @@ The SKYAPI module documentation is hosted in the [SKYAPI Wiki](https://github.co
 
 ## Developing and Contributing
 
-This project is developed using a [simplified Gitflow workflow](https://www.grimadmin.com/article.php/simple-modified-gitflow-workflow) that cuts out the release branches, which are unnecessary when maintaining only a single version for production. The Master/Main branch will always be the latest stable version released and tagged with an updated version number anytime the Develop branch is merged into it. [Rebasing](https://www.atlassian.com/git/tutorials/merging-vs-rebasing) will occur if we need to streamline complex history.
+This project is developed using a [simplified Gitflow workflow](https://www.grimadmin.com/article.php/simple-modified-gitflow-workflow) that cuts out the release branches, which are unnecessary when maintaining only a single version for production. The Main branch is always the latest stable version released, and it is tagged with the new version number each time the Develop branch is merged into it. Shared branches are never rebased or force-pushed. See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to contribute, and [RELEASING.md](./RELEASING.md) for branching, versioning, and releases.
 
 You are welcome to [fork](https://guides.github.com/activities/forking/) the project and then offer your changes back using a [pull request](https://guides.github.com/activities/forking/#making-a-pull-request).

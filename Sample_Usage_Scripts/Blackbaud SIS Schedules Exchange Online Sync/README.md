@@ -4,7 +4,7 @@
 
 A PowerShell script that uses the [SKYAPI PowerShell Module](https://github.com/Sekers/SKYAPI) to 1-way synchronize (mirror) Blackbaud SIS schedule meetings into each user's Exchange Online Outlook calendar using the [Microsoft Graph PowerShell SDK](https://learn.microsoft.com/en-us/powershell/microsoftgraph/installation).
 
-For every configured user, the script pulls their schedule meetings from the SIS, then creates, updates, and removes matching events on their Exchange Online calendar so the calendar reflects the current schedule. Each event it creates is stamped with a private [extended property](https://learn.microsoft.com/en-us/graph/api/resources/extended-properties-overview) tag, and the script filters on that tag when reading the calendar. As a result it **only ever reads, updates, or deletes the events it created itself** — meetings the user added manually, events from other apps, and anything outside the tag are never touched. See [How the Script Isolates Its Own Events](#how-the-script-isolates-its-own-events-extended-properties) below.
+For every configured user, the script pulls their schedule meetings from the SIS, then creates, updates, and removes matching events on their Exchange Online calendar so the calendar reflects the current schedule. Each event it creates is stamped with a private [extended property](https://learn.microsoft.com/en-us/graph/api/resources/extended-properties-overview) tag, and the script filters on that tag when reading the calendar. As a result it **only ever reads, updates, or deletes the events it created itself**: meetings the user added manually, events from other apps, and anything outside the tag are never touched. See [How the Script Isolates Its Own Events](#how-the-script-isolates-its-own-events-extended-properties) below.
 
 The script syncs **section leads (referred to here as "teachers")** and, optionally, **enrolled students**. Whether a person is treated as a teacher or a student is decided per meeting, so the same person can be a teacher on one section's events and a student on another's, all in a single run.
 
@@ -18,10 +18,10 @@ The script syncs **section leads (referred to here as "teachers")** and, optiona
   - **Teachers only**,
   - **Students only**, or
   - **Both in the same config**.
-- **"Teacher" means whoever is a lead of a section**, regardless of offering type — a classroom teacher (Academics), an advisor (Advisory), a coach (Athletics), or an activity leader (Activities). The label comes from being in a meeting's leads/teachers list. Note that most offering types restrict leads to certain Blackbaud Edu roles and the same goes for students (non-lead participants).
-- **Offering-type-aware links.** Each event body lists the section's teachers and links back to the section in the school app — the faculty roster/advisees page for teachers, or the bulletin board for students — based on the meeting's offering type.
+- **"Teacher" means whoever is a lead of a section**, regardless of offering type: a classroom teacher (Academics), an advisor (Advisory), a coach (Athletics), or an activity leader (Activities). The label comes from being in a meeting's leads/teachers list. Note that most offering types restrict leads to certain Blackbaud Edu roles and the same goes for students (non-lead participants).
+- **Offering-type-aware links.** Each event body lists the section's teachers and links back to the section in the school app (the faculty roster/advisees page for teachers, or the bulletin board for students), based on the meeting's offering type.
 - **Automatic Outlook categories.** Creates a color-coded Outlook category per course (auto-assigning the least-used preset color) so events are visually grouped.
-- **Flexible date selection** — `Year`, `Term` (keeps each meeting only within its own level's current term), or a fixed `Range`, plus a configurable look-ahead window and a limit on how far into the past to sync.
+- **Flexible date selection:** `Year`, `Term` (keeps each meeting only within its own level's current term), or a fixed `Range`, plus a configurable look-ahead window and a limit on how far into the past to sync.
 - **Ignore lists** to exclude specific groups or courses from syncing.
 - **Per-user preferences** to override the default *Show As*, reminder on/off, and reminder-minutes settings for individual users.
 - Microsoft Graph authentication via Application permissions (application consented by an administrator and authenticated by certificate or client secret), so the script can run unattended and manage every synced user's calendar.
@@ -53,11 +53,11 @@ The script reads its configuration from `Config\...`, **not** from `Config Templ
 
 The five configuration files are:
 
-- **config_general.json** — the primary configuration settings for the script.
-- **config_sky_api.json** — your Blackbaud SKY API application credentials.
-- **config_scriptmessage.json** — email/messaging settings (only used when email alerts are enabled).
-- **config_meetings_to_ignore.json** — meetings to exclude from syncing.
-- **config_user_preferences.json** — per-user overrides for event preferences.
+- **config_general.json:** The primary configuration settings for the script.
+- **config_sky_api.json:** Your Blackbaud SKY API application credentials.
+- **config_scriptmessage.json:** Email/messaging settings (only used when email alerts are enabled).
+- **config_meetings_to_ignore.json:** Meetings to exclude from syncing.
+- **config_user_preferences.json:** Per-user overrides for event preferences.
 
 ---
 
@@ -76,7 +76,7 @@ JSON file that contains the primary configuration settings for the script.
 ##### General → Meetings
 
 - **DateSelection (String):** Determines the date window of meetings to sync. Valid values:
-  - **Year:** Syncs the current school year's meetings (optionally extending into the next school year — see `DaysToAppearBefore`).
+  - **Year:** Syncs the current school year's meetings (optionally extending into the next school year; see `DaysToAppearBefore`).
   - **Term:** Syncs only the current term's meetings. Because different levels and offering types can have different term structures (e.g. two academic semesters but a single year-long advisory term), the script determines the current term separately for each *level + offering type* and keeps a meeting only if its date falls inside that specific term window.
   - **Range:** Syncs a fixed date range that you specify with `StartDate` and `EndDate`. Great for testing.
 - **DaysToAppearBefore (Integer, 0 or greater):** Only used when `DateSelection` is set to 'Year' or 'Term'. Controls when the sync begins reaching into the **next** school year (`Year` mode) or the **next** term(s) (`Term` mode). Once the upcoming year's/term's start date falls within this many days of the current date, that year/term is pulled into the sync. Because it triggers at the year/term boundary rather than per meeting, crossing the threshold brings in the whole upcoming year (`Year` mode) or the whole upcoming term (`Term` mode) at once (not just the meetings within this many days). In `Term` mode the threshold is applied independently for every level and offering type (see `DateSelection` → `Term` above). Set to `0` to never look ahead.
@@ -108,7 +108,7 @@ These are the defaults applied to created events. Each can be overridden per use
 The sync removes any of its own events that no longer match a SIS meeting. That is what keeps calendars accurate, but it also means a bad or incomplete SIS result would clear events that should have stayed. These settings put a ceiling on how much one run is allowed to remove. See [Deletion Safety](#deletion-safety).
 
 - **AllowEmptySourceSync (Boolean):** Whether to continue when the SIS returns no meetings at all (after the meetings to ignore and current-term filters). Normally `false`: an empty result means "remove every synced event in range from every calendar", which is nearly always a configuration or data problem rather than a real instruction, so the script stops before touching any calendar. Set to `true` only when an empty sync is genuinely expected. Because a run like that removes 100% of every user's synced events by design, it also overrides `MaxDeletePercentPerUser` for that run (the per-user limit would otherwise block the very cleanup being asked for); the override is reported loudly as a warning.
-- **MaxDeletePercentPerUser (Integer, 1-100):** If **more than** this share of a user's existing synced events would be removed in a single run, the removals **and creations** for that user are held back and reported as a warning instead. (Creations are held back too because most trip cases are schedule *changes*; creating the replacement events while their old versions are held in place would leave duplicates.) The rest of the users are still processed, and preference updates are still applied to the held-back user. Re-run after confirming the SIS data is right, or raise this value — `100` means even a complete clear of a user's synced events is allowed.
+- **MaxDeletePercentPerUser (Integer, 1-100):** If **more than** this share of a user's existing synced events would be removed in a single run, the removals **and creations** for that user are held back and reported as a warning instead. (Creations are held back too because most trip cases are schedule *changes*; creating the replacement events while their old versions are held in place would leave duplicates.) The rest of the users are still processed, and preference updates are still applied to the held-back user. Re-run after confirming the SIS data is right, or raise this value; `100` means even a complete clear of a user's synced events is allowed.
 - **MinDeletesBeforeCheck (Integer):** The percentage check only applies once at least this many removals are queued for the user. Without it, a user with 3 events would trip a 50% limit on 2 legitimate removals. Note the flip side: users with fewer queued removals than this are not protected by the percentage check at all.
 
 ##### General → UsersSyncHistory
@@ -192,7 +192,7 @@ JSON file that contains the messaging-service settings used by the [ScriptMessag
 
 ### **config_meetings_to_ignore.json**
 
-JSON file that lets you exclude specific meetings from syncing. Each property name is a SIS meeting field, and its array of values are matched against that field — any meeting matching a value is skipped. Values are matched as **case-insensitive literal substrings** (no wildcards or regular expressions), so a value of "Homeroom" excludes every meeting whose field contains "Homeroom" anywhere in it.
+JSON file that lets you exclude specific meetings from syncing. Each property name is a SIS meeting field, and its array of values are matched against that field, and any meeting matching a value is skipped. Values are matched as **case-insensitive literal substrings** (no wildcards or regular expressions), so a value of "Homeroom" excludes every meeting whose field contains "Homeroom" anywhere in it.
 
 - **course_title (Array of Strings):** Course titles to exclude. The *course* is the subject that a section belongs to (e.g. "Algebra I"). This is the level above the group/section described below and what the script uses as the event's Outlook category. Excluding a course title therefore excludes every section of that course.
 - **group_name (Array of Strings):** Group names to exclude. A meeting's *group* is the individual section, advisory, activity or team it belongs to, and its name is what the script uses as the calendar event subject (e.g. "Algebra I - 03", "Homeroom"). The SIS calls this a group rather than a section because the same field covers all of the offering types, not just academic sections.
@@ -209,7 +209,7 @@ Entries are keyed by SIS user ID. Because an ID is not much use to a human readi
 
 - **UserId (Integer or Numeric String):** Required. The positive whole-number SIS ID of the user these preferences apply to.
 - **Comment (String, Optional):** Free text to identify who the entry is for (a name, an email address, or whatever else is useful).
-- **ShowAs (String):** Overrides `EventDefaults.ShowAs` for this user. Same accepted values — one of the Graph [`freeBusyStatus`](https://learn.microsoft.com/en-us/graph/api/resources/event#properties) values ("Unknown", "Free", "Tentative", "Busy", "Oof", "WorkingElsewhere").
+- **ShowAs (String):** Overrides `EventDefaults.ShowAs` for this user. Same accepted values: one of the Graph [`freeBusyStatus`](https://learn.microsoft.com/en-us/graph/api/resources/event#properties) values ("Unknown", "Free", "Tentative", "Busy", "Oof", "WorkingElsewhere").
 - **IsReminderOn (Boolean):** Overrides `EventDefaults.IsReminderOn` for this user.
 - **ReminderMinutesBeforeStart (Integer):** Overrides `EventDefaults.ReminderMinutesBeforeStart` for this user.
 
@@ -230,7 +230,7 @@ singleValueExtendedProperties = @(
 )
 ```
 
-The `id` uses Graph's [named-property format](https://learn.microsoft.com/en-us/graph/api/resources/extended-properties-overview#named-properties) — `String {<GUID>} Name <name>` means a `String`-typed named property, named `<name>`, that lives in the property set identified by `<GUID>`. Together the id and the `value` form a tag unique to this deployment.
+The `id` uses Graph's [named-property format](https://learn.microsoft.com/en-us/graph/api/resources/extended-properties-overview#named-properties): `String {<GUID>} Name <name>` means a `String`-typed named property, named `<name>`, that lives in the property set identified by `<GUID>`. Together the id and the `value` form a tag unique to this deployment.
 
 **2. Filtering on read.** When the script collects a user's existing events, it queries [Get-MgUserEvent](https://learn.microsoft.com/en-us/graph/api/user-list-events) with an OData `$filter` that requires both the extended-property tag *and* a date range (see [Get singleValueLegacyExtendedProperty](https://learn.microsoft.com/en-us/graph/api/singlevaluelegacyextendedproperty-get) for the filter syntax):
 
@@ -247,7 +247,7 @@ Get-MgUserEvent -UserId $EntraUser.Id -All -Filter $Filter -Property $MGEventPro
 **Important notes:**
 
 - Give each deployment its **own unique `EventsAppIdentifier.GUID` and `EventsAppIdentifier.Value`**. Two instances that share a tag would treat each other's events as their own (and could remove them). A separate test run should use its own tag values.
-- **Changing the `EventsAppIdentifier` values after events already exist will orphan the previously created events** — the script will no longer recognize them, so it will neither update nor remove them (and may create duplicates alongside them).
+- **Changing the `EventsAppIdentifier` values after events already exist will orphan the previously created events**: the script will no longer recognize them, so it will neither update nor remove them (and may create duplicates alongside them).
 - Extended properties are used (rather than schema extensions) specifically because they can be reliably filtered on the `event` object, which schema extensions cannot.
 
 Related Microsoft Graph documentation:
