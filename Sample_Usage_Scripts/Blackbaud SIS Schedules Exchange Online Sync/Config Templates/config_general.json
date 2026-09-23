@@ -78,19 +78,19 @@
         ],
         "From": {
             "Name": "SIS User Schedules Sync Script",
-            "Address": "userschedulessync@school.edu"
+            "Address": "userschedulessync@example.com"
         },
         "ReplyTo": [
             {
                 "Name": "School IT Support",
-                "Address": "it.support@school.edu"
+                "Address": "it.support@example.com"
             }
         ],
         "To": [
-            "it.support@school.edu"
+            "it.support@example.com"
         ],
         "SaveToSentItems": true,
-        "SenderId": "userschedulessync@school.edu"
+        "SenderId": "userschedulessync@example.com"
     },
     "Debugging": {
         "VerbosePreference": "SilentlyContinue",

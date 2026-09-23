@@ -63,7 +63,7 @@ function New-SchoolUserOccupation
             'User_ID'           = 3156271
             'business_name'     = "Don's Auto"
             'job_title'         = "Director of Shiny Things"
-            'business_url'      = "https://donsauto.com"
+            'business_url'      = "https://example.com"
             'industry'          = "Automotive"
             'organization'      = "Don's Group"
             'occupation'        = "Mechanical Technician"

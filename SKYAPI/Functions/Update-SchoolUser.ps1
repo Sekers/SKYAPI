@@ -190,7 +190,7 @@ function Update-SchoolUser
         'Visa Status' and 'Visa Type' tables (see Get-SchoolTypeTableValue).
 
         .EXAMPLE
-        Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
+        Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@example.com" -first_name "John" -preferred_name "Jack"
         .EXAMPLE
         Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
         .EXAMPLE

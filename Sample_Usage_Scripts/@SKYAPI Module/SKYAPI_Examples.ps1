@@ -393,7 +393,7 @@
     Update-SchoolUser
     (Use Get-SchoolTypeTableValue to get valid descriptors/IDs for fields like citizenship, ethnicity, pronouns, religion, primary_language, home_languages, races, school_program & visa status/type)
 #>
-# Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@domain.edu" -first_name "John" -preferred_name "Jack"
+# Update-SchoolUser -User_ID 1757293 -custom_field_one "my data" -email "useremail@example.com" -first_name "John" -preferred_name "Jack"
 # Update-SchoolUser -User_ID 1757293,2878846 -custom_field_one "my data"
 
 # Nested object parameters (locker, mailbox, passport, visa, in_state) accept either a single string that sets the object's primary field or a full hashtable/PSCustomObject.
@@ -516,7 +516,7 @@
 #     'User_ID'           = 3156271
 #     'business_name'     = "Don's Auto"
 #     'job_title'         = "Director of Shiny Things"
-#     'business_url'      = "https://donsauto.com"
+#     'business_url'      = "https://example.com"
 #     'industry'          = "Automotive"
 #     'organization'      = "Don's Group"
 #     'occupation'        = "Mechanical Technician"
@@ -617,7 +617,7 @@
     Tip: For more complex examples, such as processing an array of users, use the comment-based help: Get-Help Connect-SchoolUserBBID -Examples 
 #>
 # Connect-SchoolUserBBID -id 5809872
-# Connect-SchoolUserBBID -id 5809872 -email 'example@school.edu'
+# Connect-SchoolUserBBID -id 5809872 -email 'example@example.com'
 
 <#
     Get-SchoolCustomField

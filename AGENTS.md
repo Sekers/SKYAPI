@@ -19,12 +19,15 @@ live in `SKYAPI/SKYAPI.psm1`. Work happens on `develop`; `main` is the released 
   scripts can be pointed at either a throwaway development environment or the live production tenant, and the
   target is set by whichever `Set-SKYAPIConfigFilePath` / `Set-SKYAPITokensFilePath` lines are uncommented. Read
   those lines before running anything that authenticates.
-- **Every placeholder email address uses a domain reserved by [RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)**:
-  `example.com`, `example.net`, or `example.org`. None of them can ever be registered, so a placeholder copied
-  out of a help example and run unedited cannot reach a real person. Help examples are exactly what readers copy
-  and run, and some of them write to the tenant: `Connect-SchoolUserBBID -send_invite $true` emails the address
-  it is given. Prefer `example.com` for anything new, but all three are equally correct: never rename existing
-  placeholders to match that preference.
+- **Every placeholder email address and URL uses a domain reserved by
+  [RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)**: `example.com`, `example.net`, or `example.org`. None of
+  them can ever be registered, so a placeholder copied out of a help example and run unedited cannot reach a
+  real person or point at a real site. Help examples are exactly what readers copy and run, and some of them
+  write to the tenant: `Connect-SchoolUserBBID -send_invite $true` emails the address it is given, and
+  `New-SchoolUserOccupation` stores its `business_url` on the user's record. Prefer `example.com` for anything
+  new, but all three are equally correct: never rename existing placeholders to match that preference. A
+  `myschoolapp.com` host is the one exception, since an example of a school's app address only makes sense on
+  that domain.
 
 ## CHANGELOG.md
 

@@ -37,7 +37,7 @@ function Connect-SchoolUserBBID
         Connect-SchoolUserBBID -id 5809872
         .EXAMPLE
         # Single example: specify an email address and choose to send an invitation.
-        Connect-SchoolUserBBID -id 5809872 -email 'example@school.edu' -send_invite $true
+        Connect-SchoolUserBBID -id 5809872 -email 'example@example.com' -send_invite $true
         .EXAMPLE
         # Multi example: array of hashtables using 'ConnectionRequest' parameter.
         $UsersHashtable = @(
@@ -46,7 +46,7 @@ function Connect-SchoolUserBBID
             },
             @{
                 id          = 103103
-                email       = 'carol@school.edu'
+                email       = 'carol@example.com'
                 send_invite = $true
             }
         )
@@ -59,7 +59,7 @@ function Connect-SchoolUserBBID
             },
             @{
                 id          = 103103
-                email       = 'carol@school.edu'
+                email       = 'carol@example.com'
                 send_invite = $true
             }
         )
@@ -72,7 +72,7 @@ function Connect-SchoolUserBBID
             },
             [PSCustomObject]@{
                 id          = 103103
-                email       = 'carol@school.edu'
+                email       = 'carol@example.com'
                 send_invite = $true
             }
         )
@@ -85,7 +85,7 @@ function Connect-SchoolUserBBID
             },
             [PSCustomObject]@{
                 id          = 103103
-                email       = 'carol@school.edu'
+                email       = 'carol@example.com'
                 send_invite = $true
             }
         )
