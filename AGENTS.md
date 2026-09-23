@@ -176,8 +176,14 @@ without going to look.
 
 - **LF everywhere.** Every text type is pinned `eol=lf`, which is what Git stores anyway, so a checked-out
   file is byte for byte the repository's copy on any platform and under any `core.autocrlf`.
-- **No byte order mark in the repository.** Every text file here is BOM-free, and all of them are pure ASCII.
-  `Tests/TestRepoHygiene_FileEncoding.ps1` enforces that over the tracked tree.
+- **No byte order mark in the repository.** Every text file here is BOM-free.
+- **PowerShell files contain only ASCII.** This covers `.ps1`, `.psm1`, `.psd1`, `.ps1xml`, `.psrc`, and
+  `.pssc`. Windows PowerShell 5.1 reads a script that has no BOM in the system's ANSI code page, so a single
+  non-ASCII character (a curly quote or an em dash pasted into a message string, for example) is silently
+  misread there while PowerShell 7 reads it correctly. In code, write a non-ASCII character as an escape such as
+  `[char]0x00E9`. `Research_Notes/File-Encoding-And-Line-Endings.md` section 8 has the measurement.
+- **Other text files may contain non-ASCII characters**, such as the `§` the research notes use for section
+  references. The no-em-dash rule in the changelog's "Structure and style" section still applies to every file.
 - **The files the module writes at runtime are a separate question, and it is already answered.** The
   configuration file and the cached tokens file are written with `Out-File -Encoding utf8`, which is BOM-free
   on PowerShell 7 and carries a BOM on Windows PowerShell 5.1. **That BOM is accepted.** Do not "fix" those
@@ -188,7 +194,7 @@ without going to look.
   `Get-Content` honors a BOM, so the module reads either form, and `Out-File -Force` truncates before
   writing, so the BOM clears itself the next time PowerShell 7 writes the file. The only thing that would
   reopen this is a consumer outside PowerShell reading those files, which
-  `Research_Notes/File-Encoding-And-Line-Endings.md` section 8 lists as unverified.
+  `Research_Notes/File-Encoding-And-Line-Endings.md` section 9 lists as unverified.
 - **Skip anything containing a NUL byte**, which is Git's own binary test. Git reports such a file as
   `-text`, so no line-ending rule applies to it, and a bulk "read text, write text" pass over one re-encodes
   it and can halve its size.

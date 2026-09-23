@@ -37,8 +37,10 @@ Thank you for helping improve SKYAPI. This guide covers the everyday workflow.
   describe what you tested in the pull request.
 - **Tests are plain scripts, not Pester.** Name a new one `Test<Category>_<Name>.ps1` and follow the existing
   ones: `PASS`/`FAIL` lines, a final summary, and a non-zero exit code on failure.
-- **Text files use LF line endings and no byte order mark.** `.gitattributes` handles line endings, the test
-  suite checks both rules, and [AGENTS.md](./AGENTS.md) explains them.
+- **Text files use LF line endings and no byte order mark, and PowerShell files contain only ASCII.** Windows
+  PowerShell 5.1 misreads a non-ASCII character in a PowerShell file saved without a byte order mark, so write
+  one as an escape such as `[char]0x00E9`. `.gitattributes` handles line endings, the test suite checks all
+  three rules, and [AGENTS.md](./AGENTS.md) explains them.
 - **Rebase only your own branch, and only before it merges.** Never force-push `develop` or `main`.
 
 AI assistants working in this repository follow [AGENTS.md](./AGENTS.md), which also holds the detailed rules

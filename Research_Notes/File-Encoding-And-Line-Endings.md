@@ -4,8 +4,9 @@ How PowerShell writes text, how Git stores it, and the places where the two disa
 PowerShell and Git behavior rather than SKY API behavior, recorded here because getting it wrong cost real
 time and, once, corrupted a file.
 
-Measured on **2026-09-04** on Windows 11, against Windows PowerShell **5.1.26100.9168** and PowerShell
-**7.6.5**. No tenant was involved and nothing here describes the API.
+Sections 1 to 6 were measured on **2026-09-04** on Windows 11, against Windows PowerShell **5.1.26100.9168**
+and PowerShell **7.6.5**; section 8 gives its own date. No tenant was involved and nothing here describes the
+API.
 
 **Claims are labelled with their evidence.**
 
@@ -116,11 +117,37 @@ which is the sort of inconsistency worth checking for.
 ## 7. From source: what this repository pins
 
 `.gitattributes` pins every text type to `eol=lf`, which is what Git stores anyway, so a checked-out file is
-byte for byte the repository's copy on any platform and under any `core.autocrlf`. No text file is BOM-free
-by accident; all of them are pure ASCII. Binaries under `SKYAPI/Dependencies` are marked `binary` so no
-conversion can touch them.
+byte for byte the repository's copy on any platform and under any `core.autocrlf`. Every text file is
+BOM-free by design. PowerShell files are also ASCII only (section 8); other text files may hold non-ASCII
+characters, such as the `§` the research notes use for section references. Binaries under
+`SKYAPI/Dependencies` are marked `binary` so no conversion can touch them.
 
-## 8. Unverified
+## 8. Measured: a non-ASCII character in a script file without a BOM
+
+Measured on **2026-09-23** on Windows 11 (10.0.26200), with Windows PowerShell **5.1.26100.9444** and
+PowerShell **7.6.6**. The system's ANSI code page was **1252**. A one-line script assigned `café` to a string
+and printed its length and last character:
+
+| Script saved as | Windows PowerShell 5.1 | PowerShell 7 |
+| --- | --- | --- |
+| UTF-8 without a BOM, `é` written literally | `length=5`, last U+00A9 | `length=4`, last U+00E9 |
+| UTF-8 with a BOM, `é` written literally | `length=4`, last U+00E9 | `length=4`, last U+00E9 |
+| ASCII only, `é` written as `[char]0x00E9` | `length=4`, last U+00E9 | `length=4`, last U+00E9 |
+
+Windows PowerShell 5.1 read the two UTF-8 bytes of `é` as two code page 1252 characters (`Ã©`), with no error
+or warning. PowerShell 7 read all three scripts correctly. Writing the character as an escape is correct in both
+editions and keeps the file ASCII, so whether it has a BOM stops mattering. That is why PowerShell files here are
+ASCII only rather than UTF-8 with a BOM, which would break the no-BOM rule every other file follows.
+`Tests/TestRepoHygiene_FileEncoding.ps1` enforces it.
+
+What this does not establish:
+
+- Only code page 1252 and only `é` were tested. Other characters misread the same way by the same mechanism,
+  but that is inferred, not measured.
+- A module manifest cannot hold an escape such as `[char]0x00E9`. Whether a `.psd1` saved with a BOM reads
+  correctly, as the second row suggests, was not measured.
+
+## 9. Unverified
 
 - Whether any consumer outside PowerShell reads the configuration or tokens files, which is what would make
   the BOM that 5.1 writes actually matter rather than merely being untidy.

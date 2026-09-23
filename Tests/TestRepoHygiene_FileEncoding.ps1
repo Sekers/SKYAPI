@@ -4,18 +4,21 @@
 # A check is needed because Git hides this class of problem: it normalizes line endings before diffing, so a
 # file whose endings are wrong shows no diff at all and leaves "git status" clean.
 #
-# Three rules:
+# Four rules:
 #
-#   1. No byte order mark. Every text file here is pure ASCII, so a BOM buys nothing and breaks things
-#      quietly: shell tools that do not strip a BOM treat it as content, and it defeats the point of LF
-#      files being byte-identical to what Git stores.
+#   1. No byte order mark. UTF-8 needs none, and one breaks things quietly: shell tools that do not strip a
+#      BOM treat it as content, and it defeats the point of LF files being byte-identical to what Git stores.
 #
 #   2. LF only, no CR anywhere. .gitattributes pins every text type to eol=lf, which is what Git already
 #      stores, so a checked-out file is byte for byte the repository's copy on every platform. Line endings
 #      do not affect how PowerShell parses a script; this is about there being no conversion layer to
 #      reason about.
 #
-#   3. Files Git treats as binary are skipped and reported, never rewritten. Git reports such a file as
+#   3. PowerShell files contain only ASCII. Windows PowerShell 5.1 reads a script that has no BOM in the ANSI
+#      code page, so a non-ASCII character is silently misread there while PowerShell 7 reads it correctly
+#      (Research_Notes/File-Encoding-And-Line-Endings.md section 8). Other text files may hold non-ASCII.
+#
+#   4. Files Git treats as binary are skipped and reported, never rewritten. Git reports such a file as
 #      -text, so no line-ending rule applies to it, and a bulk "read text, write text" pass over one would
 #      silently re-encode it and can halve its size. A NUL byte is Git's own binary heuristic and is what
 #      this test uses, so any such file is skipped automatically rather than being mangled by the next tool
@@ -35,6 +38,13 @@ $RepoRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoo
 # Extensions .gitattributes declares as text. LICENSE has no extension and is listed there by name.
 $TextExtension = @('.ps1','.psm1','.psd1','.ps1xml','.psrc','.pssc','.md','.txt','.json','.yml','.yaml','.url','.csv')
 
+# The ones PowerShell itself reads as source, which rule 3 holds to ASCII.
+$PowerShellExtension = @('.ps1','.psm1','.psd1','.ps1xml','.psrc','.pssc')
+
+# ISO-8859-1 maps each byte to the character with the same number, so a regex over the decoded text sees the
+# raw bytes, and a byte above 0x7F is a non-ASCII character in any encoding this repository could hold.
+$Latin1 = [System.Text.Encoding]::GetEncoding(28591)
+
 if (-not (Get-Command git -ErrorAction SilentlyContinue))
 {
     'git is not available; cannot enumerate repository files'
@@ -53,8 +63,10 @@ if ($GitExit -ne 0 -or -not $Listed)
 
 $WithBom     = New-Object System.Collections.ArrayList
 $WithCr      = New-Object System.Collections.ArrayList
+$NonAscii    = New-Object System.Collections.ArrayList
 $SkippedBinary = New-Object System.Collections.ArrayList
 $Checked     = 0
+$PowerShellChecked = 0
 
 foreach ($Relative in $Listed)
 {
@@ -67,7 +79,7 @@ foreach ($Relative in $Listed)
 
     $Bytes = [System.IO.File]::ReadAllBytes($Full)
 
-    # Rule 3 first: a NUL byte means Git treats this as binary, so no text rule applies and nothing may
+    # Rule 4 first: a NUL byte means Git treats this as binary, so no text rule applies and nothing may
     # rewrite it. UTF-16 lands here, which is the point.
     if ($Bytes -contains 0)
     {
@@ -77,7 +89,8 @@ foreach ($Relative in $Listed)
 
     $Checked++
 
-    if ($Bytes.Length -ge 3 -and $Bytes[0] -eq 0xEF -and $Bytes[1] -eq 0xBB -and $Bytes[2] -eq 0xBF)
+    $HasBom = $Bytes.Length -ge 3 -and $Bytes[0] -eq 0xEF -and $Bytes[1] -eq 0xBB -and $Bytes[2] -eq 0xBF
+    if ($HasBom)
     {
         [void]$WithBom.Add($Relative)
     }
@@ -85,6 +98,21 @@ foreach ($Relative in $Listed)
     if ($Bytes -contains 13)   # CR
     {
         [void]$WithCr.Add($Relative)
+    }
+
+    # Rule 3, reported with the line of the first offending character. A BOM is rule 1's finding, so its three
+    # bytes are not counted here as well.
+    if ($PowerShellExtension -contains $Extension)
+    {
+        $PowerShellChecked++
+        $Start = if ($HasBom) { 3 } else { 0 }
+        $Text  = $Latin1.GetString($Bytes, $Start, $Bytes.Length - $Start)
+        $Match = [regex]::Match($Text, '[^\x00-\x7F]')
+        if ($Match.Success)
+        {
+            $Line = ($Text.Substring(0, $Match.Index) -split "`n").Count
+            [void]$NonAscii.Add("${Relative}:$Line")
+        }
     }
 }
 
@@ -94,9 +122,13 @@ Assert-Equal 'no file has a UTF-8 BOM' '' ($WithBom -join ', ')
 "--- every text file uses LF, matching the eol=lf pin in .gitattributes"
 Assert-Equal 'no text file contains a CR' '' ($WithCr -join ', ')
 
+"--- every PowerShell file is ASCII ($PowerShellChecked checked)"
+Assert-Equal 'no PowerShell file holds a non-ASCII character' '' ($NonAscii -join ', ')
+
 # A guard that silently checks nothing is worse than no guard, so prove the enumeration found something.
 "--- the scan actually reached the repository"
 Assert-Equal 'text files were checked' $true ($Checked -gt 100)
+Assert-Equal 'PowerShell files were checked' $true ($PowerShellChecked -gt 50)
 
 if ($SkippedBinary.Count)
 {
@@ -116,5 +148,8 @@ else
     'To convert a text file to LF (never run this over a file listed as skipped-as-binary above):'
     '    $t = [System.IO.File]::ReadAllText($Path)'
     '    [System.IO.File]::WriteAllText($Path, ($t -replace "`r`n","`n"))'
+    ''
+    'In a PowerShell file, write a non-ASCII character as an escape such as [char]0x00E9. The line number'
+    'after each file above is where the first one is.'
     exit 1
 }
