@@ -50,9 +50,10 @@ A side effect of how the module happens to be built is not part of it, even when
   for years. Either way, the changelog entry says what changed.
 - **Correcting an unintended side effect is not a breaking change.** Behavior that exists only because of how the
   module was built, and that no documentation ever offered (the help, the README, the wiki, the sample scripts,
-  or the changelog), is outside the public contract even though a caller can observe or use it. An example is a
-  variable exported into the caller's session only because the manifest exported every variable. Changing or
-  removing such behavior needs no deprecation, and the "reasonable script" test above does not apply. Naming
+  or the changelog), is outside the public contract even though a caller can observe or use it. Examples are a
+  global variable the module creates that nothing documents, and a plain value piped into a function being
+  applied to every text filter at once, which happened only because of how the parameters were declared.
+  Changing or removing such behavior needs no deprecation, and the "reasonable script" test above does not apply. Naming
   something in an error message does not document it. Behavior the module intends callers to use stays in the
   contract even where its documentation is thin. The change gets a changelog entry only when a script that
   follows the documentation could notice it.
