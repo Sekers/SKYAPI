@@ -140,12 +140,17 @@ editions and keeps the file ASCII, so whether it has a BOM stops mattering. That
 ASCII only rather than UTF-8 with a BOM, which would break the no-BOM rule every other file follows.
 `Tests/TestRepoHygiene_FileEncoding.ps1` enforces it.
 
+A module manifest cannot hold an escape such as `[char]0x00E9`, so it was measured separately the same day: a
+`.psd1` whose `Author` was `Café`, read through both `Import-PowerShellDataFile` and `Test-ModuleManifest`.
+Saved without a BOM, 5.1 returned 5 characters ending in U+00A9 and PowerShell 7 returned `Café`. Saved with a
+BOM, both editions returned `Café` through both commands. So a manifest that ever needs a non-ASCII character
+can have one only by carrying a BOM, which the repository's no-BOM rule would then need an exception for.
+
 What this does not establish:
 
 - Only code page 1252 and only `é` were tested. Other characters misread the same way by the same mechanism,
   but that is inferred, not measured.
-- A module manifest cannot hold an escape such as `[char]0x00E9`. Whether a `.psd1` saved with a BOM reads
-  correctly, as the second row suggests, was not measured.
+- Only reading a manifest was tested. Publishing one with a BOM to the PowerShell Gallery was not.
 
 ## 9. Unverified
 
