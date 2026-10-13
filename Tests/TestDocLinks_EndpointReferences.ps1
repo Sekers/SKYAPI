@@ -28,7 +28,7 @@
 # scratch folders such as '@Local Only' out of the results while still checking a file that has been written
 # but not yet committed. Pass -Path to add another checkout, for example the wiki:
 #
-#     .\TestDocLinks_EndpointReferences.ps1 -Path 'c:\Programming\Wikis\SKYAPI.wiki'
+#     .\Tests\TestDocLinks_EndpointReferences.ps1 -Path '.\wiki'
 #
 # Needs network, but no auth, no tenant and no token file: it reads the public developer portal only.
 

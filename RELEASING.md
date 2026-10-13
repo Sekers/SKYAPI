@@ -145,6 +145,9 @@ section.
 ## Releasing a version
 
 1. **Choose the version** from the `[Unreleased]` entries, following [Deciding hard cases](#deciding-hard-cases).
+   Before opening the release-prep pull request, ensure `develop` records the wiki revision for this release
+   and that revision is available on the wiki remote. Keep unreleased documentation on a non-default wiki
+   branch.
 2. **Open a release-prep pull request into `develop`** that changes only:
    - `ModuleVersion`, and `Prerelease` for a prerelease, in `SKYAPI/SKYAPI.psd1`.
    - `CHANGELOG.md`: rename `## [Unreleased](...)` to a dated heading such as
@@ -169,11 +172,28 @@ section.
    3. Builds the package once and publishes it to the PowerShell Gallery, in the `psgallery` environment.
    4. Creates the GitHub release from the version's changelog section, attaches the same package, and
       publishes the release.
-6. **Merge `main` back into `develop` with a merge commit**, not a squash ([Branches](#branches) explains why).
+6. **For a stable release, publish the wiki revision recorded by the release tag** after the Release workflow
+   passes, following [Publishing the wiki](#publishing-the-wiki).
+7. **Merge `main` back into `develop` with a merge commit**, not a squash ([Branches](#branches) explains why).
 
 The GitHub release is created last so that a failed check or publish never leaves behind a public release, which
 immutable releases would lock, for a version that did not ship. Publishing a GitHub release by hand publishes
 nothing to the Gallery; only a pushed tag does.
+
+### Publishing the wiki
+
+The release tag records a specific commit of the `wiki/` submodule. Find it with
+`git rev-parse <release-tag>:wiki`, fetch the wiki repository, and merge that commit into its default branch,
+`master`. Review the result before pushing: the published pages must describe the released module, with no
+documentation for a later release. If other wiki changes have landed since the recorded revision, reconcile
+them before publishing.
+
+Publishing happens only after the Release workflow succeeds. Updating the module's submodule reference alone
+does not publish the wiki; pushing the wiki's default branch does. If wiki publication fails, retry that wiki
+operation separately without rerunning the PowerShell Gallery publish job.
+
+Prereleases keep their wiki documentation on a non-default branch. Publish the public wiki when the stable
+release succeeds.
 
 ### If the Release workflow fails
 
@@ -219,6 +239,8 @@ enforceable:
 ## Release checklist
 
 - [ ] Every change listed under `[Unreleased]` has been reviewed and merged into `develop`.
+- [ ] `develop` records the wiki revision for this release, including new or renamed functions, and that
+      revision is available on the wiki remote. Unreleased documentation remains on a non-default wiki branch.
 - [ ] The version increment follows [Versioning](#versioning).
 - [ ] `.\Tests\Invoke-Tests.ps1 -Network` passes, so every SKY API documentation link has been checked against
       the portal. CI runs only the offline suite.
@@ -228,8 +250,8 @@ enforceable:
 - [ ] The tag is annotated, has no `v` prefix, and is on the merge commit.
 - [ ] Every job in the Release workflow passed.
 - [ ] The version appears on the PowerShell Gallery, and the GitHub release has the right notes and package.
-- [ ] The wiki (`Sekers/SKYAPI.wiki`) describes this release, including any new function in its list of
-      supported endpoints, and its update was pushed after the Release workflow passed.
+- [ ] For a stable release, the wiki revision recorded by the release tag was published to the wiki's default
+      branch after the Release workflow passed, including any new function in its list of supported endpoints.
 - [ ] `main` was merged back into `develop` with a merge commit.
 - [ ] Anything that needs a live SKY API test was tested separately against a development environment. The
       automated tests never connect to a tenant.

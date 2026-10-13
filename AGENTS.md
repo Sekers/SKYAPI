@@ -7,8 +7,11 @@ to this file, so Claude Code and Codex both pick up the same rules. Edit this fi
 Management "school" API). Public functions live one-per-file in `SKYAPI/Functions/`; shared private helpers
 live in `SKYAPI/SKYAPI.psm1`. Work happens on `develop`; `main` is the released branch.
 [RELEASING.md](./RELEASING.md) holds the versioning rules and the release process, and
-[CONTRIBUTING.md](./CONTRIBUTING.md) the everyday workflow. The GitHub wiki is a separate repository
-(`Sekers/SKYAPI.wiki`), not part of this one.
+[CONTRIBUTING.md](./CONTRIBUTING.md) the everyday workflow. The GitHub wiki remains a separate repository
+(`Sekers/SKYAPI.wiki`), included at `wiki/` as a Git submodule. This repository records a specific wiki commit;
+wiki edits are committed and pushed separately before updating that reference. Keep upcoming documentation on
+a non-default wiki branch, and publish it to the wiki's default branch (`master`) only after the corresponding
+release succeeds. [CONTRIBUTING.md](./CONTRIBUTING.md#working-on-the-wiki) covers the wiki workflow.
 
 ## Safety rules that override convenience
 

@@ -3,6 +3,25 @@
 Thank you for helping improve SKYAPI. This guide covers the everyday workflow.
 [RELEASING.md](./RELEASING.md) covers versioning, branches, and releases in full.
 
+## Getting the source
+
+Clone with the wiki submodule included:
+
+```powershell
+git clone --recurse-submodules https://github.com/Sekers/SKYAPI.git
+```
+
+In an existing checkout, initialize the wiki, or restore the revision recorded by the current branch:
+
+```powershell
+git submodule update --init --recursive
+```
+
+Run that update after pulling or switching branches in the module repository. Save any wiki work first. The
+wiki is checked out at the recorded commit, normally with a detached `HEAD`; switch to a wiki branch before
+editing. GitHub's **Download ZIP** includes the module files and submodule configuration, but not the wiki
+pages.
+
 ## Workflow
 
 1. Fork the repository, or create a branch in it if you have write access.
@@ -24,6 +43,30 @@ Thank you for helping improve SKYAPI. This guide covers the everyday workflow.
    heading).
 6. Open a pull request into `develop` (or into `main` for a hotfix) and complete the pull request template,
    including the release classification.
+
+## Working on the wiki
+
+`wiki/` is a checkout of the separate `Sekers/SKYAPI.wiki` repository. The module repository stores its commit
+reference, not copies of its pages. The public wiki renders that repository's default branch, `master`.
+
+1. Create a wiki branch, such as `docs/<short-name>`, from the recorded revision. Keep documentation for
+   upcoming module changes on that branch so the public wiki continues to describe the latest release.
+2. Edit and review the wiki pages. If endpoint links change, check both repositories from the module root:
+
+   ```powershell
+   .\Tests\TestDocLinks_EndpointReferences.ps1 -Path '.\wiki'
+   ```
+
+3. Commit and push the wiki branch first. Anyone cloning the module must be able to fetch the wiki commit it
+   records. Contributors without wiki write access should arrange the wiki update with a maintainer.
+4. In the module repository, stage the reference with `git add wiki` and include it in the pull request with
+   the corresponding code changes. Identify the wiki commit and summarize its changes in the pull request.
+5. After the module release succeeds, publish the recorded wiki revision as described in
+   [RELEASING.md](./RELEASING.md#publishing-the-wiki).
+
+Documentation corrections for released behavior can be published on the wiki's default branch independently.
+Update `main`'s wiki reference through a documentation pull request, and incorporate the correction into any
+upcoming wiki branch before updating `develop`'s reference.
 
 ## Rules
 
