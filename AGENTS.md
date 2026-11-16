@@ -5,7 +5,8 @@ to this file, so Claude Code and Codex both pick up the same rules. Edit this fi
 
 **What this repository is:** `SKYAPI`, a PowerShell module wrapping Blackbaud's SKY API (mainly the Education
 Management "school" API). Public functions live one-per-file in `SKYAPI/Functions/`; shared private helpers
-live in `SKYAPI/SKYAPI.psm1`. Work happens on `develop`; `main` is the released branch.
+live in `SKYAPI/SKYAPI.psm1`. Work happens on `develop`; `main` is the released branch. The sample scripts in
+`Sample_Usage_Scripts/` have their own versions, separate from the module's.
 [RELEASING.md](./RELEASING.md) holds the versioning rules and the release process, and
 [CONTRIBUTING.md](./CONTRIBUTING.md) the everyday workflow. The GitHub wiki is a separate repository
 (`Sekers/SKYAPI.wiki`), not part of this one.
