@@ -4,6 +4,12 @@
 
 # Creates Exchange Online events for users (faculty, students, etc.) from the Blackbaud School Environment.
 
+##################
+# SCRIPT VERSION #
+##################
+
+[string]$ScriptVersion = '1.0.0'
+
 ##############
 # TODO ITEMS #
 ##############
@@ -66,14 +72,12 @@ function Test-Write
     )
     try {
         $testPath = Join-Path $Path ([IO.Path]::GetRandomFileName())
-        [IO.File]::Create($testPath, 1, 'DeleteOnClose') > $null
-        # Or...
-        <# New-Item -Path $testPath -ItemType File -ErrorAction Stop > $null #>
+        # DeleteOnClose removes the test file when the stream is closed.
+        $testStream = [IO.File]::Create($testPath, 1, 'DeleteOnClose')
+        $testStream.Dispose()
         return $true
     } catch {
         return $false
-    } finally {
-        Remove-Item $testPath -ErrorAction SilentlyContinue
     }
 }
 
@@ -250,12 +254,13 @@ function Write-RunSummary
     param (
         [Parameter(Mandatory=$true)][string]$Outcome, # E.g., 'Success', 'Completed With Errors', 'Failed'.
         [Parameter(Mandatory=$true)][System.Collections.Specialized.OrderedDictionary]$Counters,
+        [Parameter(Mandatory=$true)][string]$ScriptVersion,
         [bool]$LoggingEnabled = $false,
         [string]$Detail
     )
 
     $CounterText = ($Counters.GetEnumerator() | ForEach-Object {"$($_.Key)=$($_.Value)"}) -join ', '
-    $SummaryText = "Run Summary [$($Outcome)]: $CounterText"
+    $SummaryText = "Run Summary [$($Outcome)] (Version $ScriptVersion): $CounterText"
     if (-not [string]::IsNullOrWhiteSpace($Detail)) { $SummaryText += " | $Detail" }
 
     # When logging is on the logging provider already writes this to the console, so only write it directly
@@ -508,6 +513,7 @@ if ($LoggingEnabled)
 {
     Set-PSFLoggingProvider @paramSetPSFLoggingProvider
     Write-PSFMessage -Level Important -Message "---SCRIPT BEGIN---"
+    Write-PSFMessage -Level Verbose -Message "Script Version: $ScriptVersion"
     Write-PSFMessage -Level Verbose -Message "PowerShell Version: $($PSVersionTable.PSVersion.ToString()), $($PSVersionTable.PSEdition.ToString())$(if([Environment]::Is64BitProcess){$(", 64Bit")}else{$(", 32Bit")})"
     foreach ($moduleInfo in Get-Module)
     {
@@ -562,7 +568,7 @@ if (-not $SingleInstanceMutexAcquired)
 {
     $NewMessage = "Another copy of this deployment of the script is still running (single-instance lock `"$SingleInstanceMutexName`"). Stopping so the two runs don't work on the same calendars at the same time."
     if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message $NewMessage}
-    $null = Write-RunSummary -Outcome 'Already Running' -Counters $RunCounters -LoggingEnabled $LoggingEnabled -Detail $NewMessage
+    $null = Write-RunSummary -Outcome 'Already Running' -Counters $RunCounters -ScriptVersion $ScriptVersion -LoggingEnabled $LoggingEnabled -Detail $NewMessage
     if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
     if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
     $SingleInstanceMutex.Dispose()
@@ -1020,7 +1026,7 @@ try
                 }
 
                 # End Logging Message
-                $null = Write-RunSummary -Outcome 'Nothing To Do' -Counters $RunCounters -LoggingEnabled $LoggingEnabled -Detail 'No school terms within the date range.'
+                $null = Write-RunSummary -Outcome 'Nothing To Do' -Counters $RunCounters -ScriptVersion $ScriptVersion -LoggingEnabled $LoggingEnabled -Detail 'No school terms within the date range.'
                 if ($LoggingEnabled) {Write-PSFMessage -Level Important -Message "---SCRIPT END---"}
                 if ($LoggingEnabled) {Wait-PSFMessage} # Make Sure Logging Is Flushed Before Terminating
 
@@ -1709,7 +1715,7 @@ try
     # Skipped users count as a warning outcome too: every user in the configured roles was asked for, so a
     # scheduled task watching the exit code should notice when some of them silently received no sync.
     $RunOutcome = if (($RunCounters.UsersFailed -gt 0) -or ($RunCounters.UsersSkipped -gt 0) -or ($RunCounters.DeleteGuardTrips -gt 0)) {'Completed With Warnings'} else {'Success'}
-    $RunSummaryText = Write-RunSummary -Outcome $RunOutcome -Counters $RunCounters -LoggingEnabled $LoggingEnabled
+    $RunSummaryText = Write-RunSummary -Outcome $RunOutcome -Counters $RunCounters -ScriptVersion $ScriptVersion -LoggingEnabled $LoggingEnabled
 
     # Email Warning Message, if enabled in config.
     If ($EmailonWarning -and -not [string]::IsNullOrEmpty($CustomWarningMessage))
@@ -1756,7 +1762,7 @@ catch
     # Log Error Message
     if ($LoggingEnabled) {Write-PSFMessage -Level Error -Message "Error Running Script (Name: `"$($_.InvocationInfo.ScriptName)`" | Line: $($_.InvocationInfo.ScriptLineNumber))" -Tag 'Failure' -ErrorRecord $_}
     $ScriptError = $_ # Kept because $_ refers to something else inside the alert email handling below.
-    $RunSummaryText = Write-RunSummary -Outcome 'Failed' -Counters $RunCounters -LoggingEnabled $LoggingEnabled -Detail "$ScriptError"
+    $RunSummaryText = Write-RunSummary -Outcome 'Failed' -Counters $RunCounters -ScriptVersion $ScriptVersion -LoggingEnabled $LoggingEnabled -Detail "$ScriptError"
 
     # Disconnect from Microsoft Graph API, if enabled in config.
     if ($MgDisconnectWhenDone)
